@@ -13,6 +13,7 @@ import { AppointmentForm } from '../components/forms/AppointmentForm';
 import { CalendarView } from '../components/calendar/CalendarView';
 import { db } from '../data';
 import type { Appointment } from '../types';
+import { ContextHelperRail } from '../components/ai/ContextHelperRail';
 
 const STATUS_CONFIG = {
   Scheduled:  { color: 'bg-indigo-500',  text: 'text-indigo-300',  bg: 'bg-indigo-500/15',  border: 'border-indigo-500/30',  icon: <Clock className="w-3.5 h-3.5" /> },
@@ -30,6 +31,7 @@ const TYPE_CONFIG = {
 export const Appointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>(db.appointments);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [listLayout, setListLayout] = useState<'card' | 'table'>('card');
 
   // Filter & Search states
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,8 +147,27 @@ export const Appointments: React.FC = () => {
     noShow: filteredAppointments.filter(a => a.status === 'No-Show').length,
   }), [filteredAppointments]);
 
+  const shiftGuideAgent = db.aiAgents.find(a => a.id === 'shiftguide-agent');
+  const helperInsights = shiftGuideAgent ? [
+    {
+      title: "Today's Load",
+      description: `${stats.scheduled} scheduled · ${stats.completed} completed · ${stats.noShow} no-shows`,
+      tag: 'Schedule'
+    },
+    {
+      title: 'Coverage outlook',
+      description: shiftGuideAgent.statusMessage,
+      tag: 'AI Status'
+    },
+    {
+      title: 'Queued Adjustments',
+      description: `${shiftGuideAgent.metrics.find(m => m.label === 'Adjustments queued')?.value ?? 'Stable'} recommended swaps pending`
+    }
+  ] : [];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:flex lg:items-start lg:gap-6">
+      <div className="flex-1 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -275,12 +296,74 @@ export const Appointments: React.FC = () => {
             </div>
           </GlassCard>
 
+          {/* Layout Toggle */}
+          <div className="flex justify-end">
+            <div className="flex bg-white/5 rounded-xl p-1 text-sm">
+              <button
+                onClick={() => setListLayout('card')}
+                className={`px-3 py-1.5 rounded-lg ${listLayout === 'card' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
+              >
+                Card view
+              </button>
+              <button
+                onClick={() => setListLayout('table')}
+                className={`px-3 py-1.5 rounded-lg ${listLayout === 'table' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
+              >
+                Table view
+              </button>
+            </div>
+          </div>
+
           {/* Grouped List */}
           {Object.keys(groupedAppointments).length === 0 ? (
             <GlassCard className="text-center py-16">
               <CalendarDays className="w-16 h-16 text-white/10 mx-auto mb-4" />
               <p className="text-white/40 text-lg">No appointments found</p>
               <p className="text-white/30 text-sm mt-1">Try adjusting your filters</p>
+            </GlassCard>
+          ) : listLayout === 'table' ? (
+            <GlassCard className="overflow-auto">
+              <table className="min-w-full text-sm">
+                <thead className="text-white/60">
+                  <tr>
+                    <th className="text-left py-2 border-b border-white/10">Date</th>
+                    <th className="text-left py-2 border-b border-white/10">Time</th>
+                    <th className="text-left py-2 border-b border-white/10">Patient</th>
+                    <th className="text-left py-2 border-b border-white/10">Doctor</th>
+                    <th className="text-left py-2 border-b border-white/10">Type</th>
+                    <th className="text-left py-2 border-b border-white/10">Status</th>
+                    <th className="text-right py-2 border-b border-white/10">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredAppointments.map((apt) => {
+                    const statusCfg = STATUS_CONFIG[apt.status];
+                    const typeCfg = TYPE_CONFIG[apt.type];
+                    return (
+                      <tr key={apt.id} className="text-white/80">
+                        <td className="py-3">{apt.date}</td>
+                        <td>{apt.time}</td>
+                        <td className="font-medium">{apt.patientName}</td>
+                        <td>{apt.doctorName}</td>
+                        <td>
+                          <span className={`px-2 py-0.5 rounded-full text-xs border border-white/10 ${typeCfg.bg} ${typeCfg.color}`}>
+                            {apt.type}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`px-2 py-0.5 rounded-full text-xs border ${statusCfg.bg} ${statusCfg.border} ${statusCfg.text}`}>
+                            {apt.status}
+                          </span>
+                        </td>
+                        <td className="text-right space-x-2">
+                          <button onClick={() => openEditModal(apt)} className="text-white/60 hover:text-white text-xs">Edit</button>
+                          <button onClick={() => openDeleteModal(apt)} className="text-red-400 hover:text-red-300 text-xs">Delete</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </GlassCard>
           ) : (
             <div className="space-y-4">
@@ -462,6 +545,15 @@ export const Appointments: React.FC = () => {
         message="Are you sure you want to delete this appointment? This action cannot be undone."
         itemName={`${selectedAppointment?.patientName} - ${selectedAppointment?.date}`}
       />
+      </div>
+      {shiftGuideAgent && (
+        <ContextHelperRail
+          agent={shiftGuideAgent}
+          title="Staffing Guidance"
+          insights={helperInsights}
+          ctaLabel="Open ShiftGuide"
+        />
+      )}
     </div>
   );
 };

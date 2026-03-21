@@ -13,7 +13,8 @@ export const aiInsights: AIInsight[] = [
       'Continuous cardiac monitoring recommended'
     ],
     createdAt: '2024-03-02T10:30:00Z',
-    severity: 'Critical'
+    severity: 'Critical',
+    agentId: 'quickcheck-agent'
   },
   {
     id: 'AI002',
@@ -27,7 +28,8 @@ export const aiInsights: AIInsight[] = [
       'Lifestyle modification counseling'
     ],
     createdAt: '2024-02-28T14:15:00Z',
-    severity: 'High'
+    severity: 'High',
+    agentId: 'quickcheck-agent'
   },
   {
     id: 'AI003',
@@ -41,7 +43,8 @@ export const aiInsights: AIInsight[] = [
       'Nutritionist consultation'
     ],
     createdAt: '2024-02-25T09:45:00Z',
-    severity: 'Medium'
+    severity: 'Medium',
+    agentId: 'careguide-agent'
   },
   {
     id: 'AI004',
@@ -55,7 +58,8 @@ export const aiInsights: AIInsight[] = [
       '6-week follow-up for lipid recheck'
     ],
     createdAt: '2024-03-05T11:20:00Z',
-    severity: 'High'
+    severity: 'High',
+    agentId: 'trendwatch-agent'
   },
   {
     id: 'AI005',
@@ -69,7 +73,8 @@ export const aiInsights: AIInsight[] = [
       'Maintain current nutrition plan'
     ],
     createdAt: '2024-03-03T16:00:00Z',
-    severity: 'Low'
+    severity: 'Low',
+    agentId: 'careguide-agent'
   },
   {
     id: 'AI006',
@@ -83,7 +88,8 @@ export const aiInsights: AIInsight[] = [
       'Ergonomics assessment'
     ],
     createdAt: '2024-03-04T13:30:00Z',
-    severity: 'Medium'
+    severity: 'Medium',
+    agentId: 'shiftguide-agent'
   }
 ];
 

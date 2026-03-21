@@ -89,6 +89,16 @@ export const AIInsights: React.FC = () => {
     setTimeout(() => setIsScanning(false), 2500);
   };
 
+  const formatRelativeTime = (timestamp: string) => {
+    const diffMs = Date.now() - new Date(timestamp).getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
   return (
     <div className="space-y-8">
 
@@ -270,6 +280,7 @@ export const AIInsights: React.FC = () => {
             const patient = db.patients.find(p => p.id === insight.patientId);
             const config = getSeverityConfig(insight.severity);
             const isExpanded = expandedInsight === insight.id;
+            const agentMeta = insight.agentId ? db.aiAgents.find(a => a.id === insight.agentId) : null;
 
             return (
               <div
@@ -309,7 +320,11 @@ export const AIInsights: React.FC = () => {
                       <span>•</span>
                       <span>AI Confidence: <span className={`font-medium ${config.color}`}>{insight.confidence}%</span></span>
                       <span>•</span>
-                      <span>{new Date(insight.createdAt).toLocaleDateString()}</span>
+                      <GlassBadge variant="primary" size="sm">
+                        {agentMeta?.name ?? 'AI Hub'}
+                      </GlassBadge>
+                      <span>•</span>
+                      <span>{formatRelativeTime(insight.createdAt)}</span>
                     </div>
                   </div>
 

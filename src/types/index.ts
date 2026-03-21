@@ -158,6 +158,7 @@ export interface AIInsight {
   recommendations: string[];
   createdAt: string;
   severity: 'Low' | 'Medium' | 'High' | 'Critical';
+  agentId?: string;
 }
 
 export interface AIAgentMetric {

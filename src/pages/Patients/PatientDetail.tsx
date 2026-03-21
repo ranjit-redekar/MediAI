@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Calendar, Phone, Mail, Droplet, Brain, AlertTriangle,
@@ -10,6 +10,7 @@ import { GlassButton } from '../../components/ui/GlassButton';
 import { GlassBadge } from '../../components/ui/GlassBadge';
 import { GlassModal } from '../../components/ui/GlassModal';
 import { MedicalTimeline } from '../../components/timeline/MedicalTimeline';
+import { ContextHelperRail } from '../../components/ai/ContextHelperRail';
 import { db } from '../../data';
 import type { MedicalRecord } from '../../types';
 
@@ -33,6 +34,7 @@ export const PatientDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>(patient?.medicalHistory || []);
   const [isAddRecordModalOpen, setIsAddRecordModalOpen] = useState(false);
+  const careGuideAgent = db.aiAgents.find(a => a.id === 'careguide-agent');
 
   if (!patient) {
     return (
@@ -47,6 +49,28 @@ export const PatientDetail: React.FC = () => {
       </div>
     );
   }
+
+  const [patientData, setPatientData] = useState(patient);
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [contactDraft, setContactDraft] = useState({
+    phone: patient.phone,
+    email: patient.email,
+    status: patient.status
+  });
+
+  useEffect(() => {
+    setPatientData(patient);
+    setContactDraft({
+      phone: patient.phone,
+      email: patient.email,
+      status: patient.status
+    });
+  }, [patient]);
+
+  const handleContactSave = () => {
+    setPatientData(prev => ({ ...prev, ...contactDraft }));
+    setIsEditingContact(false);
+  };
 
   const handleAddRecord = (record: Partial<MedicalRecord>) => {
     const newRecord: MedicalRecord = {
@@ -63,9 +87,35 @@ export const PatientDetail: React.FC = () => {
     (r.labResults || []).map(lab => ({ ...lab, date: r.date, diagnosis: r.diagnosis }))
   );
   const criticalLabs = allLabResults.filter(l => l.status === 'Critical');
+  const helperInsights = careGuideAgent ? [
+    {
+      title: 'AI Risk Score',
+      description: patientData.aiRiskScore
+        ? `${patientData.aiRiskScore}/100 · ${patientData.status}`
+        : 'No AI signal available',
+      tag: 'Patient'
+    },
+    aiInsight
+      ? {
+          title: aiInsight.type,
+          description: aiInsight.recommendations[0],
+          tag: aiInsight.severity
+        }
+      : {
+          title: 'Care Pathway',
+          description: 'All follow-ups up to date'
+        },
+    {
+      title: 'Upcoming Visits',
+      description: patientAppointments.length
+        ? `Next: ${patientAppointments[0].date} · ${patientAppointments[0].doctorName}`
+        : 'No future visits scheduled'
+    }
+  ] : [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:flex lg:items-start lg:gap-6">
+      <div className="flex-1 space-y-6">
       {/* Back */}
       <button
         onClick={() => navigate('/patients')}
@@ -75,12 +125,24 @@ export const PatientDetail: React.FC = () => {
         <span className="text-sm">Back to Patients</span>
       </button>
 
+      {/* Breadcrumb */}
+      <div className="flex flex-wrap items-center gap-2 text-xs text-white/50">
+        {['Dashboard', 'Patients', patientData.name].map((crumb, index) => (
+          <span key={crumb} className="flex items-center gap-2">
+            <span className={`px-2 py-0.5 rounded-full border ${index === 2 ? 'border-violet-500/40 text-white' : 'border-white/15'}`}>
+              {crumb}
+            </span>
+            {index < 2 && <span className="text-white/30">/</span>}
+          </span>
+        ))}
+      </div>
+
       {/* Patient Hero Banner */}
       <div className="relative overflow-hidden rounded-3xl">
         <div className={`
           absolute inset-0
-          ${patient.status === 'Critical' ? 'bg-gradient-to-r from-red-900/40 via-slate-900/60 to-slate-900/80' :
-            patient.aiRiskScore && patient.aiRiskScore >= 40 ? 'bg-gradient-to-r from-amber-900/30 via-slate-900/60 to-slate-900/80' :
+          ${patientData.status === 'Critical' ? 'bg-gradient-to-r from-red-900/40 via-slate-900/60 to-slate-900/80' :
+            patientData.aiRiskScore && patientData.aiRiskScore >= 40 ? 'bg-gradient-to-r from-amber-900/30 via-slate-900/60 to-slate-900/80' :
             'bg-gradient-to-r from-indigo-900/40 via-slate-900/60 to-slate-900/80'}
         `} />
         <div className="absolute inset-0 backdrop-blur-sm border border-white/10 rounded-3xl" />
@@ -90,31 +152,31 @@ export const PatientDetail: React.FC = () => {
             {/* Avatar + Status */}
             <div className="relative flex-shrink-0">
               <img
-                src={patient.avatar}
-                alt={patient.name}
+                src={patientData.avatar}
+                alt={patientData.name}
                 className="w-24 h-24 md:w-32 md:h-32 rounded-3xl border-4 border-white/20 object-cover shadow-2xl"
               />
               <div className={`
                 absolute -bottom-2 -right-2 px-2.5 py-1 rounded-full text-xs font-bold border-2 border-slate-900
-                ${patient.status === 'Active' ? 'bg-emerald-500 text-white' :
-                  patient.status === 'Critical' ? 'bg-red-500 text-white animate-pulse' :
+                ${patientData.status === 'Active' ? 'bg-emerald-500 text-white' :
+                  patientData.status === 'Critical' ? 'bg-red-500 text-white animate-pulse' :
                   'bg-gray-500 text-white'}
               `}>
-                {patient.status}
+                {patientData.status}
               </div>
             </div>
 
             {/* Core Info */}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-3 mb-1">
-                <h1 className="text-3xl font-bold text-white">{patient.name}</h1>
-                {patient.status === 'Critical' && (
+                <h1 className="text-3xl font-bold text-white">{patientData.name}</h1>
+                {patientData.status === 'Critical' && (
                   <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 text-sm animate-pulse">
                     <AlertTriangle className="w-3.5 h-3.5" /> Critical
                   </span>
                 )}
               </div>
-              <p className="text-white/50 text-sm mb-4">ID: {patient.id} · Registered {patient.registrationDate}</p>
+              <p className="text-white/50 text-sm mb-4">ID: {patientData.id} · Registered {patientData.registrationDate}</p>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="flex items-center gap-2">
@@ -123,7 +185,7 @@ export const PatientDetail: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-white/40">Age / Gender</p>
-                    <p className="text-sm font-medium text-white">{patient.age} yrs · {patient.gender}</p>
+                    <p className="text-sm font-medium text-white">{patientData.age} yrs · {patientData.gender}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -132,7 +194,7 @@ export const PatientDetail: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-white/40">Blood Group</p>
-                    <p className="text-sm font-medium text-white">{patient.bloodGroup}</p>
+                    <p className="text-sm font-medium text-white">{patientData.bloodGroup}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -141,7 +203,15 @@ export const PatientDetail: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-white/40">Phone</p>
-                    <p className="text-sm font-medium text-white">{patient.phone}</p>
+                    {isEditingContact ? (
+                      <input
+                        value={contactDraft.phone}
+                        onChange={(e) => setContactDraft(d => ({ ...d, phone: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/20 rounded-lg px-2 py-1 text-sm text-white"
+                      />
+                    ) : (
+                      <p className="text-sm font-medium text-white">{patientData.phone}</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -150,14 +220,71 @@ export const PatientDetail: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-white/40">Email</p>
-                    <p className="text-sm font-medium text-white truncate">{patient.email}</p>
+                    {isEditingContact ? (
+                      <input
+                        value={contactDraft.email}
+                        onChange={(e) => setContactDraft(d => ({ ...d, email: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/20 rounded-lg px-2 py-1 text-sm text-white"
+                      />
+                    ) : (
+                      <p className="text-sm font-medium text-white truncate">{patientData.email}</p>
+                    )}
                   </div>
                 </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2">
+                <span className="text-xs text-white/40">Status</span>
+                {isEditingContact ? (
+                  <select
+                    value={contactDraft.status}
+                    onChange={(e) => setContactDraft(d => ({ ...d, status: e.target.value as typeof contactDraft.status }))}
+                    className="bg-white/5 border border-white/20 rounded-lg px-2 py-1 text-sm text-white"
+                  >
+                    {['Active', 'Inactive', 'Critical'].map(option => (
+                      <option key={option} value={option} className="bg-slate-900">
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <GlassBadge variant={patientData.status === 'Critical' ? 'danger' : patientData.status === 'Active' ? 'success' : 'default'}>
+                    {patientData.status}
+                  </GlassBadge>
+                )}
+                <GlassButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (isEditingContact) {
+                      handleContactSave();
+                    } else {
+                      setIsEditingContact(true);
+                    }
+                  }}
+                >
+                  {isEditingContact ? 'Save' : 'Edit info'}
+                </GlassButton>
+                {isEditingContact && (
+                  <GlassButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingContact(false);
+                      setContactDraft({
+                        phone: patientData.phone,
+                        email: patientData.email,
+                        status: patientData.status
+                      });
+                    }}
+                  >
+                    Cancel
+                  </GlassButton>
+                )}
               </div>
             </div>
 
             {/* AI Risk Score */}
-            {patient.aiRiskScore !== undefined && (
+            {patientData.aiRiskScore !== undefined && (
               <div className="flex-shrink-0 w-full md:w-44">
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
                   <div className="flex items-center justify-center gap-1.5 mb-3">
@@ -166,27 +293,27 @@ export const PatientDetail: React.FC = () => {
                     <Sparkles className="w-3 h-3 text-violet-400" />
                   </div>
                   <div className={`text-4xl font-bold mb-1 ${
-                    patient.aiRiskScore >= 70 ? 'text-red-400' :
-                    patient.aiRiskScore >= 40 ? 'text-amber-400' : 'text-emerald-400'
+                    patientData.aiRiskScore >= 70 ? 'text-red-400' :
+                    patientData.aiRiskScore >= 40 ? 'text-amber-400' : 'text-emerald-400'
                   }`}>
-                    {patient.aiRiskScore}
+                    {patientData.aiRiskScore}
                     <span className="text-lg text-white/30">/100</span>
                   </div>
                   <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-2">
                     <div
                       className={`h-full rounded-full transition-all duration-1000 ${
-                        patient.aiRiskScore >= 70 ? 'bg-gradient-to-r from-red-500 to-rose-400' :
-                        patient.aiRiskScore >= 40 ? 'bg-gradient-to-r from-amber-500 to-orange-400' :
+                        patientData.aiRiskScore >= 70 ? 'bg-gradient-to-r from-red-500 to-rose-400' :
+                        patientData.aiRiskScore >= 40 ? 'bg-gradient-to-r from-amber-500 to-orange-400' :
                         'bg-gradient-to-r from-emerald-500 to-teal-400'
                       }`}
-                      style={{ width: `${patient.aiRiskScore}%` }}
+                      style={{ width: `${patientData.aiRiskScore}%` }}
                     />
                   </div>
                   <span className={`text-xs font-medium ${
-                    patient.aiRiskScore >= 70 ? 'text-red-400' :
-                    patient.aiRiskScore >= 40 ? 'text-amber-400' : 'text-emerald-400'
+                    patientData.aiRiskScore >= 70 ? 'text-red-400' :
+                    patientData.aiRiskScore >= 40 ? 'text-amber-400' : 'text-emerald-400'
                   }`}>
-                    {patient.aiRiskScore >= 70 ? 'High Risk' : patient.aiRiskScore >= 40 ? 'Moderate Risk' : 'Low Risk'}
+                    {patientData.aiRiskScore >= 70 ? 'High Risk' : patientData.aiRiskScore >= 40 ? 'Moderate Risk' : 'Low Risk'}
                   </span>
                 </div>
               </div>
@@ -260,7 +387,7 @@ export const PatientDetail: React.FC = () => {
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
-        <OverviewTab patient={patient} aiInsight={aiInsight} medicalRecords={medicalRecords} />
+        <OverviewTab patient={patientData} aiInsight={aiInsight} medicalRecords={medicalRecords} />
       )}
 
       {activeTab === 'history' && (
@@ -299,6 +426,15 @@ export const PatientDetail: React.FC = () => {
           onCancel={() => setIsAddRecordModalOpen(false)}
         />
       </GlassModal>
+      </div>
+      {careGuideAgent && (
+        <ContextHelperRail
+          agent={careGuideAgent}
+          title="Care Guidance"
+          insights={helperInsights}
+          ctaLabel="Open CareGuide"
+        />
+      )}
     </div>
   );
 };

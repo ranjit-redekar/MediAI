@@ -1,13 +1,15 @@
 import React from 'react';
-import { Menu, Bell, Search, Moon, Sun } from 'lucide-react';
+import { Menu, Bell, Search, Moon, Sun, Command as CommandIcon } from 'lucide-react';
 import { GlassInput } from '../ui/GlassInput';
 import { GlassButton } from '../ui/GlassButton';
 
 interface HeaderProps {
   onMenuClick: () => void;
+  onOpenCommand: () => void;
+  onOpenTaskInbox: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+export const Header: React.FC<HeaderProps> = ({ onMenuClick, onOpenCommand, onOpenTaskInbox }) => {
   const [isDark, setIsDark] = React.useState(true);
 
   return (
@@ -30,6 +32,16 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               icon={<Search className="w-4 h-4" />}
             />
           </div>
+          <GlassButton
+            variant="ghost"
+            size="sm"
+            className="hidden md:flex items-center gap-2 text-white/70"
+            onClick={onOpenCommand}
+          >
+            <CommandIcon className="w-4 h-4" />
+            Quick Command
+            <span className="px-1.5 py-0.5 rounded-md border border-white/20 text-xs">⌘K</span>
+          </GlassButton>
         </div>
 
         {/* Right Section */}
@@ -46,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
           {/* Notifications */}
           <div className="relative">
-            <GlassButton variant="ghost" size="sm">
+            <GlassButton variant="ghost" size="sm" onClick={onOpenTaskInbox}>
               <Bell className="w-4 h-4" />
             </GlassButton>
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center font-medium">
