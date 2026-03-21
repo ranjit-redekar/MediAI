@@ -8,6 +8,7 @@ MediAI is a React + TypeScript single-page application that simulates an AI-assi
 - **Patient & doctor management** – List + detail flows, medical timelines, vitals, lab tabs, doctor availability, rating, and achievements.
 - **Appointments workspace** – Calendar/list toggle, grouped agendas, filters, and CRUD modals for scheduling.
 - **Billing, pharmacy & laboratory modules** – Inventory cards, invoice tables, lab result grids with severity badges.
+- **Role-specific workspaces** – Receptionist, attending doctor, and pharma/test coordinators each get dedicated KPIs, workflows, queues, and shortcuts.
 - **AI Intelligence Center** – Severity filters, radar/area charts, expandable recommendations, and “Run AI Scan” call-to-action.
 - **Glassmorphic design system** – Reusable `Glass*` components (cards, buttons, inputs, badges, modals) built on Tailwind CSS.
 
@@ -21,7 +22,9 @@ MediAI is a React + TypeScript single-page application that simulates an AI-assi
 - **Laboratory**: Queue metrics, searchable orders, and result summaries with severity chips.
 - **Reports**: Quick KPIs plus downloadable report catalog for audits and leadership decks.
 - **AI Insights**: Severity filters, accuracy/risk charts, and expandable recommendations to prioritize care.
+- **AI Agent Library**: A lineup of operational AI agents with live status plus dedicated “viewbooks” detailing missions, workflows, and success metrics.
 - **Settings**: Tabbed profile, notification, security, and appearance controls using the glass UI kit.
+- **Role Workspaces**: Directory + detail screens for Receptionist, Attending Doctor, and Pharma/Test coordinators that bundle metrics, AI copilot notes, workflows, alerts, and links to the right modules.
 
 ## Tech Stack
 - React 19 + React Router 7

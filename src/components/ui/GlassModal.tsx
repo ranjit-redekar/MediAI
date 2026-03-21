@@ -30,14 +30,14 @@ export const GlassModal: React.FC<GlassModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="glass-modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div
         className={cn(
-          'relative w-full bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl',
+          'glass-modal relative w-full backdrop-blur-xl border rounded-2xl shadow-2xl',
           'transform transition-all duration-300 scale-100',
           sizes[size]
         )}

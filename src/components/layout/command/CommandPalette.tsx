@@ -44,6 +44,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
       description: 'Jump to appointments page',
       icon: <ArrowRight className="w-4 h-4 text-white/60" />,
       onSelect: () => navigate('/appointments')
+    },
+    {
+      id: 'goto-roles',
+      label: 'Open Role Workspaces',
+      description: 'Browse receptionist, doctor, and pharma-test views',
+      icon: <ArrowRight className="w-4 h-4 text-white/60" />,
+      onSelect: () => navigate('/roles')
     }
   ], [navigate]);
 
@@ -95,7 +102,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
       <div
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          'mx-auto mt-20 w-full max-w-2xl rounded-3xl border border-white/10 bg-slate-950/90 backdrop-blur-2xl p-4 transition-all duration-200',
+          'mx-auto mt-20 w-full max-w-2xl rounded-3xl border glass-panel backdrop-blur-2xl p-4 transition-all duration-200',
           isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-6'
         )}
       >

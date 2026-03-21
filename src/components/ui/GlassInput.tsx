@@ -29,10 +29,9 @@ export const GlassInput: React.FC<GlassInputProps> = ({
         )}
         <input
           className={cn(
-            'w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-xl',
+            'w-full glass-input backdrop-blur-md border rounded-xl',
             'px-4 py-3 outline-none transition-all duration-300',
             'focus:bg-white/10 focus:border-white/30',
-            'placeholder:text-white/40',
             icon && 'pl-12',
             error && 'border-red-500/50 focus:border-red-500',
             className

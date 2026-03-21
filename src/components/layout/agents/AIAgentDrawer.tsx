@@ -42,7 +42,7 @@ export const AIAgentDrawer: React.FC<AIAgentDrawerProps> = ({ isOpen, onClose })
       />
       <aside
         className={cn(
-          'fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-slate-950/95 backdrop-blur-2xl border-l border-white/10',
+          'fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] glass-panel backdrop-blur-2xl border-l',
           'transition-transform duration-300 ease-in-out overflow-y-auto',
           isOpen ? 'translate-x-0' : 'translate-x-full'
         )}

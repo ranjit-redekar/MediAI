@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Plus, Edit, Trash2, Brain, Eye } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -10,6 +10,7 @@ import { DeleteConfirmModal } from '../../components/ui/DeleteConfirmModal';
 import { PatientForm } from '../../components/forms/PatientForm';
 import { db } from '../../data';
 import type { Patient } from '../../types';
+import { cn } from '../../utils/cn';
 
 export const PatientList: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +23,17 @@ export const PatientList: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const statusTabs = useMemo(() => {
+    const active = patients.filter(p => p.status === 'Active').length;
+    const inactive = patients.filter(p => p.status === 'Inactive').length;
+    const critical = patients.filter(p => p.status === 'Critical').length;
+    return [
+      { label: 'All Patients', value: 'all', count: patients.length },
+      { label: 'Active', value: 'Active', count: active },
+      { label: 'Inactive', value: 'Inactive', count: inactive },
+      { label: 'Critical', value: 'Critical', count: critical }
+    ];
+  }, [patients]);
 
   const filteredPatients = patients.filter((patient) => {
     const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -93,43 +105,64 @@ export const PatientList: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Patients</h1>
-          <p className="text-white/60 mt-1">Manage patient records and view AI insights</p>
-        </div>
-        <GlassButton variant="primary" onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Patient
-        </GlassButton>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold text-white">Patients</h1>
+        <p className="text-white/60">Manage patient records and view AI insights</p>
       </div>
 
       {/* Filters */}
-      <GlassCard>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
+      <GlassCard className="space-y-4">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
             <GlassInput
               placeholder="Search patients by name or ID..."
               icon={<Search className="w-4 h-4" />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            <div className="flex flex-wrap gap-2">
+              <GlassButton variant="ghost" className="flex items-center gap-2 px-4">
+                <Filter className="w-4 h-4" />
+                Smart filters
+              </GlassButton>
+              <GlassButton
+                variant="ghost"
+                className="flex items-center gap-2 px-4"
+                onClick={() => navigate('/ai-insights')}
+              >
+                <Brain className="w-4 h-4" />
+                AI triage
+              </GlassButton>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="glass-input px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white"
-            >
-              <option value="all" className="bg-slate-900">All Status</option>
-              <option value="Active" className="bg-slate-900">Active</option>
-              <option value="Inactive" className="bg-slate-900">Inactive</option>
-              <option value="Critical" className="bg-slate-900">Critical</option>
-            </select>
-            <GlassButton variant="ghost">
-              <Filter className="w-4 h-4" />
-            </GlassButton>
-          </div>
+          <GlassButton
+            variant="primary"
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center justify-center gap-2 w-full sm:w-auto"
+          >
+            <Plus className="w-4 h-4" />
+            Add Patient
+          </GlassButton>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {statusTabs.map(tab => {
+            const isActiveTab = statusFilter === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={cn(
+                  'px-4 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all',
+                  isActiveTab
+                    ? 'bg-primary/20 border-primary/40 text-white shadow-lg shadow-primary/20'
+                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                )}
+              >
+                <span>{tab.label}</span>
+                <span className="text-[11px] text-white/50">{tab.count}</span>
+              </button>
+            );
+          })}
         </div>
       </GlassCard>
 

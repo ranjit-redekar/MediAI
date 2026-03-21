@@ -1,14 +1,26 @@
-import React, { useState } from 'react';
-import { Search, Download, CreditCard, DollarSign } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Search, Download, CreditCard, DollarSign, Filter, Printer } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassInput } from '../components/ui/GlassInput';
 import { GlassBadge } from '../components/ui/GlassBadge';
 import { GlassButton } from '../components/ui/GlassButton';
 import { db } from '../data';
+import { cn } from '../utils/cn';
 
 export const Billing: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const statusTabs = useMemo(() => {
+    const paid = db.bills.filter(b => b.status === 'Paid').length;
+    const pending = db.bills.filter(b => b.status === 'Pending').length;
+    const overdue = db.bills.filter(b => b.status === 'Overdue').length;
+    return [
+      { label: 'All invoices', value: 'all', count: db.bills.length },
+      { label: 'Paid', value: 'Paid', count: paid },
+      { label: 'Pending', value: 'Pending', count: pending },
+      { label: 'Overdue', value: 'Overdue', count: overdue }
+    ];
+  }, []);
 
   const filteredBills = db.bills.filter((bill) => {
     const matchesSearch = bill.patientName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -30,15 +42,9 @@ export const Billing: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Billing</h1>
-          <p className="text-white/60 mt-1">Manage invoices and payments</p>
-        </div>
-        <GlassButton variant="primary">
-          <Download className="w-4 h-4 mr-2" />
-          Export
-        </GlassButton>
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold text-white">Billing</h1>
+        <p className="text-white/60">Manage invoices and payments</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -77,26 +83,50 @@ export const Billing: React.FC = () => {
         </GlassCard>
       </div>
 
-      <GlassCard>
-        <div className="flex flex-col sm:flex-row gap-4">
+      <GlassCard className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="flex-1">
             <GlassInput
-              placeholder="Search bills by patient name..."
+              placeholder="Search bills by patient or invoice id..."
               icon={<Search className="w-4 h-4" />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="glass-input px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white"
-          >
-            <option value="all" className="bg-slate-900">All Status</option>
-            <option value="Paid" className="bg-slate-900">Paid</option>
-            <option value="Pending" className="bg-slate-900">Pending</option>
-            <option value="Overdue" className="bg-slate-900">Overdue</option>
-          </select>
+          <div className="flex flex-wrap gap-2">
+            <GlassButton variant="ghost" className="flex items-center gap-2 px-4">
+              <Filter className="w-4 h-4" />
+              Advanced filters
+            </GlassButton>
+            <GlassButton variant="ghost" className="flex items-center gap-2 px-4">
+              <Printer className="w-4 h-4" />
+              Print batch
+            </GlassButton>
+            <GlassButton variant="primary" className="flex items-center gap-2 px-4">
+              <Download className="w-4 h-4" />
+              New invoice
+            </GlassButton>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {statusTabs.map((tab) => {
+            const active = statusFilter === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={cn(
+                  'px-4 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all',
+                  active
+                    ? 'bg-primary/20 border-primary/40 text-white shadow-lg shadow-primary/20'
+                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                )}
+              >
+                <span>{tab.label}</span>
+                <span className="text-[11px] text-white/50">{tab.count}</span>
+              </button>
+            );
+          })}
         </div>
       </GlassCard>
 

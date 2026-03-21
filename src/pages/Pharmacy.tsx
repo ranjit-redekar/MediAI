@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
-import { Search, Pill, AlertTriangle, Package } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Search, Pill, AlertTriangle, Package, Filter, Plus } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassInput } from '../components/ui/GlassInput';
 import { GlassBadge } from '../components/ui/GlassBadge';
+import { GlassButton } from '../components/ui/GlassButton';
 import { db } from '../data';
+import { cn } from '../utils/cn';
 
 export const Pharmacy: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const statusTabs = useMemo(() => {
+    const inStock = db.medicines.filter(m => m.status === 'In Stock').length;
+    const low = db.medicines.filter(m => m.status === 'Low Stock').length;
+    const out = db.medicines.filter(m => m.status === 'Out of Stock').length;
+    return [
+      { label: 'All items', value: 'All', count: db.medicines.length },
+      { label: 'In stock', value: 'In Stock', count: inStock },
+      { label: 'Low stock', value: 'Low Stock', count: low },
+      { label: 'Out of stock', value: 'Out of Stock', count: out }
+    ];
+  }, []);
 
   const filteredMedicines = db.medicines.filter((med) =>
-    med.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    med.category.toLowerCase().includes(searchTerm.toLowerCase())
+    (med.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    med.category.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (statusFilter === 'All' || med.status === statusFilter)
   );
 
   const lowStockCount = db.medicines.filter(m => m.status === 'Low Stock').length;
@@ -27,11 +42,9 @@ export const Pharmacy: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Pharmacy</h1>
-          <p className="text-white/60 mt-1">Manage medicine inventory</p>
-        </div>
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold text-white">Pharmacy</h1>
+        <p className="text-white/60">Manage medicine inventory</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -70,13 +83,47 @@ export const Pharmacy: React.FC = () => {
         </GlassCard>
       </div>
 
-      <GlassCard>
-        <GlassInput
-          placeholder="Search medicines by name or category..."
-          icon={<Search className="w-4 h-4" />}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <GlassCard className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex-1">
+            <GlassInput
+              placeholder="Search medicines by name or category..."
+              icon={<Search className="w-4 h-4" />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <GlassButton variant="ghost" className="flex items-center gap-2 px-4">
+              <Filter className="w-4 h-4" />
+              Restock rules
+            </GlassButton>
+            <GlassButton variant="primary" className="flex items-center gap-2 px-4">
+              <Plus className="w-4 h-4" />
+              New item
+            </GlassButton>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {statusTabs.map((tab) => {
+            const active = statusFilter === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={cn(
+                  'px-4 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all',
+                  active
+                    ? 'bg-primary/20 border-primary/40 text-white shadow-lg shadow-primary/20'
+                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                )}
+              >
+                <span>{tab.label}</span>
+                <span className="text-[11px] text-white/50">{tab.count}</span>
+              </button>
+            );
+          })}
+        </div>
       </GlassCard>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

@@ -13,6 +13,7 @@ import {
   recentActivities,
   aiAgents
 } from './aiMockData';
+import { roles } from './roles';
 
 export { patients } from './patients';
 export { doctors } from './doctors';
@@ -29,6 +30,7 @@ export {
   recentActivities,
   aiAgents
 } from './aiMockData';
+export { roles } from './roles';
 
 // Export all data as a single object for easy access
 export const db = {
@@ -44,7 +46,8 @@ export const db = {
   revenueChartData,
   patientDemographics,
   departmentDistribution,
-  recentActivities
+  recentActivities,
+  roles
 };
 
 export default db;

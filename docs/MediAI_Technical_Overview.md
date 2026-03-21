@@ -20,6 +20,7 @@ MediAI simulates a hospital command center where administrators, clinicians, and
 - 4 KPI tiles (patients, doctors, today’s appointments, monthly revenue) with month-over-month deltas.
 - Revenue Overview area chart plus patient demographic pie to spot macro trends.
 - AI widget summarizing predictions, critical alerts, and latest recommendations without leaving the page.
+- **AI Agent Lineup**: Compact cards present each operational agent’s mission, status (online/monitoring/idle), and live metrics so leaders can see what automation is running before diving deeper.
 - Critical Alert list highlights severity, affected patient, and AI confidence so triage teams know where to act first.
 - Recent Activity feed mixes AI events, appointments, billing, and labs for situational awareness.
 
@@ -58,10 +59,16 @@ MediAI simulates a hospital command center where administrators, clinicians, and
 - Severity cards (Critical, High, Medium, Low) double as filters and show active alert counts.
 - Charts track AI model accuracy trend and risk distribution across clinical categories.
 - Expandable insight cards combine AI description, patient snapshot, confidence, and actionable recommendations with quick actions (view patient, mark reviewed).
+- **Agent Showcase + Viewbooks**: Switch between compact and detailed agent displays, then drill into a full "Agent ViewBook" page featuring mission, pillars, workflows, success stories, and activation timeline for each agent archetype.
 
 ### 3.7 Settings & Personalization
 - Tabbed panels for Profile (avatar + contact info), Notifications (toggles for alert types), Security (password update), and Appearance (dark/compact mode toggles).
 - Each uses the glass component library for consistency with the rest of the product.
+
+### 3.8 Role Workspaces (NEW)
+- **Role Directory**: Searchable grid of hospital personas (Receptionist, Attending Doctor, Pharma/Test Coordinator) with the top KPIs, focus areas, and shift context.
+- **Role Detail**: Deep dive per role showing AI copilot summary, KPI grid, focus widgets, quick actions, workflow SLAs, live queues, alert feed, linked MediAI screens, and hand-off notes.
+- **Purpose**: Demonstrates how RBAC-ready layouts can be composed so each persona sees only the modules and AI nudges they need, paving the way for granular permissions later.
 
 ## 4. User Journeys
 1. **Command Center Morning Standup**: Team lands on Dashboard, scans KPIs, reviews AI alerts, and drills into flagged patients.

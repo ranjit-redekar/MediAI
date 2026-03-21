@@ -1,7 +1,9 @@
-import React from 'react';
-import { FileText, Download, BarChart3, Users, TrendingUp } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { FileText, Download, BarChart3, Users, TrendingUp, Search, Filter } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
+import { GlassInput } from '../components/ui/GlassInput';
+import { cn } from '../utils/cn';
 
 const reports = [
   { id: 1, title: 'Monthly Patient Report', type: 'Patients', date: '2024-03-01', size: '2.4 MB' },
@@ -13,17 +15,32 @@ const reports = [
 ];
 
 export const Reports: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('All');
+  const typeTabs = useMemo(() => {
+    const map = reports.reduce<Record<string, number>>((acc, report) => {
+      acc[report.type] = (acc[report.type] ?? 0) + 1;
+      return acc;
+    }, {});
+    return [
+      { label: 'All categories', value: 'All', count: reports.length },
+      ...Object.entries(map).map(([label, count]) => ({
+        label,
+        value: label,
+        count
+      }))
+    ];
+  }, []);
+  const filtered = reports.filter(report =>
+    (report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    report.type.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (typeFilter === 'All' || report.type === typeFilter)
+  );
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Reports</h1>
-          <p className="text-white/60 mt-1">View and download system reports</p>
-        </div>
-        <GlassButton variant="primary">
-          <Download className="w-4 h-4 mr-2" />
-          Generate Report
-        </GlassButton>
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold text-white">Reports</h1>
+        <p className="text-white/60">View and download system reports</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -73,6 +90,49 @@ export const Reports: React.FC = () => {
         </GlassCard>
       </div>
 
+      <GlassCard className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex-1">
+            <GlassInput
+              placeholder="Search by name or type..."
+              icon={<Search className="w-4 h-4" />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <GlassButton variant="ghost" className="flex items-center gap-2 px-4">
+              <Filter className="w-4 h-4" />
+              Templates
+            </GlassButton>
+            <GlassButton variant="primary" className="flex items-center gap-2 px-4">
+              <Download className="w-4 h-4" />
+              Generate report
+            </GlassButton>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {typeTabs.map((tab) => {
+            const active = typeFilter === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setTypeFilter(tab.value)}
+                className={cn(
+                  'px-4 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all',
+                  active
+                    ? 'bg-primary/20 border-primary/40 text-white shadow-lg shadow-primary/20'
+                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                )}
+              >
+                <span>{tab.label}</span>
+                <span className="text-[11px] text-white/50">{tab.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </GlassCard>
+
       <GlassCard padding="none" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -86,7 +146,7 @@ export const Reports: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {reports.map((report) => (
+              {filtered.map((report) => (
                 <tr key={report.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">

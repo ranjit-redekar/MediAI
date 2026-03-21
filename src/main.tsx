@@ -1,10 +1,18 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App.tsx';
+import { ThemeProvider } from './context/ThemeContext.tsx';
+
+const savedTheme = (typeof window !== 'undefined' && localStorage.getItem('mediai-theme')) as 'dark' | 'light' | null;
+const initialTheme = savedTheme ?? 'dark';
+document.documentElement.setAttribute('data-theme', initialTheme);
+document.body.setAttribute('data-theme', initialTheme);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
-  </StrictMode>,
-)
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+  </StrictMode>
+);

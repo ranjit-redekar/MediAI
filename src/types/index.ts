@@ -235,3 +235,74 @@ export interface NavItem {
   path: string;
   badge?: number;
 }
+
+export interface RoleMetric {
+  label: string;
+  value: string;
+  change?: string;
+  trend?: 'up' | 'down';
+  helper?: string;
+}
+
+export interface RoleAction {
+  label: string;
+  description: string;
+  route: string;
+  emphasis?: 'primary' | 'ghost';
+}
+
+export interface RoleFocusArea {
+  title: string;
+  description: string;
+  status: 'Healthy' | 'Watch' | 'Critical';
+  indicator?: string;
+}
+
+export interface RoleWorkflow {
+  title: string;
+  description: string;
+  sla: string;
+  lastUpdated: string;
+}
+
+export interface RoleQueueItem {
+  id: string;
+  title: string;
+  meta: string;
+  eta: string;
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+}
+
+export interface RoleAlert {
+  title: string;
+  detail: string;
+  severity: 'info' | 'warning' | 'critical';
+  timestamp: string;
+  route?: string;
+}
+
+export interface RoleScreenLink {
+  title: string;
+  description: string;
+  route: string;
+  badge: string;
+  icon: string;
+}
+
+export interface RoleDefinition {
+  id: string;
+  name: string;
+  persona: string;
+  summary: string;
+  shift: string;
+  status: string;
+  aiCopilot: string;
+  metrics: RoleMetric[];
+  focusAreas: RoleFocusArea[];
+  workflows: RoleWorkflow[];
+  actions: RoleAction[];
+  queue: RoleQueueItem[];
+  alerts: RoleAlert[];
+  screens: RoleScreenLink[];
+  handoffNotes: string[];
+}

@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import {
   Calendar as CalendarIcon, List, Plus, Edit, Trash2, Search,
-  Clock, Video, Phone, UserRound, Filter, ChevronDown, ChevronUp,
+  Clock, Video, Phone, UserRound, ChevronDown, ChevronUp,
   CalendarDays, Stethoscope, CheckCircle2, XCircle,
-  AlertCircle, ArrowUpDown
+  AlertCircle, Filter, ArrowUpDown
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
@@ -175,7 +175,6 @@ export const Appointments: React.FC = () => {
           <p className="text-white/60 mt-1">Manage patient appointments</p>
         </div>
         <div className="flex items-center gap-3">
-          {/* View Toggle */}
           <div className="flex bg-white/5 rounded-xl p-1">
             <button
               onClick={() => setViewMode('calendar')}

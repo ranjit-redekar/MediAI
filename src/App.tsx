@@ -13,11 +13,15 @@ import { Reports } from './pages/Reports';
 import { AIInsights } from './pages/AIInsights';
 import { AIAgentDetail } from './pages/AIAgentDetail';
 import { Settings } from './pages/Settings';
+import { Login } from './pages/Login';
+import { RoleDirectory } from './pages/Roles/RoleDirectory';
+import { RoleDetail } from './pages/Roles/RoleDetail';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="patients" element={<PatientList />} />
@@ -32,6 +36,8 @@ function App() {
           <Route path="ai-insights" element={<AIInsights />} />
           <Route path="agents/:agentId" element={<AIAgentDetail />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="roles" element={<RoleDirectory />} />
+          <Route path="roles/:roleId" element={<RoleDetail />} />
         </Route>
       </Routes>
     </BrowserRouter>
