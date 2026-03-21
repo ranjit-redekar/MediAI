@@ -160,6 +160,62 @@ export interface AIInsight {
   severity: 'Low' | 'Medium' | 'High' | 'Critical';
 }
 
+export interface AIAgentMetric {
+  label: string;
+  value: string;
+  helper?: string;
+  trend?: 'up' | 'down';
+}
+
+export interface AIAgent {
+  id: string;
+  name: string;
+  focus: string;
+  description: string;
+  status: 'Online' | 'Monitoring' | 'Idle';
+  statusMessage: string;
+  lastUpdated: string;
+  metrics: AIAgentMetric[];
+  highlights: string[];
+  primaryAction: string;
+  viewBook: AIAgentViewBook;
+}
+
+export interface AIAgentViewBook {
+  tagline: string;
+  mission: string;
+  promise: string;
+  pillars: AgentPillar[];
+  workflows: AgentWorkflow[];
+  successStories: AgentSuccessStory[];
+  timeline: AgentTimelineEvent[];
+}
+
+export interface AgentPillar {
+  title: string;
+  description: string;
+  badge?: string;
+}
+
+export interface AgentWorkflow {
+  title: string;
+  description: string;
+  impact: string;
+  metric: string;
+}
+
+export interface AgentSuccessStory {
+  title: string;
+  result: string;
+  detail: string;
+}
+
+export interface AgentTimelineEvent {
+  phase: string;
+  detail: string;
+  timestamp: string;
+}
+
 export interface DashboardStats {
   totalPatients: number;
   totalDoctors: number;

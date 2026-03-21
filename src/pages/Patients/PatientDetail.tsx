@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Calendar, Phone, Mail, Droplet, Brain, AlertTriangle,
   CheckCircle, Plus, MapPin, User, Activity, FlaskConical, Clock,
-  Stethoscope, Heart, Thermometer, Wind, Weight, Sparkles, Edit
+  Stethoscope, Heart, Thermometer, Wind, Weight, Sparkles
 } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
@@ -63,7 +63,6 @@ export const PatientDetail: React.FC = () => {
     (r.labResults || []).map(lab => ({ ...lab, date: r.date, diagnosis: r.diagnosis }))
   );
   const criticalLabs = allLabResults.filter(l => l.status === 'Critical');
-  const abnormalLabs = allLabResults.filter(l => l.status === 'Abnormal');
 
   return (
     <div className="space-y-6">

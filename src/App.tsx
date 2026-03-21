@@ -11,6 +11,7 @@ import { Pharmacy } from './pages/Pharmacy';
 import { Laboratory } from './pages/Laboratory';
 import { Reports } from './pages/Reports';
 import { AIInsights } from './pages/AIInsights';
+import { AIAgentDetail } from './pages/AIAgentDetail';
 import { Settings } from './pages/Settings';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
           <Route path="laboratory" element={<Laboratory />} />
           <Route path="reports" element={<Reports />} />
           <Route path="ai-insights" element={<AIInsights />} />
+          <Route path="agents/:agentId" element={<AIAgentDetail />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>

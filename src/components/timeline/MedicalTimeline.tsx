@@ -5,7 +5,6 @@ import {
   Heart, Thermometer, Wind, Weight, Activity, AlertTriangle
 } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
-import { GlassBadge } from '../ui/GlassBadge';
 import type { MedicalRecord } from '../../types';
 
 interface MedicalTimelineProps {

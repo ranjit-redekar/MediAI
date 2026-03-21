@@ -11,6 +11,18 @@ MediAI is a React + TypeScript single-page application that simulates an AI-assi
 - **AI Intelligence Center** – Severity filters, radar/area charts, expandable recommendations, and “Run AI Scan” call-to-action.
 - **Glassmorphic design system** – Reusable `Glass*` components (cards, buttons, inputs, badges, modals) built on Tailwind CSS.
 
+## Feature Tour
+- **Dashboard & AI Widget**: Track total patients/doctors, appointment load, revenue, demographic mix, and AI alerts in one hero view.
+- **Patients**: Searchable roster with risk badges plus a cinematic patient detail page (AI insight, vitals strip, timeline, labs, appointments).
+- **Doctors**: Availability-driven cards and deep profiles with performance charts, schedules, and patient panels.
+- **Appointments**: Month grid + list agenda, rich filtering, and modals for booking/editing/removing visits.
+- **Billing**: Revenue, pending, invoice counts, and status-colored table for finance teams.
+- **Pharmacy**: Stock KPIs and per-medicine cards showing units, price, expiry, and supply risk.
+- **Laboratory**: Queue metrics, searchable orders, and result summaries with severity chips.
+- **Reports**: Quick KPIs plus downloadable report catalog for audits and leadership decks.
+- **AI Insights**: Severity filters, accuracy/risk charts, and expandable recommendations to prioritize care.
+- **Settings**: Tabbed profile, notification, security, and appearance controls using the glass UI kit.
+
 ## Tech Stack
 - React 19 + React Router 7
 - TypeScript (strict, bundler resolution)
@@ -34,20 +46,6 @@ npm run lint         # run ESLint (TS + React Hooks + React Refresh rules)
 ```
 > Tip: all data is mocked inside `src/data`, so refreshing the browser resets CRUD operations.
 
-## Directory Highlights
-| Path | Description |
-| --- | --- |
-| `src/App.tsx` | Router definition (Dashboard + feature pages) nested under the global `Layout`. |
-| `src/components/layout` | Sidebar + header chrome with responsive drawer behavior. |
-| `src/components/ui` | Glass-themed primitives (`GlassCard`, `GlassButton`, `GlassModal`, etc.). |
-| `src/components/forms` | Controlled forms for patients, doctors, and appointments. |
-| `src/components/calendar/CalendarView.tsx` | Month grid + agenda logic used by the Appointments page. |
-| `src/components/timeline/MedicalTimeline.tsx` | Expandable patient medical history timeline. |
-| `src/components/ai/AIDashboardWidget.tsx` | Shared AI insights widget reused on the dashboard. |
-| `src/pages` | Feature modules (Dashboard, Patients/Doctors list & detail, Appointments, Billing, Pharmacy, Laboratory, Reports, AI Insights, Settings). |
-| `src/data` | Mock database split by concern and re-exported as the `db` object. |
-| `src/types` | Domain models covering patients, doctors, appointments, billing, medicines, lab tests, AI insights, etc. |
-
 ## Mock Data & Extensibility
 - `src/data/index.ts` aggregates all mock tables (`patients`, `doctors`, `appointments`, `bills`, `medicines`, `labTests`, AI stats, charts, demographics, recent activities) into `db`.
 - Feature pages import `db` once and hydrate local `useState` hooks. Add/Edit/Delete flows simply mutate that local state.
@@ -55,7 +53,7 @@ npm run lint         # run ESLint (TS + React Hooks + React Refresh rules)
 - Tailwind customization lives in `tailwind.config.js` and `src/index.css` (Inter font, gradient background, custom scrollbars, animation helpers) so you can re-skin quickly.
 
 ## Documentation
-A deeper dive into routing, modules, data shapes, shared components, and recommended next steps lives in [`docs/MediAI_Technical_Overview.md`](docs/MediAI_Technical_Overview.md). Start there when onboarding engineers or planning integrations.
+A stakeholder-friendly deep dive into every module, journey, and roadmap idea lives in [`docs/MediAI_Technical_Overview.md`](docs/MediAI_Technical_Overview.md). Engineers can still inspect the repo structure directly, but the doc keeps the focus on features and outcomes.
 
 ## Suggested Next Steps
 1. Connect the mock data layer to your API (REST, GraphQL, or React Query loaders) and persist CRUD mutations.

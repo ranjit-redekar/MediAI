@@ -2,7 +2,6 @@ import React from 'react';
 import { FileText, Download, BarChart3, Users, TrendingUp } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
-import { db } from '../data';
 
 const reports = [
   { id: 1, title: 'Monthly Patient Report', type: 'Patients', date: '2024-03-01', size: '2.4 MB' },

@@ -2,13 +2,12 @@ import React, { useState, useMemo } from 'react';
 import {
   Calendar as CalendarIcon, List, Plus, Edit, Trash2, Search,
   Clock, Video, Phone, UserRound, Filter, ChevronDown, ChevronUp,
-  CalendarDays, Stethoscope, MoreHorizontal, CheckCircle2, XCircle,
+  CalendarDays, Stethoscope, CheckCircle2, XCircle,
   AlertCircle, ArrowUpDown
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
 import { GlassModal } from '../components/ui/GlassModal';
-import { GlassBadge } from '../components/ui/GlassBadge';
 import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
 import { AppointmentForm } from '../components/forms/AppointmentForm';
 import { CalendarView } from '../components/calendar/CalendarView';
@@ -44,7 +43,6 @@ export const Appointments: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const handleAdd = (appointmentData: Partial<Appointment>) => {
     const newAppointment: Appointment = {
@@ -82,10 +80,6 @@ export const Appointments: React.FC = () => {
   const openDeleteModal = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setIsDeleteModalOpen(true);
-  };
-
-  const handleDateSelect = (date: string) => {
-    setSelectedDate(date);
   };
 
   const handleAppointmentSelect = (appointment: Appointment) => {
@@ -201,7 +195,7 @@ export const Appointments: React.FC = () => {
         <CalendarView
           appointments={appointments}
           onSelectAppointment={handleAppointmentSelect}
-          onDateSelect={handleDateSelect}
+          onDateSelect={() => {}}
         />
       ) : (
         /* List View */

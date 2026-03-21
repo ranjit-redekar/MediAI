@@ -29,6 +29,7 @@ import {
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassBadge } from '../components/ui/GlassBadge';
 import { AIDashboardWidget } from '../components/ai/AIDashboardWidget';
+import { AIAgentShowcase } from '../components/ai/AIAgentShowcase';
 import { db } from '../data';
 
 const stats = [
@@ -118,6 +119,9 @@ export const Dashboard: React.FC = () => {
       {/* AI Intelligence Hub Widget */}
       <AIDashboardWidget />
 
+      {/* AI Agents Overview */}
+      <AIAgentShowcase />
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue Chart */}
@@ -175,7 +179,7 @@ export const Dashboard: React.FC = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {db.patientDemographics.map((entry, index) => (
+                  {db.patientDemographics.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

@@ -1,14 +1,11 @@
 import React from 'react';
 import { Brain, TrendingUp, AlertTriangle, Activity, Sparkles, Zap, Shield } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
-import { GlassBadge } from '../ui/GlassBadge';
 import { db } from '../../data';
 
 export const AIDashboardWidget: React.FC = () => {
   const criticalAlerts = db.aiInsights.filter(i => i.severity === 'Critical').length;
   const highAlerts = db.aiInsights.filter(i => i.severity === 'High').length;
-  const mediumAlerts = db.aiInsights.filter(i => i.severity === 'Medium').length;
-
   const stats = [
     { label: 'AI Predictions', value: db.aiInsights.length, icon: Brain, color: 'text-violet-400', bgColor: 'bg-violet-500/20' },
     { label: 'Critical Alerts', value: criticalAlerts, icon: AlertTriangle, color: 'text-red-400', bgColor: 'bg-red-500/20' },

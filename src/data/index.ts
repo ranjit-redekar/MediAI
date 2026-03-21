@@ -10,7 +10,8 @@ import {
   revenueChartData, 
   patientDemographics,
   departmentDistribution,
-  recentActivities 
+  recentActivities,
+  aiAgents
 } from './aiMockData';
 
 export { patients } from './patients';
@@ -25,7 +26,8 @@ export {
   revenueChartData, 
   patientDemographics,
   departmentDistribution,
-  recentActivities 
+  recentActivities,
+  aiAgents
 } from './aiMockData';
 
 // Export all data as a single object for easy access
@@ -37,6 +39,7 @@ export const db = {
   medicines,
   labTests,
   aiInsights,
+  aiAgents,
   dashboardStats,
   revenueChartData,
   patientDemographics,

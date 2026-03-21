@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import {
-  Brain, AlertTriangle, CheckCircle, TrendingUp, Activity, Shield,
+  Brain, AlertTriangle, CheckCircle, Activity, Shield,
   Sparkles, Zap, Eye, ChevronDown, ChevronUp, Users,
   Target, BarChart2, RefreshCw
 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip, BarChart, Bar, Cell
+  CartesianGrid, Tooltip
 } from 'recharts';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassBadge } from '../components/ui/GlassBadge';
 import { GlassButton } from '../components/ui/GlassButton';
+import { AIAgentShowcase } from '../components/ai/AIAgentShowcase';
 import { db } from '../data';
 
 const riskRadarData = [
@@ -395,6 +396,9 @@ export const AIInsights: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* Agent Playbooks */}
+      <AIAgentShowcase variant="detailed" />
     </div>
   );
 };
