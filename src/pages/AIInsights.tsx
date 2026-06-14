@@ -12,8 +12,10 @@ import {
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassBadge } from '../components/ui/GlassBadge';
 import { GlassButton } from '../components/ui/GlassButton';
+import { CountUp } from '../components/ui/StatCard';
 import { AIAgentShowcase } from '../components/ai/AIAgentShowcase';
 import { db } from '../data';
+import { cn } from '../utils/cn';
 
 const riskRadarData = [
   { subject: 'Cardiovascular', A: 80 },
@@ -121,7 +123,7 @@ export const AIInsights: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-3xl font-bold text-white">AI Intelligence Center</h1>
+                  <h1 className="text-2xl sm:text-[28px] font-bold text-app tracking-tight">AI Intelligence Center</h1>
                   <Sparkles className="w-6 h-6 text-violet-400 animate-pulse" />
                 </div>
                 <p className="text-violet-300/80">Real-time AI-powered clinical analytics & predictions</p>
@@ -160,27 +162,26 @@ export const AIInsights: React.FC = () => {
           { label: 'High Risk', count: highCount, severity: 'High' },
           { label: 'Medium', count: mediumCount, severity: 'Medium' },
           { label: 'Low Risk', count: lowCount, severity: 'Low' },
-        ].map(({ label, count, severity }) => {
+        ].map(({ label, count, severity }, i) => {
           const config = getSeverityConfig(severity);
+          const active = activeFilter === severity;
           return (
             <button
               key={severity}
-              onClick={() => setActiveFilter(activeFilter === severity ? 'all' : severity)}
-              className={`
-                relative p-5 rounded-2xl border transition-all duration-300 text-left
-                ${activeFilter === severity
-                  ? `${config.bg} ${config.border} shadow-lg ${config.glowClass}`
-                  : 'bg-white/5 border-white/10 hover:bg-white/10'
-                }
-              `}
+              onClick={() => setActiveFilter(active ? 'all' : severity)}
+              style={{ animationDelay: `${i * 70}ms` }}
+              className={cn(
+                'reveal hover-lift relative p-5 rounded-2xl border transition-colors text-left',
+                active ? `${config.bg} ${config.border}` : 'glass-card hover:border-[var(--border-strong)]'
+              )}
             >
               <div className={`p-2.5 rounded-xl ${config.bg} w-fit mb-3`}>
                 <span className={config.color}>{config.icon}</span>
               </div>
-              <div className="text-3xl font-bold text-white mb-1">{count}</div>
+              <CountUp value={count} className="block text-3xl font-bold text-app tracking-tight mb-0.5 tabular-nums" />
               <div className={`text-sm font-medium ${config.color}`}>{label}</div>
               {count > 0 && severity === 'Critical' && (
-                <div className={`absolute top-3 right-3 w-2.5 h-2.5 rounded-full ${config.bg.replace('/20', '')} animate-pulse`} />
+                <div className="absolute top-4 right-4 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
               )}
             </button>
           );
@@ -191,67 +192,59 @@ export const AIInsights: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* AI Accuracy Trend */}
-        <GlassCard>
+        <GlassCard className="reveal" style={{ animationDelay: '80ms' }}>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-app flex items-center gap-2">
                 <BarChart2 className="w-5 h-5 text-violet-400" />
                 AI Model Performance
               </h3>
-              <p className="text-sm text-white/50">Prediction accuracy over time</p>
+              <p className="text-sm text-app-subtle">Prediction accuracy over time</p>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-violet-400">94%</div>
-              <div className="text-xs text-white/50">Current accuracy</div>
+              <CountUp value={94} suffix="%" className="block text-2xl font-bold text-violet-400 tabular-nums" />
+              <div className="text-xs text-app-subtle">Current accuracy</div>
             </div>
           </div>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={aiAccuracyData}>
+              <AreaChart data={aiAccuracyData} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorAccuracy" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
                     <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="month" stroke="rgba(255,255,255,0.4)" tick={{ fontSize: 12 }} />
-                <YAxis stroke="rgba(255,255,255,0.4)" tick={{ fontSize: 12 }} domain={[70, 100]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
+                <XAxis dataKey="month" stroke="rgba(148,163,184,0.6)" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                <YAxis stroke="rgba(148,163,184,0.6)" tick={{ fontSize: 12 }} domain={[70, 100]} tickLine={false} axisLine={false} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(15,23,42,0.95)',
-                    border: '1px solid rgba(139,92,246,0.3)',
-                    borderRadius: '12px',
-                    color: '#fff'
-                  }}
-                  formatter={(value, name) => [
-                    name === 'accuracy' ? `${value}%` : value,
-                    name === 'accuracy' ? 'Accuracy' : 'Predictions'
-                  ]}
+                  contentStyle={{ backgroundColor: 'var(--surface-solid)', border: '1px solid var(--border-strong)', borderRadius: '12px', color: 'var(--text)', fontSize: '12px' }}
+                  formatter={(value, name) => [name === 'accuracy' ? `${value}%` : value, name === 'accuracy' ? 'Accuracy' : 'Predictions']}
                 />
-                <Area type="monotone" dataKey="accuracy" stroke="#8b5cf6" strokeWidth={2} fill="url(#colorAccuracy)" />
+                <Area type="monotone" dataKey="accuracy" stroke="#8b5cf6" strokeWidth={2.5} fill="url(#colorAccuracy)" animationDuration={1200} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </GlassCard>
 
         {/* Risk Distribution Radar */}
-        <GlassCard>
+        <GlassCard className="reveal" style={{ animationDelay: '120ms' }}>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-app flex items-center gap-2">
                 <Target className="w-5 h-5 text-fuchsia-400" />
                 Risk Distribution by Category
               </h3>
-              <p className="text-sm text-white/50">Across all monitored patients</p>
+              <p className="text-sm text-app-subtle">Across all monitored patients</p>
             </div>
           </div>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={riskRadarData}>
-                <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }} />
-                <Radar name="Risk" dataKey="A" stroke="#d946ef" fill="#d946ef" fillOpacity={0.2} strokeWidth={2} />
+                <PolarGrid stroke="rgba(148,163,184,0.18)" />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                <Radar name="Risk" dataKey="A" stroke="#d946ef" fill="#d946ef" fillOpacity={0.25} strokeWidth={2} animationDuration={1100} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -261,14 +254,14 @@ export const AIInsights: React.FC = () => {
       {/* Alert Insights List */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-white">
+          <h3 className="text-xl font-semibold text-app">
             {activeFilter === 'all' ? 'All AI Insights' : `${activeFilter} Alerts`}
-            <span className="ml-2 text-sm text-white/40">({filteredInsights.length})</span>
+            <span className="ml-2 text-sm text-app-subtle">({filteredInsights.length})</span>
           </h3>
           {activeFilter !== 'all' && (
             <button
               onClick={() => setActiveFilter('all')}
-              className="text-sm text-white/50 hover:text-white transition-colors"
+              className="text-sm text-app-muted hover:text-app transition-colors"
             >
               Clear filter
             </button>
@@ -276,7 +269,7 @@ export const AIInsights: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-          {filteredInsights.map((insight) => {
+          {filteredInsights.map((insight, i) => {
             const patient = db.patients.find(p => p.id === insight.patientId);
             const config = getSeverityConfig(insight.severity);
             const isExpanded = expandedInsight === insight.id;
@@ -285,11 +278,12 @@ export const AIInsights: React.FC = () => {
             return (
               <div
                 key={insight.id}
-                className={`
-                  rounded-2xl border transition-all duration-300 overflow-hidden
-                  ${config.bg} ${config.border}
-                  ${insight.severity === 'Critical' ? `shadow-lg ${config.glowClass}` : ''}
-                `}
+                style={{ animationDelay: `${i * 60}ms` }}
+                className={cn(
+                  'reveal rounded-2xl border transition-all duration-300 overflow-hidden',
+                  config.bg, config.border,
+                  insight.severity === 'Critical' ? `shadow-lg ${config.glowClass}` : ''
+                )}
               >
                 {/* Card Header */}
                 <button

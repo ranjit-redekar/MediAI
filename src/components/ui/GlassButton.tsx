@@ -2,12 +2,17 @@ import React from 'react';
 import { cn } from '../../utils/cn';
 
 interface GlassButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'primary' | 'ghost' | 'danger';
+  variant?: 'default' | 'primary' | 'ghost' | 'danger' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
   className?: string;
 }
 
+/**
+ * Single source of truth for buttons.
+ * Convention: `primary` is the ONLY gradient variant (one per view, max).
+ * Everything else uses flat, theme-aware surfaces for a consistent, premium feel.
+ */
 export const GlassButton: React.FC<GlassButtonProps> = ({
   variant = 'default',
   size = 'md',
@@ -16,24 +21,30 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
   ...props
 }) => {
   const variants = {
-    default: 'bg-white/10 border border-white/20 hover:bg-white/20',
-    primary: 'bg-gradient-to-r from-primary to-accent border-0 hover:shadow-lg hover:shadow-primary/30',
-    ghost: 'bg-transparent border border-white/10 hover:bg-white/10',
-    danger: 'bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-200'
+    primary:
+      'bg-gradient-to-r from-primary to-accent text-white border border-transparent shadow-primary hover:brightness-110',
+    default:
+      'bg-[var(--surface-2)] text-app border border-[var(--border)] hover:bg-[var(--surface-3)]',
+    outline:
+      'bg-transparent text-app border border-[var(--border-strong)] hover:bg-[var(--surface-2)]',
+    ghost:
+      'bg-transparent text-app-muted border border-transparent hover:bg-[var(--surface-2)] hover:text-app',
+    danger:
+      'bg-[color:rgba(239,68,68,0.14)] text-red-300 border border-[color:rgba(239,68,68,0.3)] hover:bg-[color:rgba(239,68,68,0.22)]',
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2',
-    lg: 'px-6 py-3 text-lg'
+    sm: 'h-9 px-3.5 text-sm gap-1.5',
+    md: 'h-10 px-4 text-sm gap-2',
+    lg: 'h-12 px-6 text-base gap-2',
   };
 
   return (
     <button
       className={cn(
-        'rounded-xl font-medium transition-all duration-300',
-        'hover:scale-105 active:scale-95',
-        'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
+        'inline-flex items-center justify-center rounded-xl font-semibold whitespace-nowrap',
+        'transition-all duration-200 active:scale-[0.98] focus-ring',
+        'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
         variants[variant],
         sizes[size],
         className

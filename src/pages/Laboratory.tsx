@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Search, FlaskConical, CheckCircle, Clock, AlertCircle, Filter } from 'lucide-react';
+import { FlaskConical, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
-import { GlassInput } from '../components/ui/GlassInput';
 import { GlassBadge } from '../components/ui/GlassBadge';
 import { GlassButton } from '../components/ui/GlassButton';
+import { PageHeader } from '../components/ui/PageHeader';
+import { SearchInput } from '../components/ui/SearchInput';
+import { MiniStat } from '../components/ui/StatCard';
 import { db } from '../data';
 import { cn } from '../utils/cn';
 
@@ -43,93 +45,57 @@ export const Laboratory: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold text-white">Laboratory</h1>
-        <p className="text-white/60">Manage lab tests and results</p>
+      <PageHeader
+        title="Laboratory"
+        subtitle="Manage lab tests and results"
+        actions={
+          <GlassButton variant="primary">
+            <FlaskConical className="w-4 h-4" />
+            New test
+          </GlassButton>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <MiniStat icon={Clock} label="Pending" value={pendingCount} tint="text-amber-400" ring="bg-amber-500/15" index={0} />
+        <MiniStat icon={FlaskConical} label="In Progress" value={inProgressCount} tint="text-cyan-400" ring="bg-cyan-500/15" index={1} />
+        <MiniStat icon={CheckCircle} label="Completed" value={completedCount} tint="text-emerald-400" ring="bg-emerald-500/15" index={2} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <GlassCard>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-              <Clock className="w-6 h-6 text-amber-400" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">Pending</p>
-              <h3 className="text-2xl font-bold text-white">{pendingCount}</h3>
-            </div>
-          </div>
-        </GlassCard>
-        <GlassCard>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
-              <FlaskConical className="w-6 h-6 text-cyan-400" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">In Progress</p>
-              <h3 className="text-2xl font-bold text-white">{inProgressCount}</h3>
-            </div>
-          </div>
-        </GlassCard>
-        <GlassCard>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">Completed</p>
-              <h3 className="text-2xl font-bold text-white">{completedCount}</h3>
-            </div>
-          </div>
-        </GlassCard>
-      </div>
-
-      <GlassCard className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="flex-1">
-            <GlassInput
-              placeholder="Search tests by patient or test name..."
-              icon={<Search className="w-4 h-4" />}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+      <GlassCard padding="sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <SearchInput
+            width="lg"
+            placeholder="Search tests by patient or test name…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
           <div className="flex flex-wrap gap-2">
-            <GlassButton variant="ghost" className="flex items-center gap-2 px-4">
-              <Filter className="w-4 h-4" />
-              Panels
-            </GlassButton>
-            <GlassButton variant="primary" className="flex items-center gap-2 px-4">
-              <FlaskConical className="w-4 h-4" />
-              New test
-            </GlassButton>
+            {statusTabs.map((tab) => {
+              const active = statusFilter === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setStatusFilter(tab.value)}
+                  className={cn(
+                    'h-9 px-3.5 rounded-lg border text-xs font-semibold inline-flex items-center gap-2 transition-all',
+                    active
+                      ? 'bg-primary/15 border-primary/40 text-app'
+                      : 'bg-[var(--surface-2)] border-[var(--border)] text-app-muted hover:text-app hover:border-[var(--border-strong)]'
+                  )}
+                >
+                  <span>{tab.label}</span>
+                  <span className={cn('text-[11px] px-1.5 rounded-full', active ? 'bg-primary/20 text-app' : 'bg-[var(--surface-3)] text-app-subtle')}>{tab.count}</span>
+                </button>
+              );
+            })}
           </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {statusTabs.map((tab) => {
-            const active = statusFilter === tab.value;
-            return (
-              <button
-                key={tab.value}
-                onClick={() => setStatusFilter(tab.value)}
-                className={cn(
-                  'px-4 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all',
-                  active
-                    ? 'bg-primary/20 border-primary/40 text-white shadow-lg shadow-primary/20'
-                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
-                )}
-              >
-                <span>{tab.label}</span>
-                <span className="text-[11px] text-white/50">{tab.count}</span>
-              </button>
-            );
-          })}
         </div>
       </GlassCard>
 
-      <div className="space-y-4">
-        {filteredTests.map((test) => (
-          <GlassCard key={test.id}>
+      <div className="space-y-3">
+        {filteredTests.map((test, i) => (
+          <GlassCard key={test.id} hover={false} className="reveal hover-lift" style={{ animationDelay: `${i * 50}ms` }}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">

@@ -32,7 +32,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
       className={cn(
         'glass-card backdrop-blur-xl border rounded-2xl',
         paddingClasses[padding],
-        hover && 'transition-all duration-300 hover:bg-white/15 hover:-translate-y-1 hover:shadow-2xl',
+        hover && 'transition-all duration-200 hover:border-[var(--border-strong)] hover:shadow-lifted',
         glow && 'ai-glow',
         onClick && 'cursor-pointer',
         className

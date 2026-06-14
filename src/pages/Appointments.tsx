@@ -1,19 +1,22 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Calendar as CalendarIcon, List, Plus, Edit, Trash2, Search,
-  Clock, Video, Phone, UserRound, ChevronDown, ChevronUp,
+  Calendar as CalendarIcon, List, LayoutGrid, Plus, Edit, Trash2,
+  Clock, Video, Phone, UserRound,
   CalendarDays, Stethoscope, CheckCircle2, XCircle,
-  AlertCircle, Filter, ArrowUpDown
+  AlertCircle, ArrowUpDown
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
-import { GlassModal } from '../components/ui/GlassModal';
+import { GlassSelect } from '../components/ui/GlassSelect';
+import { PageHeader } from '../components/ui/PageHeader';
+import { SearchInput } from '../components/ui/SearchInput';
 import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
-import { AppointmentForm } from '../components/forms/AppointmentForm';
 import { CalendarView } from '../components/calendar/CalendarView';
+import { cn } from '../utils/cn';
+import { useAppointments } from '../context/AppointmentsContext';
 import { db } from '../data';
 import type { Appointment } from '../types';
-import { ContextHelperRail } from '../components/ai/ContextHelperRail';
 
 const STATUS_CONFIG = {
   Scheduled:  { color: 'bg-indigo-500',  text: 'text-indigo-300',  bg: 'bg-indigo-500/15',  border: 'border-indigo-500/30',  icon: <Clock className="w-3.5 h-3.5" /> },
@@ -29,7 +32,8 @@ const TYPE_CONFIG = {
 };
 
 export const Appointments: React.FC = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>(db.appointments);
+  const navigate = useNavigate();
+  const { appointments, removeAppointment } = useAppointments();
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [listLayout, setListLayout] = useState<'card' | 'table'>('card');
 
@@ -38,45 +42,21 @@ export const Appointments: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [typeFilter, setTypeFilter] = useState<string>('All');
   const [dateSort, setDateSort] = useState<'asc' | 'desc'>('desc');
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Modal states
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // Delete confirmation state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
-  const handleAdd = (appointmentData: Partial<Appointment>) => {
-    const newAppointment: Appointment = {
-      ...appointmentData,
-      id: `A${String(appointments.length + 1).padStart(3, '0')}`,
-    } as Appointment;
-    
-    setAppointments([...appointments, newAppointment]);
-    setIsAddModalOpen(false);
-  };
-
-  const handleEdit = (appointmentData: Partial<Appointment>) => {
-    if (selectedAppointment) {
-      setAppointments(appointments.map(a => 
-        a.id === selectedAppointment.id ? { ...a, ...appointmentData } : a
-      ));
-      setIsEditModalOpen(false);
-      setSelectedAppointment(null);
-    }
-  };
-
   const handleDelete = () => {
     if (selectedAppointment) {
-      setAppointments(appointments.filter(a => a.id !== selectedAppointment.id));
+      removeAppointment(selectedAppointment.id);
       setIsDeleteModalOpen(false);
       setSelectedAppointment(null);
     }
   };
 
   const openEditModal = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setIsEditModalOpen(true);
+    navigate(`/appointments/${appointment.id}/edit`);
   };
 
   const openDeleteModal = (appointment: Appointment) => {
@@ -85,13 +65,12 @@ export const Appointments: React.FC = () => {
   };
 
   const handleAppointmentSelect = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setIsEditModalOpen(true);
+    navigate(`/appointments/${appointment.id}/edit`);
   };
 
   // Filter and sort appointments
   const filteredAppointments = useMemo(() => {
-    let filtered = appointments.filter(apt => {
+    const filtered = appointments.filter(apt => {
       const matchesSearch =
         apt.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         apt.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -110,35 +89,6 @@ export const Appointments: React.FC = () => {
     return filtered;
   }, [appointments, searchTerm, statusFilter, typeFilter, dateSort]);
 
-  // Group by date
-  const groupedAppointments = useMemo(() => {
-    const groups: Record<string, Appointment[]> = {};
-    filteredAppointments.forEach(apt => {
-      if (!groups[apt.date]) groups[apt.date] = [];
-      groups[apt.date].push(apt);
-    });
-    return groups;
-  }, [filteredAppointments]);
-
-  const toggleGroup = (date: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(date)) next.delete(date);
-      else next.add(date);
-      return next;
-    });
-  };
-
-  const formatDateHeader = (dateStr: string) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    const today = new Date().toISOString().split('T')[0];
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-
-    if (dateStr === today) return 'Today';
-    if (dateStr === tomorrow) return 'Tomorrow';
-    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  };
-
   const stats = useMemo(() => ({
     total: filteredAppointments.length,
     scheduled: filteredAppointments.filter(a => a.status === 'Scheduled').length,
@@ -147,68 +97,39 @@ export const Appointments: React.FC = () => {
     noShow: filteredAppointments.filter(a => a.status === 'No-Show').length,
   }), [filteredAppointments]);
 
-  const shiftGuideAgent = db.aiAgents.find(a => a.id === 'shiftguide-agent');
-  const helperInsights = shiftGuideAgent ? [
-    {
-      title: "Today's Load",
-      description: `${stats.scheduled} scheduled · ${stats.completed} completed · ${stats.noShow} no-shows`,
-      tag: 'Schedule'
-    },
-    {
-      title: 'Coverage outlook',
-      description: shiftGuideAgent.statusMessage,
-      tag: 'AI Status'
-    },
-    {
-      title: 'Queued Adjustments',
-      description: `${shiftGuideAgent.metrics.find(m => m.label === 'Adjustments queued')?.value ?? 'Stable'} recommended swaps pending`
-    }
-  ] : [];
-
   return (
-    <div className="space-y-6 lg:flex lg:items-start lg:gap-6">
-      <div className="flex-1 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Appointments</h1>
-          <p className="text-white/60 mt-1">Manage patient appointments</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex bg-white/5 rounded-xl p-1">
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`
-                flex items-center gap-2 px-4 py-2 rounded-lg transition-all
-                ${viewMode === 'calendar' 
-                  ? 'bg-indigo-500 text-white' 
-                  : 'text-white/60 hover:text-white hover:bg-white/10'
-                }
-              `}
-            >
-              <CalendarIcon className="w-4 h-4" />
-              Calendar
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`
-                flex items-center gap-2 px-4 py-2 rounded-lg transition-all
-                ${viewMode === 'list' 
-                  ? 'bg-indigo-500 text-white' 
-                  : 'text-white/60 hover:text-white hover:bg-white/10'
-                }
-              `}
-            >
-              <List className="w-4 h-4" />
-              List
-            </button>
-          </div>
-          <GlassButton variant="primary" onClick={() => setIsAddModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            New
-          </GlassButton>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Appointments"
+        subtitle="Manage patient appointments"
+        actions={
+          <>
+            <div className="flex items-center bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-1">
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={cn(
+                  'flex items-center gap-2 h-8 px-3 rounded-lg text-sm font-medium transition-all',
+                  viewMode === 'calendar' ? 'bg-gradient-to-r from-primary to-accent text-white shadow-primary' : 'text-app-muted hover:text-app'
+                )}
+              >
+                <CalendarIcon className="w-4 h-4" /> Calendar
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'flex items-center gap-2 h-8 px-3 rounded-lg text-sm font-medium transition-all',
+                  viewMode === 'list' ? 'bg-gradient-to-r from-primary to-accent text-white shadow-primary' : 'text-app-muted hover:text-app'
+                )}
+              >
+                <List className="w-4 h-4" /> List
+              </button>
+            </div>
+            <GlassButton variant="primary" onClick={() => navigate('/appointments/new')}>
+              <Plus className="w-4 h-4" /> New
+            </GlassButton>
+          </>
+        }
+      />
 
       {/* Calendar View */}
       {viewMode === 'calendar' ? (
@@ -220,317 +141,198 @@ export const Appointments: React.FC = () => {
       ) : (
         /* List View */
         <div className="space-y-5">
-          {/* Stats Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {/* Compact stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {[
-              { label: 'Total', value: stats.total, color: 'text-white', bg: 'bg-white/10', border: 'border-white/15' },
-              { label: 'Scheduled', value: stats.scheduled, color: 'text-indigo-300', bg: 'bg-indigo-500/15', border: 'border-indigo-500/30' },
-              { label: 'Completed', value: stats.completed, color: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' },
-              { label: 'Cancelled', value: stats.cancelled, color: 'text-red-300', bg: 'bg-red-500/15', border: 'border-red-500/30' },
-              { label: 'No-Show', value: stats.noShow, color: 'text-amber-300', bg: 'bg-amber-500/15', border: 'border-amber-500/30' },
+              { label: 'Total', value: stats.total, tint: 'text-app', ring: 'bg-[var(--surface-3)]' },
+              { label: 'Scheduled', value: stats.scheduled, tint: 'text-indigo-300', ring: 'bg-indigo-500/15' },
+              { label: 'Completed', value: stats.completed, tint: 'text-emerald-300', ring: 'bg-emerald-500/15' },
+              { label: 'Cancelled', value: stats.cancelled, tint: 'text-red-300', ring: 'bg-red-500/15' },
+              { label: 'No-Show', value: stats.noShow, tint: 'text-amber-300', ring: 'bg-amber-500/15' },
             ].map(s => (
-              <div key={s.label} className={`p-4 rounded-2xl border ${s.bg} ${s.border} text-center`}>
-                <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-                <div className="text-xs text-white/40 mt-0.5">{s.label}</div>
-              </div>
+              <GlassCard key={s.label} padding="none" hover={false} className="flex items-center gap-3 p-3.5">
+                <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center', s.ring)}>
+                  <CalendarDays className={cn('w-4 h-4', s.tint)} />
+                </div>
+                <div className="min-w-0">
+                  <div className={cn('text-xl font-bold leading-none', s.tint)}>{s.value}</div>
+                  <div className="text-xs text-app-subtle mt-1">{s.label}</div>
+                </div>
+              </GlassCard>
             ))}
           </div>
 
-          {/* Filters */}
-          <GlassCard>
-            <div className="flex flex-col lg:flex-row gap-4">
-              {/* Search */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                <input
-                  type="text"
-                  placeholder="Search patients, doctors, specialties..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm"
-                />
-              </div>
-
-              {/* Filter Dropdowns */}
-              <div className="flex gap-3">
-                <div className="relative">
-                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <select
+          {/* Filter bar */}
+          <GlassCard padding="sm">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+              <SearchInput
+                width="lg"
+                placeholder="Search patients, doctors, specialties…"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+              <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+                <div className="w-36">
+                  <GlassSelect
                     value={statusFilter}
                     onChange={e => setStatusFilter(e.target.value)}
-                    className="pl-10 pr-8 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                  >
-                    <option value="All" className="bg-slate-900">All Status</option>
-                    <option value="Scheduled" className="bg-slate-900">Scheduled</option>
-                    <option value="Completed" className="bg-slate-900">Completed</option>
-                    <option value="Cancelled" className="bg-slate-900">Cancelled</option>
-                    <option value="No-Show" className="bg-slate-900">No-Show</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                    options={[
+                      { value: 'All', label: 'All status' },
+                      { value: 'Scheduled', label: 'Scheduled' },
+                      { value: 'Completed', label: 'Completed' },
+                      { value: 'Cancelled', label: 'Cancelled' },
+                      { value: 'No-Show', label: 'No-Show' },
+                    ]}
+                  />
                 </div>
-
-                <div className="relative">
-                  <Video className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <select
+                <div className="w-32">
+                  <GlassSelect
                     value={typeFilter}
                     onChange={e => setTypeFilter(e.target.value)}
-                    className="pl-10 pr-8 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                  >
-                    <option value="All" className="bg-slate-900">All Types</option>
-                    <option value="In-Person" className="bg-slate-900">In-Person</option>
-                    <option value="Video" className="bg-slate-900">Video</option>
-                    <option value="Phone" className="bg-slate-900">Phone</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                    options={[
+                      { value: 'All', label: 'All types' },
+                      { value: 'In-Person', label: 'In-Person' },
+                      { value: 'Video', label: 'Video' },
+                      { value: 'Phone', label: 'Phone' },
+                    ]}
+                  />
                 </div>
-
-                <button
-                  onClick={() => setDateSort(prev => prev === 'asc' ? 'desc' : 'asc')}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm hover:bg-white/10 transition-colors"
-                >
+                <GlassButton variant="ghost" onClick={() => setDateSort(prev => prev === 'asc' ? 'desc' : 'asc')}>
                   <ArrowUpDown className="w-4 h-4" />
-                  {dateSort === 'asc' ? 'Oldest First' : 'Newest First'}
-                </button>
+                  {dateSort === 'asc' ? 'Oldest' : 'Newest'}
+                </GlassButton>
+                <div className="flex items-center bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-0.5">
+                  <button
+                    onClick={() => setListLayout('card')}
+                    className={cn('h-8 px-2.5 rounded-md text-xs font-medium transition-colors', listLayout === 'card' ? 'bg-[var(--surface-3)] text-app' : 'text-app-muted hover:text-app')}
+                    title="Card view"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setListLayout('table')}
+                    className={cn('h-8 px-2.5 rounded-md text-xs font-medium transition-colors', listLayout === 'table' ? 'bg-[var(--surface-3)] text-app' : 'text-app-muted hover:text-app')}
+                    title="Table view"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </GlassCard>
 
-          {/* Layout Toggle */}
-          <div className="flex justify-end">
-            <div className="flex bg-white/5 rounded-xl p-1 text-sm">
-              <button
-                onClick={() => setListLayout('card')}
-                className={`px-3 py-1.5 rounded-lg ${listLayout === 'card' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
-              >
-                Card view
-              </button>
-              <button
-                onClick={() => setListLayout('table')}
-                className={`px-3 py-1.5 rounded-lg ${listLayout === 'table' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
-              >
-                Table view
-              </button>
-            </div>
-          </div>
-
-          {/* Grouped List */}
-          {Object.keys(groupedAppointments).length === 0 ? (
+          {/* Results */}
+          {filteredAppointments.length === 0 ? (
             <GlassCard className="text-center py-16">
-              <CalendarDays className="w-16 h-16 text-white/10 mx-auto mb-4" />
-              <p className="text-white/40 text-lg">No appointments found</p>
-              <p className="text-white/30 text-sm mt-1">Try adjusting your filters</p>
+              <CalendarDays className="w-14 h-14 text-app-subtle mx-auto mb-4 opacity-40" />
+              <p className="text-app-muted text-lg">No appointments found</p>
+              <p className="text-app-subtle text-sm mt-1">Try adjusting your filters</p>
             </GlassCard>
           ) : listLayout === 'table' ? (
-            <GlassCard className="overflow-auto">
-              <table className="min-w-full text-sm">
-                <thead className="text-white/60">
-                  <tr>
-                    <th className="text-left py-2 border-b border-white/10">Date</th>
-                    <th className="text-left py-2 border-b border-white/10">Time</th>
-                    <th className="text-left py-2 border-b border-white/10">Patient</th>
-                    <th className="text-left py-2 border-b border-white/10">Doctor</th>
-                    <th className="text-left py-2 border-b border-white/10">Type</th>
-                    <th className="text-left py-2 border-b border-white/10">Status</th>
-                    <th className="text-right py-2 border-b border-white/10">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredAppointments.map((apt) => {
-                    const statusCfg = STATUS_CONFIG[apt.status];
-                    const typeCfg = TYPE_CONFIG[apt.type];
-                    return (
-                      <tr key={apt.id} className="text-white/80">
-                        <td className="py-3">{apt.date}</td>
-                        <td>{apt.time}</td>
-                        <td className="font-medium">{apt.patientName}</td>
-                        <td>{apt.doctorName}</td>
-                        <td>
-                          <span className={`px-2 py-0.5 rounded-full text-xs border border-white/10 ${typeCfg.bg} ${typeCfg.color}`}>
-                            {apt.type}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`px-2 py-0.5 rounded-full text-xs border ${statusCfg.bg} ${statusCfg.border} ${statusCfg.text}`}>
-                            {apt.status}
-                          </span>
-                        </td>
-                        <td className="text-right space-x-2">
-                          <button onClick={() => openEditModal(apt)} className="text-white/60 hover:text-white text-xs">Edit</button>
-                          <button onClick={() => openDeleteModal(apt)} className="text-red-400 hover:text-red-300 text-xs">Delete</button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <GlassCard padding="none" className="overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[840px] text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wide text-app-subtle border-b border-[var(--border)]">
+                      <th className="px-5 py-3.5 font-semibold">Patient</th>
+                      <th className="px-5 py-3.5 font-semibold">Doctor</th>
+                      <th className="px-5 py-3.5 font-semibold">Date & Time</th>
+                      <th className="px-5 py-3.5 font-semibold">Type</th>
+                      <th className="px-5 py-3.5 font-semibold">Status</th>
+                      <th className="px-5 py-3.5 font-semibold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAppointments.map((apt) => {
+                      const statusCfg = STATUS_CONFIG[apt.status];
+                      const typeCfg = TYPE_CONFIG[apt.type];
+                      const patient = db.patients.find(p => p.id === apt.patientId);
+                      return (
+                        <tr key={apt.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)] transition-colors">
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-3">
+                              {patient?.avatar ? (
+                                <img src={patient.avatar} alt={apt.patientName} className="w-9 h-9 rounded-full border border-[var(--border)] object-cover" />
+                              ) : (
+                                <div className="w-9 h-9 rounded-full bg-[var(--surface-3)] flex items-center justify-center"><UserRound className="w-4 h-4 text-app-subtle" /></div>
+                              )}
+                              <span className="font-medium text-app">{apt.patientName}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3">
+                            <p className="text-app">{apt.doctorName}</p>
+                            <p className="text-xs text-app-subtle">{apt.specialty}</p>
+                          </td>
+                          <td className="px-5 py-3 text-app-muted whitespace-nowrap">{apt.date} · {apt.time}</td>
+                          <td className="px-5 py-3">
+                            <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs', typeCfg.bg, typeCfg.color)}>
+                              {typeCfg.icon}{apt.type}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3">
+                            <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border', statusCfg.bg, statusCfg.border, statusCfg.text)}>
+                              {statusCfg.icon}{apt.status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => openEditModal(apt)} title="Edit" className="p-2 rounded-lg hover:bg-[var(--surface-3)] text-app-subtle hover:text-app transition-colors"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => openDeleteModal(apt)} title="Delete" className="p-2 rounded-lg hover:bg-red-500/15 text-app-subtle hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </GlassCard>
           ) : (
-            <div className="space-y-4">
-              {Object.entries(groupedAppointments).map(([date, apts]) => {
-                const isExpanded = expandedGroups.has(date);
-                const dateStats = {
-                  total: apts.length,
-                  scheduled: apts.filter(a => a.status === 'Scheduled').length,
-                };
-
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredAppointments.map((apt) => {
+                const statusCfg = STATUS_CONFIG[apt.status];
+                const typeCfg = TYPE_CONFIG[apt.type];
+                const patient = db.patients.find(p => p.id === apt.patientId);
                 return (
-                  <div key={date} className="space-y-2">
-                    {/* Date Header */}
-                    <button
-                      onClick={() => toggleGroup(date)}
-                      className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="flex flex-col items-center justify-center w-14 h-14 rounded-xl bg-indigo-500/20 border border-indigo-500/30">
-                          <span className="text-xs text-indigo-300 font-medium uppercase">
-                            {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' })}
-                          </span>
-                          <span className="text-xl font-bold text-white">
-                            {new Date(date + 'T00:00:00').getDate()}
-                          </span>
+                  <GlassCard key={apt.id} padding="none" className="p-4 group">
+                    <div className="flex items-start gap-3">
+                      {patient?.avatar ? (
+                        <img src={patient.avatar} alt={apt.patientName} className="w-11 h-11 rounded-xl border border-[var(--border)] object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-11 h-11 rounded-xl bg-[var(--surface-3)] flex items-center justify-center flex-shrink-0"><UserRound className="w-5 h-5 text-app-subtle" /></div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-app truncate">{apt.patientName}</p>
+                        <p className="text-xs text-app-subtle flex items-center gap-1 mt-0.5">
+                          <Stethoscope className="w-3 h-3" /> {apt.doctorName}
+                        </p>
+                      </div>
+                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] border flex-shrink-0', statusCfg.bg, statusCfg.border, statusCfg.text)}>
+                        {statusCfg.icon}{apt.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--border)]">
+                      <div className="flex items-center gap-2 text-sm text-app-muted">
+                        <Clock className="w-4 h-4 text-app-subtle" />
+                        <span>{apt.date}</span>
+                        <span className="text-app-subtle">·</span>
+                        <span className="font-medium text-app">{apt.time}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={cn('inline-flex items-center gap-1 text-xs', typeCfg.color)}>{typeCfg.icon}{apt.type}</span>
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => openEditModal(apt)} title="Edit" className="p-1.5 rounded-lg hover:bg-[var(--surface-3)] text-app-subtle hover:text-app transition-colors"><Edit className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => openDeleteModal(apt)} title="Delete" className="p-1.5 rounded-lg hover:bg-red-500/15 text-app-subtle hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
-                        <div className="text-left">
-                          <h3 className="text-lg font-semibold text-white">{formatDateHeader(date)}</h3>
-                          <p className="text-sm text-white/40">
-                            {dateStats.total} appointment{dateStats.total !== 1 ? 's' : ''}
-                            {dateStats.scheduled > 0 && ` · ${dateStats.scheduled} scheduled`}
-                          </p>
-                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        {isExpanded ? (
-                          <ChevronUp className="w-5 h-5 text-white/40" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-white/40" />
-                        )}
-                      </div>
-                    </button>
-
-                    {/* Appointments for this date */}
-                    {isExpanded && (
-                      <div className="grid gap-2 pl-4">
-                        {apts.map(apt => {
-                          const patient = db.patients.find(p => p.id === apt.patientId);
-                          const statusCfg = STATUS_CONFIG[apt.status];
-                          const typeCfg = TYPE_CONFIG[apt.type];
-
-                          return (
-                            <GlassCard
-                              key={apt.id}
-                              className="flex items-center gap-4 p-4 hover:bg-white/[0.07] transition-colors group"
-                            >
-                              {/* Time Column */}
-                              <div className="flex flex-col items-center justify-center w-16 flex-shrink-0">
-                                <span className="text-lg font-bold text-white">{apt.time}</span>
-                                <span className="text-xs text-white/30">{apt.id}</span>
-                              </div>
-
-                              {/* Status Stripe */}
-                              <div className={`w-1 h-12 rounded-full flex-shrink-0 ${statusCfg.color}`} />
-
-                              {/* Patient Avatar */}
-                              {patient?.avatar ? (
-                                <img
-                                  src={patient.avatar}
-                                  alt={apt.patientName}
-                                  className="w-12 h-12 rounded-xl border border-white/10 object-cover flex-shrink-0"
-                                />
-                              ) : (
-                                <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                                  <UserRound className="w-5 h-5 text-white/30" />
-                                </div>
-                              )}
-
-                              {/* Main Info */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-semibold text-white text-base">{apt.patientName}</span>
-                                  <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${typeCfg.bg} ${typeCfg.color} border border-white/10`}>
-                                    {typeCfg.icon}
-                                    {apt.type}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-3 mt-1 text-sm text-white/50">
-                                  <span className="flex items-center gap-1">
-                                    <Stethoscope className="w-3.5 h-3.5" />
-                                    {apt.doctorName}
-                                  </span>
-                                  <span className="text-white/20">·</span>
-                                  <span>{apt.specialty}</span>
-                                </div>
-                                {apt.notes && (
-                                  <p className="text-xs text-white/40 mt-1.5 italic truncate">"{apt.notes}"</p>
-                                )}
-                              </div>
-
-                              {/* Status Badge */}
-                              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${statusCfg.bg} ${statusCfg.border} ${statusCfg.text} text-xs font-medium flex-shrink-0`}>
-                                {statusCfg.icon}
-                                {apt.status}
-                              </div>
-
-                              {/* Actions */}
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                <button
-                                  onClick={() => openEditModal(apt)}
-                                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                                  title="Edit"
-                                >
-                                  <Edit className="w-4 h-4 text-white/60" />
-                                </button>
-                                <button
-                                  onClick={() => openDeleteModal(apt)}
-                                  className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-400" />
-                                </button>
-                              </div>
-                            </GlassCard>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  </GlassCard>
                 );
               })}
             </div>
           )}
         </div>
       )}
-
-      {/* Add Modal */}
-      <GlassModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title="Add New Appointment"
-        size="lg"
-      >
-        <AppointmentForm
-          onSubmit={handleAdd}
-          onCancel={() => setIsAddModalOpen(false)}
-        />
-      </GlassModal>
-
-      {/* Edit Modal */}
-      <GlassModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedAppointment(null);
-        }}
-        title="Edit Appointment"
-        size="lg"
-      >
-        <AppointmentForm
-          appointment={selectedAppointment || undefined}
-          onSubmit={handleEdit}
-          onCancel={() => {
-            setIsEditModalOpen(false);
-            setSelectedAppointment(null);
-          }}
-        />
-      </GlassModal>
 
       {/* Delete Confirmation */}
       <DeleteConfirmModal
@@ -544,15 +346,6 @@ export const Appointments: React.FC = () => {
         message="Are you sure you want to delete this appointment? This action cannot be undone."
         itemName={`${selectedAppointment?.patientName} - ${selectedAppointment?.date}`}
       />
-      </div>
-      {shiftGuideAgent && (
-        <ContextHelperRail
-          agent={shiftGuideAgent}
-          title="Staffing Guidance"
-          insights={helperInsights}
-          ctaLabel="Open ShiftGuide"
-        />
-      )}
     </div>
   );
 };

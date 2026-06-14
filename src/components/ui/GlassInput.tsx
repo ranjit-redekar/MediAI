@@ -17,31 +17,29 @@ export const GlassInput: React.FC<GlassInputProps> = ({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-white/80 mb-2">
+        <label className="block text-sm font-medium text-app-muted mb-1.5">
           {label}
         </label>
       )}
       <div className="relative">
         {icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-app-subtle pointer-events-none">
             {icon}
           </div>
         )}
         <input
           className={cn(
-            'w-full glass-input backdrop-blur-md border rounded-xl',
-            'px-4 py-3 outline-none transition-all duration-300',
-            'focus:bg-white/10 focus:border-white/30',
-            icon && 'pl-12',
-            error && 'border-red-500/50 focus:border-red-500',
+            'w-full h-11 rounded-xl glass-input border px-4 text-sm text-app',
+            'outline-none transition-all duration-200 focus-ring',
+            'focus:border-[var(--border-strong)]',
+            icon && 'pl-10',
+            error && 'border-[color:var(--danger)]',
             className
           )}
           {...props}
         />
       </div>
-      {error && (
-        <p className="mt-1 text-sm text-red-400">{error}</p>
-      )}
+      {error && <p className="mt-1.5 text-sm text-[color:var(--danger)]">{error}</p>}
     </div>
   );
 };

@@ -12,6 +12,7 @@ import {
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { GlassBadge } from '../../components/ui/GlassBadge';
+import { useDoctors } from '../../context/DoctorsContext';
 import { db } from '../../data';
 import type { Appointment } from '../../types';
 
@@ -41,7 +42,8 @@ export const DoctorDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const doctor = db.doctors.find(d => d.id === id);
+  const { getDoctor } = useDoctors();
+  const doctor = getDoctor(id ?? '');
   const doctorAppointments = db.appointments.filter(a => a.doctorId === id);
 
   const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -120,7 +122,7 @@ export const DoctorDetail: React.FC = () => {
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-white mb-1">{doctor.name}</h1>
+                  <h1 className="text-2xl sm:text-[28px] font-bold text-app tracking-tight mb-1">{doctor.name}</h1>
                   <p className="text-lg text-indigo-300">{doctor.specialty}</p>
                   <p className="text-white/50 text-sm">{doctor.qualification} · {doctor.department}</p>
                 </div>

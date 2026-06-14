@@ -41,7 +41,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onSelectAppointment,
   onDateSelect,
 }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Default to the month of the most recent appointment so the calendar always
+  // lands on data (mock data may not be in the current real-world month).
+  const [currentDate, setCurrentDate] = useState(() => {
+    const dates = appointments.map(a => a.date).sort();
+    const latest = dates[dates.length - 1];
+    return latest ? new Date(latest + 'T00:00:00') : new Date();
+  });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
 

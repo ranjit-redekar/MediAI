@@ -3,16 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Calendar, Phone, Mail, Droplet, Brain, AlertTriangle,
   CheckCircle, Plus, MapPin, User, Activity, FlaskConical, Clock,
-  Stethoscope, Heart, Thermometer, Wind, Weight, Sparkles
+  Stethoscope, Heart, Thermometer, Wind, Weight, Sparkles,
+  CalendarPlus, FileText, Pill, ShieldAlert, TrendingUp, ExternalLink, ArrowRight, Pencil
 } from 'lucide-react';
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+} from 'recharts';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { GlassBadge } from '../../components/ui/GlassBadge';
-import { GlassModal } from '../../components/ui/GlassModal';
 import { MedicalTimeline } from '../../components/timeline/MedicalTimeline';
-import { ContextHelperRail } from '../../components/ai/ContextHelperRail';
+import { usePatients } from '../../context/PatientsContext';
 import { db } from '../../data';
-import type { MedicalRecord } from '../../types';
+import type { AIAgent, Appointment, MedicalRecord, Patient } from '../../types';
 
 type TabId = 'overview' | 'history' | 'labs' | 'appointments';
 
@@ -27,13 +30,12 @@ export const PatientDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const patient = db.patients.find(p => p.id === id);
+  const { getPatient } = usePatients();
+  const patient = getPatient(id ?? '');
   const aiInsight = db.aiInsights.find(i => i.patientId === id);
   const patientAppointments = db.appointments.filter(a => a.patientId === id);
 
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>(patient?.medicalHistory || []);
-  const [isAddRecordModalOpen, setIsAddRecordModalOpen] = useState(false);
   const careGuideAgent = db.aiAgents.find(a => a.id === 'careguide-agent');
 
   if (!patient) {
@@ -50,6 +52,7 @@ export const PatientDetail: React.FC = () => {
     );
   }
 
+  const medicalRecords = patient.medicalHistory ?? [];
   const [patientData, setPatientData] = useState(patient);
   const [isEditingContact, setIsEditingContact] = useState(false);
   const [contactDraft, setContactDraft] = useState({
@@ -72,50 +75,14 @@ export const PatientDetail: React.FC = () => {
     setIsEditingContact(false);
   };
 
-  const handleAddRecord = (record: Partial<MedicalRecord>) => {
-    const newRecord: MedicalRecord = {
-      ...record,
-      id: `MR${String(medicalRecords.length + 1).padStart(3, '0')}`,
-      date: new Date().toISOString().split('T')[0],
-    } as MedicalRecord;
-    setMedicalRecords([newRecord, ...medicalRecords]);
-    setIsAddRecordModalOpen(false);
-  };
-
   const latestRecord = medicalRecords[0];
   const allLabResults = medicalRecords.flatMap(r =>
     (r.labResults || []).map(lab => ({ ...lab, date: r.date, diagnosis: r.diagnosis }))
   );
   const criticalLabs = allLabResults.filter(l => l.status === 'Critical');
-  const helperInsights = careGuideAgent ? [
-    {
-      title: 'AI Risk Score',
-      description: patientData.aiRiskScore
-        ? `${patientData.aiRiskScore}/100 · ${patientData.status}`
-        : 'No AI signal available',
-      tag: 'Patient'
-    },
-    aiInsight
-      ? {
-          title: aiInsight.type,
-          description: aiInsight.recommendations[0],
-          tag: aiInsight.severity
-        }
-      : {
-          title: 'Care Pathway',
-          description: 'All follow-ups up to date'
-        },
-    {
-      title: 'Upcoming Visits',
-      description: patientAppointments.length
-        ? `Next: ${patientAppointments[0].date} · ${patientAppointments[0].doctorName}`
-        : 'No future visits scheduled'
-    }
-  ] : [];
 
   return (
-    <div className="space-y-6 lg:flex lg:items-start lg:gap-6">
-      <div className="flex-1 space-y-6">
+    <div className="space-y-6">
       {/* Back */}
       <button
         onClick={() => navigate('/patients')}
@@ -169,7 +136,7 @@ export const PatientDetail: React.FC = () => {
             {/* Core Info */}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-3 mb-1">
-                <h1 className="text-3xl font-bold text-white">{patientData.name}</h1>
+                <h1 className="text-2xl sm:text-[28px] font-bold text-app tracking-tight">{patientData.name}</h1>
                 {patientData.status === 'Critical' && (
                   <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 text-sm animate-pulse">
                     <AlertTriangle className="w-3.5 h-3.5" /> Critical
@@ -355,7 +322,8 @@ export const PatientDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation + Quick Actions */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
       <div className="flex overflow-x-auto gap-1 p-1 bg-white/5 rounded-2xl border border-white/10 hide-scrollbar">
         {TABS.map(tab => (
           <button
@@ -384,10 +352,28 @@ export const PatientDetail: React.FC = () => {
           </button>
         ))}
       </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <GlassButton variant="primary" size="sm" onClick={() => navigate(`/patients/${patient.id}/records/new`)}>
+          <FileText className="w-4 h-4 mr-1.5" /> Add Record
+        </GlassButton>
+        <GlassButton variant="ghost" size="sm" onClick={() => navigate('/appointments/new')}>
+          <CalendarPlus className="w-4 h-4 mr-1.5" /> New Appointment
+        </GlassButton>
+        <GlassButton variant="ghost" size="sm" onClick={() => navigate(`/patients/${patient.id}/edit`)}>
+          <Pencil className="w-4 h-4 mr-1.5" /> Edit
+        </GlassButton>
+      </div>
+      </div>
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
-        <OverviewTab patient={patientData} aiInsight={aiInsight} medicalRecords={medicalRecords} />
+        <OverviewTab
+          patient={patientData}
+          aiInsight={aiInsight}
+          medicalRecords={medicalRecords}
+          appointments={patientAppointments}
+          careGuideAgent={careGuideAgent}
+        />
       )}
 
       {activeTab === 'history' && (
@@ -397,7 +383,7 @@ export const PatientDetail: React.FC = () => {
               <h3 className="text-xl font-semibold text-white">Medical History</h3>
               <p className="text-white/50 text-sm">{medicalRecords.length} visits recorded</p>
             </div>
-            <GlassButton variant="primary" size="sm" onClick={() => setIsAddRecordModalOpen(true)}>
+            <GlassButton variant="primary" size="sm" onClick={() => navigate(`/patients/${patient.id}/records/new`)}>
               <Plus className="w-4 h-4 mr-1.5" />
               Add Record
             </GlassButton>
@@ -412,28 +398,6 @@ export const PatientDetail: React.FC = () => {
 
       {activeTab === 'appointments' && (
         <AppointmentsTab appointments={patientAppointments} />
-      )}
-
-      {/* Add Record Modal */}
-      <GlassModal
-        isOpen={isAddRecordModalOpen}
-        onClose={() => setIsAddRecordModalOpen(false)}
-        title="Add Medical Record"
-        size="lg"
-      >
-        <MedicalRecordForm
-          onSubmit={handleAddRecord}
-          onCancel={() => setIsAddRecordModalOpen(false)}
-        />
-      </GlassModal>
-      </div>
-      {careGuideAgent && (
-        <ContextHelperRail
-          agent={careGuideAgent}
-          title="Care Guidance"
-          insights={helperInsights}
-          ctaLabel="Open CareGuide"
-        />
       )}
     </div>
   );
@@ -456,162 +420,305 @@ const VitalChip: React.FC<{ icon: React.ReactNode; label: string; value: string;
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 const OverviewTab: React.FC<{
-  patient: ReturnType<typeof db.patients.find>;
+  patient: Patient | undefined;
   aiInsight: ReturnType<typeof db.aiInsights.find>;
   medicalRecords: MedicalRecord[];
-}> = ({ patient, aiInsight, medicalRecords }) => {
+  appointments: Appointment[];
+  careGuideAgent: AIAgent | undefined;
+}> = ({ patient, aiInsight, medicalRecords, appointments, careGuideAgent }) => {
+  const navigate = useNavigate();
   if (!patient) return null;
 
-  const currentMeds = medicalRecords.flatMap(r => r.medications);
-  const uniqueMeds = [...new Set(currentMeds)];
+  const uniqueMeds = [...new Set(medicalRecords.flatMap(r => r.medications))];
+  const conditions = [...new Set(medicalRecords.map(r => r.diagnosis).filter(Boolean))];
   const latestRecord = medicalRecords[0];
+  const vitalsSeries = [...medicalRecords].reverse()
+    .filter(r => r.vitals?.heartRate)
+    .map(r => ({
+      date: r.date.slice(5),
+      hr: r.vitals?.heartRate ?? 0,
+      o2: r.vitals?.oxygenSaturation ?? 0,
+      weight: r.vitals?.weight ?? 0
+    }));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Left Column */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* AI Insight Card */}
-        {aiInsight && (
-          <GlassCard className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5" />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500">
-                  <Brain className="w-4 h-4 text-white" />
+    <div className="space-y-6">
+      {/* Health Trends — full-width premium chart */}
+      {vitalsSeries.length > 1 && (
+        <HealthTrends data={vitalsSeries} latest={latestRecord} />
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Primary column */}
+        <div className="lg:col-span-2 space-y-6">
+          {aiInsight && (
+            <GlassCard className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5" />
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500">
+                    <Brain className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-white">AI Clinical Analysis</h3>
+                  <Sparkles className="w-4 h-4 text-violet-400 ml-1" />
+                  <GlassBadge variant={aiInsight.severity === 'Critical' ? 'danger' : aiInsight.severity === 'High' ? 'warning' : 'info'} size="sm" className="ml-auto">
+                    {aiInsight.severity}
+                  </GlassBadge>
                 </div>
-                <h3 className="font-semibold text-white">AI Clinical Analysis</h3>
-                <Sparkles className="w-4 h-4 text-violet-400 ml-1" />
-                <GlassBadge variant={aiInsight.severity === 'Critical' ? 'danger' : aiInsight.severity === 'High' ? 'warning' : 'info'} size="sm">
-                  {aiInsight.severity}
-                </GlassBadge>
-              </div>
-              <p className="text-white/80 text-sm mb-4 leading-relaxed">{aiInsight.description}</p>
-              <div className="flex items-center gap-3 mb-4 p-2 rounded-lg bg-white/5">
-                <span className="text-xs text-white/50">AI Confidence</span>
-                <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-violet-500 rounded-full" style={{ width: `${aiInsight.confidence}%` }} />
+                <p className="text-white/80 text-sm mb-4 leading-relaxed">{aiInsight.description}</p>
+                <div className="flex items-center gap-3 mb-4 p-2.5 rounded-xl bg-white/5">
+                  <span className="text-xs text-white/50">AI Confidence</span>
+                  <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-400 rounded-full" style={{ width: `${aiInsight.confidence}%` }} />
+                  </div>
+                  <span className="text-sm font-semibold text-violet-400">{aiInsight.confidence}%</span>
                 </div>
-                <span className="text-sm font-semibold text-violet-400">{aiInsight.confidence}%</span>
-              </div>
-              {patient.aiRecommendations && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-white/50">AI Recommendations</p>
-                  {patient.aiRecommendations.map((rec, i) => (
-                    <div key={i} className="flex items-start gap-2.5 text-sm text-white/75">
-                      <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="w-3 h-3 text-emerald-400" />
+                {patient.aiRecommendations && (
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {patient.aiRecommendations.map((rec, i) => (
+                      <div key={i} className="flex items-start gap-2.5 text-sm text-white/75 p-2.5 rounded-xl bg-white/5 border border-white/10">
+                        <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <CheckCircle className="w-3 h-3 text-emerald-400" />
+                        </div>
+                        {rec}
                       </div>
-                      {rec}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+              </div>
+            </GlassCard>
+          )}
+
+          {latestRecord && (
+            <GlassCard>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-indigo-400" />
+                  Most Recent Visit
+                </h3>
+                <span className="text-sm text-white/50">{latestRecord.date}</span>
+              </div>
+              <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mb-4">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <Stethoscope className="w-4 h-4 text-indigo-400" />
+                  <span className="font-semibold text-white">{latestRecord.diagnosis}</span>
+                  {latestRecord.visitType && (
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-white/10 text-white/60">{latestRecord.visitType}</span>
+                  )}
                 </div>
+                <p className="text-sm text-white/60 italic">"{latestRecord.notes}"</p>
+              </div>
+              {latestRecord.symptoms.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs text-white/40 mb-2">Symptoms Presented</p>
+                  <div className="flex flex-wrap gap-2">
+                    {latestRecord.symptoms.map((s, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full bg-white/10 text-white/70 text-xs">{s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {latestRecord.followUpDate && (
+                <div className="flex items-center gap-2 pt-3 border-t border-white/10">
+                  <Calendar className="w-4 h-4 text-amber-400" />
+                  <span className="text-sm text-white/60">Follow-up scheduled:</span>
+                  <span className="text-sm font-medium text-amber-400">{latestRecord.followUpDate}</span>
+                </div>
+              )}
+            </GlassCard>
+          )}
+
+          {/* Visit Summary */}
+          {medicalRecords.length > 0 && (
+            <GlassCard>
+              <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-indigo-400" />
+                Visit Summary
+                <span className="text-xs text-white/40 font-normal ml-auto">{medicalRecords.length} total visits</span>
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+                {['Emergency', 'Routine', 'Follow-up', 'Specialist', 'Preventive', 'Surgery'].map(type => {
+                  const count = medicalRecords.filter(r => r.visitType === type).length;
+                  if (count === 0) return null;
+                  return (
+                    <div key={type} className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-white/60 w-24">{type}</span>
+                      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-400 rounded-full" style={{ width: `${(count / medicalRecords.length) * 100}%` }} />
+                      </div>
+                      <span className="text-sm font-semibold text-white w-4 text-right">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </GlassCard>
+          )}
+        </div>
+
+        {/* Secondary column */}
+        <div className="space-y-6">
+          {/* Care Guidance */}
+          {careGuideAgent && (
+            <GlassCard className="bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 border-violet-500/20">
+              <div className="flex items-center gap-2 text-white/70 text-sm mb-3">
+                <Sparkles className="w-4 h-4 text-violet-300" />
+                Care Guidance
+              </div>
+              <p className="text-base font-semibold text-white">{careGuideAgent.name}</p>
+              <p className="text-sm text-white/50 mb-3">{careGuideAgent.focus}</p>
+              <div className="flex items-center gap-2 text-xs text-white/50 mb-3">
+                <GlassBadge variant="primary" size="sm">{careGuideAgent.status}</GlassBadge>
+                <span className="truncate">{careGuideAgent.statusMessage}</span>
+              </div>
+              <GlassButton variant="ghost" size="sm" className="w-full" onClick={() => navigate(`/agents/${careGuideAgent.id}`)}>
+                <ExternalLink className="w-3 h-3 mr-1" /> Open CareGuide
+              </GlassButton>
+            </GlassCard>
+          )}
+
+          {/* Patient Details */}
+          <GlassCard>
+            <h3 className="font-semibold text-white mb-4">Patient Details</h3>
+            <div className="space-y-3">
+              <DetailRow icon={<MapPin className="w-4 h-4 text-white/40" />} label="Address" value={patient.address} />
+              <DetailRow icon={<Calendar className="w-4 h-4 text-white/40" />} label="Registered" value={patient.registrationDate} />
+              <DetailRow icon={<Clock className="w-4 h-4 text-white/40" />} label="Last Visit" value={patient.lastVisit} />
+              <DetailRow icon={<Droplet className="w-4 h-4 text-white/40" />} label="Blood Group" value={patient.bloodGroup} />
+            </div>
+          </GlassCard>
+
+          {/* Conditions */}
+          {conditions.length > 0 && (
+            <GlassCard>
+              <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-400" />
+                Conditions
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs ml-auto">{conditions.length}</span>
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {conditions.slice(0, 8).map((c, i) => (
+                  <span key={i} className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200/90 text-xs">{c}</span>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+
+          {/* Current Medications */}
+          <GlassCard>
+            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+              <Pill className="w-4 h-4 text-emerald-400" />
+              <span>Current Medications</span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs ml-auto">{uniqueMeds.length}</span>
+            </h3>
+            <div className="space-y-2">
+              {uniqueMeds.length === 0 ? (
+                <p className="text-white/40 text-sm">No active medications</p>
+              ) : (
+                uniqueMeds.slice(0, 6).map((med, i) => (
+                  <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+                    <span className="text-sm text-white/80">{med}</span>
+                  </div>
+                ))
               )}
             </div>
           </GlassCard>
-        )}
 
-        {/* Recent Visit Summary */}
-        {latestRecord && (
+          {/* Upcoming Appointments */}
           <GlassCard>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white flex items-center gap-2">
-                <Clock className="w-4 h-4 text-indigo-400" />
-                Most Recent Visit
-              </h3>
-              <span className="text-sm text-white/50">{latestRecord.date}</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Stethoscope className="w-4 h-4 text-indigo-400" />
-                <span className="font-semibold text-white">{latestRecord.diagnosis}</span>
-                {latestRecord.visitType && (
-                  <span className="px-2 py-0.5 rounded-full text-xs bg-white/10 text-white/60">
-                    {latestRecord.visitType}
-                  </span>
-                )}
+            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+              <CalendarPlus className="w-4 h-4 text-indigo-400" />
+              Upcoming Appointments
+            </h3>
+            {appointments.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-white/40 text-sm mb-3">No upcoming appointments</p>
+                <GlassButton variant="ghost" size="sm" onClick={() => navigate('/appointments/new')}>
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Schedule
+                </GlassButton>
               </div>
-              <p className="text-sm text-white/60 italic">"{latestRecord.notes}"</p>
-            </div>
-            {latestRecord.symptoms.length > 0 && (
-              <div className="mb-3">
-                <p className="text-xs text-white/40 mb-2">Symptoms Presented</p>
-                <div className="flex flex-wrap gap-2">
-                  {latestRecord.symptoms.map((s, i) => (
-                    <span key={i} className="px-2.5 py-1 rounded-full bg-white/10 text-white/70 text-xs">{s}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {latestRecord.followUpDate && (
-              <div className="flex items-center gap-2 pt-3 border-t border-white/10">
-                <Calendar className="w-4 h-4 text-amber-400" />
-                <span className="text-sm text-white/60">Follow-up scheduled: </span>
-                <span className="text-sm font-medium text-amber-400">{latestRecord.followUpDate}</span>
+            ) : (
+              <div className="space-y-2">
+                {appointments.slice(0, 3).map(apt => (
+                  <button
+                    key={apt.id}
+                    onClick={() => navigate(`/appointments/${apt.id}/edit`)}
+                    className="w-full text-left flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                      <Stethoscope className="w-4 h-4 text-indigo-300" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white truncate">{apt.doctorName}</p>
+                      <p className="text-xs text-white/40">{apt.date} · {apt.time}</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                ))}
               </div>
             )}
           </GlassCard>
-        )}
-      </div>
-
-      {/* Right Column */}
-      <div className="space-y-6">
-        {/* Patient Details */}
-        <GlassCard>
-          <h3 className="font-semibold text-white mb-4">Patient Details</h3>
-          <div className="space-y-3">
-            <DetailRow icon={<MapPin className="w-4 h-4 text-white/40" />} label="Address" value={patient.address} />
-            <DetailRow icon={<Calendar className="w-4 h-4 text-white/40" />} label="Registered" value={patient.registrationDate} />
-            <DetailRow icon={<Clock className="w-4 h-4 text-white/40" />} label="Last Visit" value={patient.lastVisit} />
-            <DetailRow icon={<Activity className="w-4 h-4 text-white/40" />} label="Total Visits" value={`${medicalRecords.length} visits`} />
-          </div>
-        </GlassCard>
-
-        {/* Current Medications */}
-        <GlassCard>
-          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-            <span>Current Medications</span>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs">{uniqueMeds.length}</span>
-          </h3>
-          <div className="space-y-2">
-            {uniqueMeds.length === 0 ? (
-              <p className="text-white/40 text-sm">No active medications</p>
-            ) : (
-              uniqueMeds.slice(0, 6).map((med, i) => (
-                <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
-                  <span className="text-sm text-white/80">{med}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </GlassCard>
-
-        {/* Visit History Summary */}
-        <GlassCard>
-          <h3 className="font-semibold text-white mb-4">Visit Summary</h3>
-          <div className="space-y-2">
-            {['Emergency', 'Routine', 'Follow-up', 'Specialist', 'Preventive', 'Surgery'].map(type => {
-              const count = medicalRecords.filter(r => r.visitType === type).length;
-              if (count === 0) return null;
-              return (
-                <div key={type} className="flex items-center justify-between">
-                  <span className="text-sm text-white/60">{type}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-indigo-500 rounded-full"
-                        style={{ width: `${(count / medicalRecords.length) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-semibold text-white w-4 text-right">{count}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </GlassCard>
+        </div>
       </div>
     </div>
+  );
+};
+
+// ─── Health Trends chart ──────────────────────────────────────────────────────
+const HealthTrends: React.FC<{
+  data: { date: string; hr: number; o2: number; weight: number }[];
+  latest?: MedicalRecord;
+}> = ({ data, latest }) => {
+  const v = latest?.vitals;
+  const stats = [
+    { label: 'Heart Rate', value: v?.heartRate ? `${v.heartRate}` : '—', unit: 'bpm', icon: <Heart className="w-4 h-4 text-rose-400" />, tint: 'bg-rose-500/15' },
+    { label: 'Blood Pressure', value: v?.bloodPressure ?? '—', unit: 'mmHg', icon: <Activity className="w-4 h-4 text-indigo-400" />, tint: 'bg-indigo-500/15' },
+    { label: 'Temperature', value: v?.temperature ? `${v.temperature}` : '—', unit: '°F', icon: <Thermometer className="w-4 h-4 text-orange-400" />, tint: 'bg-orange-500/15' },
+    { label: 'O₂ Saturation', value: v?.oxygenSaturation ? `${v.oxygenSaturation}` : '—', unit: '%', icon: <Wind className="w-4 h-4 text-cyan-400" />, tint: 'bg-cyan-500/15' }
+  ];
+  return (
+    <GlassCard>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="font-semibold text-white flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-emerald-400" />
+          Health Trends
+        </h3>
+        <span className="text-xs text-white/40">Heart rate across last {data.length} visits</span>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Stat tiles */}
+        <div className="grid grid-cols-2 gap-3 content-start">
+          {stats.map(s => (
+            <div key={s.label} className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className={`w-8 h-8 rounded-lg ${s.tint} flex items-center justify-center mb-2`}>{s.icon}</div>
+              <p className="text-xs text-white/40">{s.label}</p>
+              <p className="text-lg font-bold text-white leading-tight">{s.value} <span className="text-xs font-normal text-white/40">{s.unit}</span></p>
+            </div>
+          ))}
+        </div>
+        {/* Chart */}
+        <div className="lg:col-span-2 h-56">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 10, right: 10, left: -16, bottom: 0 }}>
+              <defs>
+                <linearGradient id="hrGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+              <XAxis dataKey="date" stroke="rgba(255,255,255,0.4)" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis stroke="rgba(255,255,255,0.4)" fontSize={11} tickLine={false} axisLine={false} domain={['dataMin - 8', 'dataMax + 8']} />
+              <Tooltip
+                contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', fontSize: '12px' }}
+                labelStyle={{ color: 'rgba(255,255,255,0.6)' }}
+              />
+              <Area type="monotone" dataKey="hr" name="Heart rate" stroke="#fb7185" strokeWidth={2.5} fill="url(#hrGrad)" dot={{ r: 3, fill: '#fb7185' }} activeDot={{ r: 5 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </GlassCard>
   );
 };
 
@@ -769,111 +876,5 @@ const AppointmentsTab: React.FC<{
         </GlassCard>
       ))}
     </div>
-  );
-};
-
-// ─── Medical Record Form ──────────────────────────────────────────────────────
-interface MedicalRecordFormProps {
-  onSubmit: (record: Partial<MedicalRecord>) => void;
-  onCancel: () => void;
-}
-
-const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({ onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState<Partial<MedicalRecord>>({
-    diagnosis: '', symptoms: [], medications: [], doctorId: '', notes: '', visitType: 'Routine',
-  });
-  const [symptomInput, setSymptomInput] = useState('');
-  const [medicationInput, setMedicationInput] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); onSubmit(formData); };
-
-  const addSymptom = () => {
-    if (symptomInput.trim()) {
-      setFormData(prev => ({ ...prev, symptoms: [...(prev.symptoms || []), symptomInput.trim()] }));
-      setSymptomInput('');
-    }
-  };
-  const addMedication = () => {
-    if (medicationInput.trim()) {
-      setFormData(prev => ({ ...prev, medications: [...(prev.medications || []), medicationInput.trim()] }));
-      setMedicationInput('');
-    }
-  };
-
-  const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:bg-white/10 focus:border-white/30 text-white placeholder:text-white/40 transition-all";
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
-          <label className="block text-xs font-medium text-white/60 mb-1.5">Diagnosis *</label>
-          <input value={formData.diagnosis} onChange={e => setFormData(p => ({ ...p, diagnosis: e.target.value }))} className={inputCls} placeholder="Enter diagnosis" required />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-white/60 mb-1.5">Visit Type</label>
-          <select value={formData.visitType} onChange={e => setFormData(p => ({ ...p, visitType: e.target.value as MedicalRecord['visitType'] }))}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:bg-white/10 focus:border-white/30">
-            {['Emergency', 'Routine', 'Follow-up', 'Specialist', 'Surgery', 'Preventive'].map(v => (
-              <option key={v} value={v} className="bg-slate-900">{v}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-white/60 mb-1.5">Doctor ID *</label>
-          <input value={formData.doctorId} onChange={e => setFormData(p => ({ ...p, doctorId: e.target.value }))} className={inputCls} placeholder="e.g. D001" required />
-        </div>
-      </div>
-
-      {/* Symptoms */}
-      <div>
-        <label className="block text-xs font-medium text-white/60 mb-1.5">Symptoms</label>
-        <div className="flex gap-2 mb-2">
-          <input value={symptomInput} onChange={e => setSymptomInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSymptom())}
-            className={`flex-1 ${inputCls}`} placeholder="Type and press Enter" />
-          <button type="button" onClick={addSymptom} className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition-colors">Add</button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {formData.symptoms?.map((s, i) => (
-            <span key={i} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs bg-white/10 text-white">
-              {s} <button type="button" onClick={() => setFormData(p => ({ ...p, symptoms: p.symptoms?.filter((_, j) => j !== i) }))} className="text-white/40 hover:text-white ml-1">×</button>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Medications */}
-      <div>
-        <label className="block text-xs font-medium text-white/60 mb-1.5">Medications</label>
-        <div className="flex gap-2 mb-2">
-          <input value={medicationInput} onChange={e => setMedicationInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addMedication())}
-            className={`flex-1 ${inputCls}`} placeholder="Type and press Enter" />
-          <button type="button" onClick={addMedication} className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition-colors">Add</button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {formData.medications?.map((m, i) => (
-            <span key={i} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-300">
-              {m} <button type="button" onClick={() => setFormData(p => ({ ...p, medications: p.medications?.filter((_, j) => j !== i) }))} className="text-emerald-400/50 hover:text-emerald-300 ml-1">×</button>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-xs font-medium text-white/60 mb-1.5">Follow-up Date</label>
-        <input type="date" value={formData.followUpDate || ''} onChange={e => setFormData(p => ({ ...p, followUpDate: e.target.value }))}
-          className={inputCls} />
-      </div>
-
-      <div>
-        <label className="block text-xs font-medium text-white/60 mb-1.5">Clinical Notes</label>
-        <textarea value={formData.notes} onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))}
-          className={`${inputCls} resize-none`} rows={3} placeholder="Additional clinical notes..." />
-      </div>
-
-      <div className="flex justify-end gap-3 pt-2">
-        <GlassButton type="button" variant="ghost" onClick={onCancel}>Cancel</GlassButton>
-        <GlassButton type="submit" variant="primary">Add Record</GlassButton>
-      </div>
-    </form>
   );
 };

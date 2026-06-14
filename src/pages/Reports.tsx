@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { FileText, Download, BarChart3, Users, TrendingUp, Search, Filter } from 'lucide-react';
+import { FileText, Download, BarChart3, Users, TrendingUp } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
-import { GlassInput } from '../components/ui/GlassInput';
+import { PageHeader } from '../components/ui/PageHeader';
+import { SearchInput } from '../components/ui/SearchInput';
+import { MiniStat } from '../components/ui/StatCard';
 import { cn } from '../utils/cn';
 
 const reports = [
@@ -38,77 +40,34 @@ export const Reports: React.FC = () => {
   );
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold text-white">Reports</h1>
-        <p className="text-white/60">View and download system reports</p>
+      <PageHeader
+        title="Reports"
+        subtitle="View and download system reports"
+        actions={
+          <GlassButton variant="primary">
+            <Download className="w-4 h-4" />
+            Generate report
+          </GlassButton>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <MiniStat icon={FileText} label="Total Reports" value={24} tint="text-primary-light" ring="bg-primary/15" index={0} />
+        <MiniStat icon={BarChart3} label="Generated This Month" value={8} tint="text-emerald-400" ring="bg-emerald-500/15" index={1} />
+        <MiniStat icon={Users} label="Patient Reports" value={12} tint="text-accent-light" ring="bg-accent/15" index={2} />
+        <MiniStat icon={TrendingUp} label="Financial Reports" value={6} tint="text-amber-400" ring="bg-amber-500/15" index={3} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <GlassCard>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-              <FileText className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">Total Reports</p>
-              <h3 className="text-2xl font-bold text-white">24</h3>
-            </div>
-          </div>
-        </GlassCard>
-        <GlassCard>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">Generated This Month</p>
-              <h3 className="text-2xl font-bold text-white">8</h3>
-            </div>
-          </div>
-        </GlassCard>
-        <GlassCard>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center">
-              <Users className="w-6 h-6 text-accent" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">Patient Reports</p>
-              <h3 className="text-2xl font-bold text-white">12</h3>
-            </div>
-          </div>
-        </GlassCard>
-        <GlassCard>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-amber-400" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">Financial Reports</p>
-              <h3 className="text-2xl font-bold text-white">6</h3>
-            </div>
-          </div>
-        </GlassCard>
-      </div>
-
-      <GlassCard className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="flex-1">
-            <GlassInput
-              placeholder="Search by name or type..."
-              icon={<Search className="w-4 h-4" />}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+      <GlassCard padding="sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <SearchInput
+            width="lg"
+            placeholder="Search by name or type…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
           <div className="flex flex-wrap gap-2">
-            <GlassButton variant="ghost" className="flex items-center gap-2 px-4">
-              <Filter className="w-4 h-4" />
-              Templates
-            </GlassButton>
-            <GlassButton variant="primary" className="flex items-center gap-2 px-4">
-              <Download className="w-4 h-4" />
-              Generate report
-            </GlassButton>
+            <GlassButton variant="ghost"><FileText className="w-4 h-4" /> Templates</GlassButton>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -146,8 +105,8 @@ export const Reports: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filtered.map((report) => (
-                <tr key={report.id} className="hover:bg-white/5 transition-colors">
+              {filtered.map((report, i) => (
+                <tr key={report.id} className="reveal hover:bg-white/5 transition-colors" style={{ animationDelay: `${i * 40}ms` }}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <FileText className="w-5 h-5 text-primary" />

@@ -91,7 +91,7 @@ export const RoleDetail: React.FC = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-sm uppercase tracking-wide text-white/40">{role.persona}</p>
-              <h1 className="text-3xl font-bold text-white mt-1">{role.name}</h1>
+              <h1 className="text-2xl sm:text-[28px] font-bold text-app tracking-tight mt-1">{role.name}</h1>
               <p className="text-white/70 mt-2">{role.summary}</p>
               <div className="flex flex-wrap gap-2 mt-4">
                 <GlassBadge variant="info">{role.shift}</GlassBadge>

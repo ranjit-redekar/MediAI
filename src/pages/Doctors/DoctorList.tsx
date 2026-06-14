@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Star, Calendar, Plus, Edit, Trash2, Eye, TrendingUp, DollarSign, Globe } from 'lucide-react';
+import { Star, Calendar, Plus, Edit, Trash2, Eye, TrendingUp, DollarSign, Globe } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassInput } from '../../components/ui/GlassInput';
 import { GlassButton } from '../../components/ui/GlassButton';
-import { GlassModal } from '../../components/ui/GlassModal';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { SearchInput } from '../../components/ui/SearchInput';
 import { DeleteConfirmModal } from '../../components/ui/DeleteConfirmModal';
-import { DoctorForm } from '../../components/forms/DoctorForm';
+import { useDoctors } from '../../context/DoctorsContext';
 import { db } from '../../data';
 import type { Doctor } from '../../types';
 import { cn } from '../../utils/cn';
@@ -21,10 +21,8 @@ export const DoctorList: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
-  const [doctors, setDoctors] = useState<Doctor[]>(db.doctors);
+  const { doctors, removeDoctor } = useDoctors();
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const doctorStatusTabs = useMemo(() => {
@@ -47,34 +45,9 @@ export const DoctorList: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleAdd = (doctorData: Partial<Doctor>) => {
-    const newDoctor: Doctor = {
-      ...doctorData,
-      id: `D${String(doctors.length + 1).padStart(3, '0')}`,
-      avatar: `https://i.pravatar.cc/150?u=${Date.now()}`,
-      schedule: [
-        { day: 'Monday', startTime: '09:00', endTime: '17:00', isAvailable: true },
-        { day: 'Tuesday', startTime: '09:00', endTime: '17:00', isAvailable: true },
-        { day: 'Wednesday', startTime: '09:00', endTime: '17:00', isAvailable: true },
-        { day: 'Thursday', startTime: '09:00', endTime: '17:00', isAvailable: true },
-        { day: 'Friday', startTime: '09:00', endTime: '16:00', isAvailable: true },
-      ]
-    } as Doctor;
-    setDoctors([...doctors, newDoctor]);
-    setIsAddModalOpen(false);
-  };
-
-  const handleEdit = (doctorData: Partial<Doctor>) => {
-    if (selectedDoctor) {
-      setDoctors(doctors.map(d => d.id === selectedDoctor.id ? { ...d, ...doctorData } : d));
-      setIsEditModalOpen(false);
-      setSelectedDoctor(null);
-    }
-  };
-
   const handleDelete = () => {
     if (selectedDoctor) {
-      setDoctors(doctors.filter(d => d.id !== selectedDoctor.id));
+      removeDoctor(selectedDoctor.id);
       setIsDeleteModalOpen(false);
       setSelectedDoctor(null);
     }
@@ -82,75 +55,52 @@ export const DoctorList: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold text-white">Doctors</h1>
-        <p className="text-white/60">{doctors.length} physicians on staff</p>
-      </div>
-
-      {/* Filters */}
-      <GlassCard className="space-y-4">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-            <GlassInput
-              placeholder="Search by name, specialty or department..."
-              icon={<Search className="w-4 h-4" />}
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-            <div className="flex flex-wrap gap-2">
-              <GlassButton
-                variant="ghost"
-                className="flex items-center gap-2 px-4"
-                onClick={() => setStatusFilter('Available')}
-              >
-                <Calendar className="w-4 h-4" />
-                Available today
-              </GlassButton>
-              <GlassButton
-                variant="ghost"
-                className="flex items-center gap-2 px-4"
-                onClick={() => setStatusFilter('Busy')}
-              >
-                <TrendingUp className="w-4 h-4" />
-                High demand
-              </GlassButton>
-            </div>
-          </div>
-          <GlassButton
-            variant="primary"
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center justify-center gap-2 w-full sm:w-auto"
-          >
+      <PageHeader
+        title="Doctors"
+        subtitle={`${doctors.length} physicians on staff`}
+        actions={
+          <GlassButton variant="primary" onClick={() => navigate('/doctors/new')}>
             <Plus className="w-4 h-4" />
             Add Doctor
           </GlassButton>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {doctorStatusTabs.map(tab => {
-            const active = statusFilter === tab.value;
-            return (
-              <button
-                key={tab.value}
-                onClick={() => setStatusFilter(tab.value)}
-                className={cn(
-                  'px-4 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all',
-                  active
-                    ? 'bg-primary/20 border-primary/40 text-white shadow-lg shadow-primary/20'
-                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
-                )}
-              >
-                <span>{tab.label}</span>
-                <span className="text-[11px] text-white/50">{tab.count}</span>
-              </button>
-            );
-          })}
+        }
+      />
+
+      {/* Filter bar */}
+      <GlassCard padding="sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <SearchInput
+            width="lg"
+            placeholder="Search by name, specialty or department…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+          <div className="flex flex-wrap gap-2">
+            {doctorStatusTabs.map(tab => {
+              const active = statusFilter === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setStatusFilter(tab.value)}
+                  className={cn(
+                    'h-9 px-3.5 rounded-lg border text-xs font-semibold inline-flex items-center gap-2 transition-all',
+                    active
+                      ? 'bg-primary/15 border-primary/40 text-app'
+                      : 'bg-[var(--surface-2)] border-[var(--border)] text-app-muted hover:text-app hover:border-[var(--border-strong)]'
+                  )}
+                >
+                  <span>{tab.label}</span>
+                  <span className={cn('text-[11px] px-1.5 rounded-full', active ? 'bg-primary/20 text-app' : 'bg-[var(--surface-3)] text-app-subtle')}>{tab.count}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </GlassCard>
 
       {/* Doctor Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {filteredDoctors.map(doctor => {
+        {filteredDoctors.map((doctor, i) => {
           const sc = STATUS_CONFIG[doctor.status];
           const doctorApts = db.appointments.filter(a => a.doctorId === doctor.id);
           const completedCount = doctorApts.filter(a => a.status === 'Completed').length;
@@ -159,7 +109,9 @@ export const DoctorList: React.FC = () => {
           return (
             <GlassCard
               key={doctor.id}
-              className="relative group flex flex-col cursor-pointer hover:scale-[1.02] transition-transform duration-200"
+              hover={false}
+              style={{ animationDelay: `${i * 60}ms` }}
+              className="reveal hover-lift relative group flex flex-col cursor-pointer"
               onClick={() => navigate(`/doctors/${doctor.id}`)}
             >
               {/* Status badge top-right */}
@@ -257,7 +209,7 @@ export const DoctorList: React.FC = () => {
                 </button>
                 <button
                   className="p-2 bg-slate-800/80 hover:bg-white/20 rounded-lg transition-colors"
-                  onClick={e => { e.stopPropagation(); setSelectedDoctor(doctor); setIsEditModalOpen(true); }}
+                  onClick={e => { e.stopPropagation(); navigate(`/doctors/${doctor.id}/edit`); }}
                   title="Edit"
                 >
                   <Edit className="w-3.5 h-3.5 text-white" />
@@ -280,16 +232,6 @@ export const DoctorList: React.FC = () => {
           <p className="text-white/50">No doctors found matching your search</p>
         </GlassCard>
       )}
-
-      {/* Add Modal */}
-      <GlassModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add New Doctor" size="lg">
-        <DoctorForm onSubmit={handleAdd} onCancel={() => setIsAddModalOpen(false)} />
-      </GlassModal>
-
-      {/* Edit Modal */}
-      <GlassModal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setSelectedDoctor(null); }} title="Edit Doctor" size="lg">
-        <DoctorForm doctor={selectedDoctor || undefined} onSubmit={handleEdit} onCancel={() => { setIsEditModalOpen(false); setSelectedDoctor(null); }} />
-      </GlassModal>
 
       {/* Delete Confirmation */}
       <DeleteConfirmModal

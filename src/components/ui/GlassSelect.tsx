@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 interface GlassSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -17,30 +18,30 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-white/80 mb-2">
+        <label className="block text-sm font-medium text-app-muted mb-1.5">
           {label}
         </label>
       )}
-      <select
-        className={cn(
-          'w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-xl',
-          'px-4 py-3 outline-none transition-all duration-300',
-          'focus:bg-white/10 focus:border-white/30',
-          'text-white',
-          error && 'border-red-500/50 focus:border-red-500',
-          className
-        )}
-        {...props}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value} className="bg-slate-900">
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {error && (
-        <p className="mt-1 text-sm text-red-400">{error}</p>
-      )}
+      <div className="relative">
+        <select
+          className={cn(
+            'w-full h-11 rounded-xl glass-input border pl-4 pr-10 text-sm text-app appearance-none',
+            'outline-none transition-all duration-200 focus-ring cursor-pointer',
+            'focus:border-[var(--border-strong)]',
+            error && 'border-[color:var(--danger)]',
+            className
+          )}
+          {...props}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value} className="bg-[var(--surface-solid)] text-app">
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="w-4 h-4 text-app-subtle absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+      </div>
+      {error && <p className="mt-1.5 text-sm text-[color:var(--danger)]">{error}</p>}
     </div>
   );
 };

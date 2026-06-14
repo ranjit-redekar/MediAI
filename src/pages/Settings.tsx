@@ -17,7 +17,7 @@ export const Settings: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold text-white">Settings</h1>
+        <h1 className="text-2xl sm:text-[28px] font-bold text-app tracking-tight">Settings</h1>
         <p className="text-white/60">Manage your account preferences</p>
       </div>
       <GlassCard className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -53,8 +53,8 @@ export const Settings: React.FC = () => {
           { label: 'Account Role', value: 'Administrator', icon: User },
           { label: 'Notifications', value: 'Enabled', icon: Bell },
           { label: 'Security Score', value: 'Strong', icon: Shield }
-        ].map(item => (
-          <GlassCard key={item.label} className="flex items-center gap-3">
+        ].map((item, i) => (
+          <GlassCard key={item.label} hover={false} className="reveal hover-lift flex items-center gap-3" style={{ animationDelay: `${i * 70}ms` }}>
             <div className="p-3 rounded-2xl bg-white/10">
               <item.icon className="w-5 h-5 text-white/70" />
             </div>
@@ -88,7 +88,7 @@ export const Settings: React.FC = () => {
         </GlassCard>
 
         {/* Content */}
-        <div className="lg:col-span-3">
+        <div key={activeTab} className="lg:col-span-3 reveal">
           {activeTab === 'profile' && (
             <GlassCard>
               <h2 className="text-xl font-semibold text-white mb-6">Profile Settings</h2>

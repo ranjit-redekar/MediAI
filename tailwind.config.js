@@ -27,9 +27,27 @@ export default {
           medium: 'rgba(255, 255, 255, 0.15)',
           heavy: 'rgba(255, 255, 255, 0.25)',
         },
+        // Semantic, theme-aware tokens (read CSS variables from index.css)
+        surface: {
+          1: 'var(--surface-1)',
+          2: 'var(--surface-2)',
+          3: 'var(--surface-3)',
+        },
+        line: 'var(--border)',
+        'line-strong': 'var(--border-strong)',
+        content: {
+          DEFAULT: 'var(--text)',
+          muted: 'var(--text-muted)',
+          subtle: 'var(--text-subtle)',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      boxShadow: {
+        card: 'var(--shadow-md)',
+        lifted: 'var(--shadow-lg)',
+        primary: 'var(--shadow-primary)',
       },
       backdropBlur: {
         xs: '2px',

@@ -1,14 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, Edit, Trash2, Brain, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Brain, Eye } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassInput } from '../../components/ui/GlassInput';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { GlassBadge } from '../../components/ui/GlassBadge';
-import { GlassModal } from '../../components/ui/GlassModal';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { SearchInput } from '../../components/ui/SearchInput';
 import { DeleteConfirmModal } from '../../components/ui/DeleteConfirmModal';
-import { PatientForm } from '../../components/forms/PatientForm';
-import { db } from '../../data';
+import { usePatients } from '../../context/PatientsContext';
 import type { Patient } from '../../types';
 import { cn } from '../../utils/cn';
 
@@ -16,11 +15,9 @@ export const PatientList: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [patients, setPatients] = useState<Patient[]>(db.patients);
-  
-  // Modal states
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { patients, removePatient } = usePatients();
+
+  // Delete confirmation state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const statusTabs = useMemo(() => {
@@ -59,32 +56,9 @@ export const PatientList: React.FC = () => {
     );
   };
 
-  const handleAdd = (patientData: Partial<Patient>) => {
-    const newPatient: Patient = {
-      ...patientData,
-      id: `P${String(patients.length + 1).padStart(3, '0')}`,
-      registrationDate: new Date().toISOString().split('T')[0],
-      lastVisit: new Date().toISOString().split('T')[0],
-      avatar: `https://i.pravatar.cc/150?u=${Date.now()}`,
-    } as Patient;
-    
-    setPatients([...patients, newPatient]);
-    setIsAddModalOpen(false);
-  };
-
-  const handleEdit = (patientData: Partial<Patient>) => {
-    if (selectedPatient) {
-      setPatients(patients.map(p => 
-        p.id === selectedPatient.id ? { ...p, ...patientData } : p
-      ));
-      setIsEditModalOpen(false);
-      setSelectedPatient(null);
-    }
-  };
-
   const handleDelete = () => {
     if (selectedPatient) {
-      setPatients(patients.filter(p => p.id !== selectedPatient.id));
+      removePatient(selectedPatient.id);
       setIsDeleteModalOpen(false);
       setSelectedPatient(null);
     }
@@ -92,8 +66,7 @@ export const PatientList: React.FC = () => {
 
   const openEditModal = (patient: Patient, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedPatient(patient);
-    setIsEditModalOpen(true);
+    navigate(`/patients/${patient.id}/edit`);
   };
 
   const openDeleteModal = (patient: Patient, e: React.MouseEvent) => {
@@ -104,65 +77,52 @@ export const PatientList: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-white">Patients</h1>
-        <p className="text-white/60">Manage patient records and view AI insights</p>
-      </div>
+      <PageHeader
+        title="Patients"
+        subtitle="Manage patient records and view AI insights"
+        actions={
+          <>
+            <GlassButton variant="ghost" onClick={() => navigate('/ai-insights')}>
+              <Brain className="w-4 h-4" />
+              AI triage
+            </GlassButton>
+            <GlassButton variant="primary" onClick={() => navigate('/patients/new')}>
+              <Plus className="w-4 h-4" />
+              Add Patient
+            </GlassButton>
+          </>
+        }
+      />
 
-      {/* Filters */}
-      <GlassCard className="space-y-4">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-            <GlassInput
-              placeholder="Search patients by name or ID..."
-              icon={<Search className="w-4 h-4" />}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="flex flex-wrap gap-2">
-              <GlassButton variant="ghost" className="flex items-center gap-2 px-4">
-                <Filter className="w-4 h-4" />
-                Smart filters
-              </GlassButton>
-              <GlassButton
-                variant="ghost"
-                className="flex items-center gap-2 px-4"
-                onClick={() => navigate('/ai-insights')}
-              >
-                <Brain className="w-4 h-4" />
-                AI triage
-              </GlassButton>
-            </div>
+      {/* Filter bar */}
+      <GlassCard padding="sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <SearchInput
+            width="lg"
+            placeholder="Search patients by name or ID…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div className="flex flex-wrap gap-2">
+            {statusTabs.map(tab => {
+              const isActiveTab = statusFilter === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setStatusFilter(tab.value)}
+                  className={cn(
+                    'h-9 px-3.5 rounded-lg border text-xs font-semibold inline-flex items-center gap-2 transition-all',
+                    isActiveTab
+                      ? 'bg-primary/15 border-primary/40 text-app'
+                      : 'bg-[var(--surface-2)] border-[var(--border)] text-app-muted hover:text-app hover:border-[var(--border-strong)]'
+                  )}
+                >
+                  <span>{tab.label}</span>
+                  <span className={cn('text-[11px] px-1.5 rounded-full', isActiveTab ? 'bg-primary/20 text-app' : 'bg-[var(--surface-3)] text-app-subtle')}>{tab.count}</span>
+                </button>
+              );
+            })}
           </div>
-          <GlassButton
-            variant="primary"
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center justify-center gap-2 w-full sm:w-auto"
-          >
-            <Plus className="w-4 h-4" />
-            Add Patient
-          </GlassButton>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {statusTabs.map(tab => {
-            const isActiveTab = statusFilter === tab.value;
-            return (
-              <button
-                key={tab.value}
-                onClick={() => setStatusFilter(tab.value)}
-                className={cn(
-                  'px-4 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all',
-                  isActiveTab
-                    ? 'bg-primary/20 border-primary/40 text-white shadow-lg shadow-primary/20'
-                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
-                )}
-              >
-                <span>{tab.label}</span>
-                <span className="text-[11px] text-white/50">{tab.count}</span>
-              </button>
-            );
-          })}
         </div>
       </GlassCard>
 
@@ -258,39 +218,6 @@ export const PatientList: React.FC = () => {
           </div>
         )}
       </GlassCard>
-
-      {/* Add Modal */}
-      <GlassModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title="Add New Patient"
-        size="lg"
-      >
-        <PatientForm
-          onSubmit={handleAdd}
-          onCancel={() => setIsAddModalOpen(false)}
-        />
-      </GlassModal>
-
-      {/* Edit Modal */}
-      <GlassModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedPatient(null);
-        }}
-        title="Edit Patient"
-        size="lg"
-      >
-        <PatientForm
-          patient={selectedPatient || undefined}
-          onSubmit={handleEdit}
-          onCancel={() => {
-            setIsEditModalOpen(false);
-            setSelectedPatient(null);
-          }}
-        />
-      </GlassModal>
 
       {/* Delete Confirmation */}
       <DeleteConfirmModal
