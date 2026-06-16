@@ -105,8 +105,8 @@ export const AIInsights: React.FC = () => {
     <div className="space-y-8">
 
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl p-8 bg-gradient-to-r from-violet-600/30 via-fuchsia-600/20 to-indigo-600/30 border border-violet-500/30">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-transparent" />
+      <div className="relative overflow-hidden rounded-3xl p-8 glass-card border border-violet-500/25">
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-violet-500/15 via-fuchsia-500/[0.08] to-indigo-500/[0.12]" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-fuchsia-500/10 rounded-full blur-3xl" />
 

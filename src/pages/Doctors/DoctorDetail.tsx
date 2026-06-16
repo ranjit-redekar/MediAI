@@ -99,9 +99,8 @@ export const DoctorDetail: React.FC = () => {
 
       {/* Hero Banner */}
       <div className="relative overflow-hidden rounded-3xl">
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/50 via-slate-900/70 to-slate-900/90" />
-        <div className="absolute top-0 right-0 w-96 h-full bg-gradient-to-l from-violet-500/10 to-transparent" />
-        <div className="absolute inset-0 backdrop-blur-sm border border-white/10 rounded-3xl" />
+        <div className="absolute inset-0 glass-card rounded-3xl" />
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-indigo-500/15 via-violet-500/[0.06] to-transparent" />
 
         <div className="relative p-6 md:p-8">
           <div className="flex flex-col md:flex-row gap-6 items-start">

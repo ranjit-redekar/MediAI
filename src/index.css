@@ -76,22 +76,22 @@
   --accent: #8b5cf6;
   --primary-contrast: #ffffff;
 
-  --app-bg: #eef1f8;
-  --app-glow: radial-gradient(1100px 540px at 50% -8%, rgba(99, 102, 241, 0.10), transparent 70%);
+  --app-bg: #e7ebf3;
+  --app-glow: radial-gradient(1100px 540px at 50% -8%, rgba(99, 102, 241, 0.12), transparent 70%);
 
   --surface-1: #ffffff;
-  --surface-2: #f4f6fb;
-  --surface-3: #eceff7;
-  --surface-panel: rgba(255, 255, 255, 0.9);
+  --surface-2: #eef1f7;
+  --surface-3: #e4e8f1;
+  --surface-panel: rgba(255, 255, 255, 0.92);
   --surface-input: #ffffff;
   --surface-solid: #ffffff;
 
-  --border: rgba(15, 23, 42, 0.1);
-  --border-strong: rgba(15, 23, 42, 0.16);
+  --border: rgba(15, 23, 42, 0.12);
+  --border-strong: rgba(15, 23, 42, 0.2);
 
   --text: #0f172a;
-  --text-muted: rgba(15, 23, 42, 0.62);
-  --text-subtle: rgba(15, 23, 42, 0.45);
+  --text-muted: rgba(15, 23, 42, 0.64);
+  --text-subtle: rgba(15, 23, 42, 0.48);
 
   --success: #059669;
   --warning: #d97706;
@@ -99,10 +99,10 @@
   --info: #0891b2;
 
   --ring: rgba(99, 102, 241, 0.45);
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 12px 32px rgba(15, 23, 42, 0.1);
-  --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.14);
-  --shadow-primary: 0 10px 30px rgba(99, 102, 241, 0.28);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 2px 8px rgba(15, 23, 42, 0.06), 0 24px 56px rgba(15, 23, 42, 0.12);
+  --shadow-primary: 0 8px 24px rgba(99, 102, 241, 0.3);
   --radius: 16px;
 
   --text-primary: var(--text);
@@ -115,6 +115,37 @@
   --app-text: var(--text);
   --card-bg: var(--surface-1);
   --card-border: var(--border);
+}
+
+/* ── Additional dark-family themes (override only brand + backdrop deltas;
+      text/surfaces inherit the readable dark base from :root) ─────────────── */
+:root[data-theme='midnight'] {
+  --primary: #3b82f6; --primary-strong: #2563eb; --accent: #6366f1;
+  --app-bg: #03040a;
+  --app-glow: radial-gradient(1100px 540px at 50% -8%, rgba(59, 130, 246, 0.13), transparent 70%);
+  --ring: rgba(59, 130, 246, 0.55);
+  --shadow-primary: 0 10px 30px rgba(59, 130, 246, 0.35);
+}
+:root[data-theme='emerald'] {
+  --primary: #10b981; --primary-strong: #059669; --accent: #14b8a6;
+  --app-bg: #04130f;
+  --app-glow: radial-gradient(1100px 540px at 50% -8%, rgba(16, 185, 129, 0.14), transparent 70%);
+  --ring: rgba(16, 185, 129, 0.5);
+  --shadow-primary: 0 10px 30px rgba(16, 185, 129, 0.3);
+}
+:root[data-theme='royal'] {
+  --primary: #a855f7; --primary-strong: #9333ea; --accent: #ec4899;
+  --app-bg: #0c0718;
+  --app-glow: radial-gradient(1100px 540px at 50% -8%, rgba(168, 85, 247, 0.16), transparent 70%);
+  --ring: rgba(168, 85, 247, 0.55);
+  --shadow-primary: 0 10px 30px rgba(168, 85, 247, 0.35);
+}
+:root[data-theme='sunset'] {
+  --primary: #f97316; --primary-strong: #ea580c; --accent: #f43f5e;
+  --app-bg: #140a06;
+  --app-glow: radial-gradient(1100px 540px at 50% -8%, rgba(249, 115, 22, 0.14), transparent 70%);
+  --ring: rgba(249, 115, 22, 0.5);
+  --shadow-primary: 0 10px 30px rgba(249, 115, 22, 0.32);
 }
 
 * {
@@ -200,63 +231,64 @@ body::before {
 .text-app-subtle { color: var(--text-subtle); }
 
 /* ============================================================================
-   LIGHT THEME COMPATIBILITY — remaps the legacy white/opacity utility classes
-   still used across pages so existing markup stays readable in light mode.
+   LIGHT-FAMILY COMPATIBILITY — remaps the legacy white/opacity utility classes
+   so existing markup stays readable on any light-family theme. Keyed to the
+   `is-light` body class (set by ThemeProvider) so new light themes also work.
    ============================================================================ */
-body[data-theme='light'] .text-white { color: #0f172a !important; }
-body[data-theme='light'] .text-white\/90 { color: rgba(15, 23, 42, 0.9) !important; }
-body[data-theme='light'] .text-white\/80 { color: rgba(15, 23, 42, 0.85) !important; }
-body[data-theme='light'] .text-white\/70 { color: rgba(15, 23, 42, 0.72) !important; }
-body[data-theme='light'] .text-white\/60 { color: rgba(15, 23, 42, 0.62) !important; }
-body[data-theme='light'] .text-white\/50 { color: rgba(15, 23, 42, 0.52) !important; }
-body[data-theme='light'] .text-white\/40 { color: rgba(15, 23, 42, 0.45) !important; }
-body[data-theme='light'] .text-white\/30 { color: rgba(15, 23, 42, 0.35) !important; }
-body[data-theme='light'] .text-white\/20 { color: rgba(15, 23, 42, 0.25) !important; }
+body.is-light .text-white { color: #0f172a !important; }
+body.is-light .text-white\/90 { color: rgba(15, 23, 42, 0.9) !important; }
+body.is-light .text-white\/80 { color: rgba(15, 23, 42, 0.85) !important; }
+body.is-light .text-white\/70 { color: rgba(15, 23, 42, 0.72) !important; }
+body.is-light .text-white\/60 { color: rgba(15, 23, 42, 0.62) !important; }
+body.is-light .text-white\/50 { color: rgba(15, 23, 42, 0.55) !important; }
+body.is-light .text-white\/40 { color: rgba(15, 23, 42, 0.48) !important; }
+body.is-light .text-white\/30 { color: rgba(15, 23, 42, 0.4) !important; }
+body.is-light .text-white\/20 { color: rgba(15, 23, 42, 0.3) !important; }
 
-body[data-theme='light'] .bg-white\/5 { background-color: rgba(15, 23, 42, 0.035) !important; }
-body[data-theme='light'] .bg-white\/10 { background-color: rgba(15, 23, 42, 0.06) !important; }
-body[data-theme='light'] .bg-white\/15 { background-color: rgba(15, 23, 42, 0.08) !important; }
-body[data-theme='light'] .bg-white\/20 { background-color: rgba(15, 23, 42, 0.11) !important; }
-body[data-theme='light'] .border-white\/10 { border-color: rgba(15, 23, 42, 0.1) !important; }
-body[data-theme='light'] .border-white\/20 { border-color: rgba(15, 23, 42, 0.16) !important; }
-body[data-theme='light'] .border-white\/30 { border-color: rgba(15, 23, 42, 0.22) !important; }
+/* Inner surfaces — bumped so tiles/chips read on white cards */
+body.is-light .bg-white\/5 { background-color: rgba(15, 23, 42, 0.05) !important; }
+body.is-light .bg-white\/8 { background-color: rgba(15, 23, 42, 0.07) !important; }
+body.is-light .bg-white\/10 { background-color: rgba(15, 23, 42, 0.08) !important; }
+body.is-light .bg-white\/15 { background-color: rgba(15, 23, 42, 0.11) !important; }
+body.is-light .bg-white\/20 { background-color: rgba(15, 23, 42, 0.14) !important; }
+body.is-light .border-white\/5 { border-color: rgba(15, 23, 42, 0.08) !important; }
+body.is-light .border-white\/10 { border-color: rgba(15, 23, 42, 0.1) !important; }
+body.is-light .border-white\/20 { border-color: rgba(15, 23, 42, 0.16) !important; }
+body.is-light .border-white\/30 { border-color: rgba(15, 23, 42, 0.22) !important; }
+body.is-light .border-white\/40 { border-color: rgba(15, 23, 42, 0.3) !important; }
 
-body[data-theme='light'] .bg-slate-900\/80,
-body[data-theme='light'] .bg-slate-900\/60,
-body[data-theme='light'] .bg-slate-900\/40 {
+body.is-light .bg-slate-900\/80,
+body.is-light .bg-slate-900\/60,
+body.is-light .bg-slate-900\/40 {
   background-color: rgba(255, 255, 255, 0.95) !important;
   color: #0f172a;
 }
 
-body[data-theme='light'] .bg-black\/60,
-body[data-theme='light'] .bg-black\/50 {
-  background-color: rgba(15, 23, 42, 0.25) !important;
+body.is-light .bg-black\/60,
+body.is-light .bg-black\/50 {
+  background-color: rgba(15, 23, 42, 0.3) !important;
 }
 
-body[data-theme='light'] .bg-slate-950\/95,
-body[data-theme='light'] .bg-slate-950\/90,
-body[data-theme='light'] .bg-slate-950\/80 {
+body.is-light .bg-slate-950\/95,
+body.is-light .bg-slate-950\/90,
+body.is-light .bg-slate-950\/80 {
   background-color: rgba(255, 255, 255, 0.98) !important;
   color: #0f172a;
 }
 
-body[data-theme='light'] .backdrop-blur-2xl {
+body.is-light .backdrop-blur-2xl {
   background-color: rgba(255, 255, 255, 0.92) !important;
 }
 
-body[data-theme='light'] .border-white\/40 {
-  border-color: rgba(15, 23, 42, 0.3) !important;
-}
-
-body[data-theme='light'] .glass-card .text-white { color: #0f172a !important; }
-body[data-theme='light'] .glass-card .text-white\/60 { color: rgba(15, 23, 42, 0.6) !important; }
-body[data-theme='light'] .glass-modal {
+body.is-light .glass-card .text-white { color: #0f172a !important; }
+body.is-light .glass-card .text-white\/60 { color: rgba(15, 23, 42, 0.6) !important; }
+body.is-light .glass-modal {
   background-color: #ffffff !important;
   color: #0f172a;
   border-color: rgba(15, 23, 42, 0.12);
 }
-body[data-theme='light'] .glass-modal-backdrop {
-  background-color: rgba(15, 23, 42, 0.25) !important;
+body.is-light .glass-modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.3) !important;
 }
 
 /* ── Scrollbars ──────────────────────────────────────────────────────────── */

@@ -106,13 +106,11 @@ export const PatientDetail: React.FC = () => {
 
       {/* Patient Hero Banner */}
       <div className="relative overflow-hidden rounded-3xl">
-        <div className={`
-          absolute inset-0
-          ${patientData.status === 'Critical' ? 'bg-gradient-to-r from-red-900/40 via-slate-900/60 to-slate-900/80' :
-            patientData.aiRiskScore && patientData.aiRiskScore >= 40 ? 'bg-gradient-to-r from-amber-900/30 via-slate-900/60 to-slate-900/80' :
-            'bg-gradient-to-r from-indigo-900/40 via-slate-900/60 to-slate-900/80'}
-        `} />
-        <div className="absolute inset-0 backdrop-blur-sm border border-white/10 rounded-3xl" />
+        <div className="absolute inset-0 glass-card rounded-3xl" />
+        <div className={`absolute inset-0 rounded-3xl bg-gradient-to-r to-transparent ${
+          patientData.status === 'Critical' ? 'from-red-500/20 via-red-500/[0.05]' :
+          patientData.aiRiskScore && patientData.aiRiskScore >= 40 ? 'from-amber-500/20 via-amber-500/[0.05]' :
+          'from-indigo-500/15 via-violet-500/[0.06]'}`} />
 
         <div className="relative p-6 md:p-8">
           <div className="flex flex-col md:flex-row gap-6 items-start">

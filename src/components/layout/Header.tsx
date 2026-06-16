@@ -8,12 +8,12 @@ interface HeaderProps {
   onOpenCommand: () => void;
   onOpenTaskInbox: () => void;
   onOpenCopilot: () => void;
-  theme: 'dark' | 'light';
+  isDark: boolean;
   onToggleTheme: () => void;
   onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onMenuClick, onOpenCommand, onOpenTaskInbox, onOpenCopilot, theme, onToggleTheme, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ onMenuClick, onOpenCommand, onOpenTaskInbox, onOpenCopilot, isDark, onToggleTheme, onLogout }) => {
   const [profileOpen, setProfileOpen] = React.useState(false);
   const { start: startTour } = useTour();
   return (
@@ -57,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onOpenCommand, onOp
           </GlassButton>
 
           <GlassButton variant="ghost" size="sm" onClick={onToggleTheme} className="hidden sm:flex w-9 px-0" title="Toggle theme">
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </GlassButton>
 
           {/* Notifications */}

@@ -10,10 +10,11 @@ import { PatientsProvider } from './context/PatientsContext.tsx';
 import { DoctorsProvider } from './context/DoctorsContext.tsx';
 import { AppointmentsProvider } from './context/AppointmentsContext.tsx';
 
-const savedTheme = (typeof window !== 'undefined' && localStorage.getItem('mediai-theme')) as 'dark' | 'light' | null;
-const initialTheme = savedTheme ?? 'dark';
-document.documentElement.setAttribute('data-theme', initialTheme);
-document.body.setAttribute('data-theme', initialTheme);
+// Apply the saved theme before first paint to avoid a flash.
+const savedTheme = (typeof window !== 'undefined' && localStorage.getItem('mediai-theme')) || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+document.body.setAttribute('data-theme', savedTheme);
+document.body.classList.toggle('is-light', savedTheme === 'light');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

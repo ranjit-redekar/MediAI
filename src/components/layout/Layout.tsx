@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Command } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { AIAgentDrawer } from './agents/AIAgentDrawer';
@@ -18,13 +17,8 @@ export const Layout: React.FC = () => {
   const [commandOpen, setCommandOpen] = useState(false);
   const [taskDrawerOpen, setTaskDrawerOpen] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
-  const { active: tourActive, start: startTour, hasCompleted } = useTour();
-  // Coachmark only appears once the user has finished the tour (avoids two onboarding popups at once)
-  const [showCoachmark, setShowCoachmark] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return hasCompleted() && !sessionStorage.getItem('mediai-coachmark-dismissed');
-  });
+  const { isDark, toggleTheme } = useTheme();
+  const { start: startTour, hasCompleted } = useTour();
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -45,11 +39,6 @@ export const Layout: React.FC = () => {
     }
   }, [hasCompleted, startTour]);
 
-  const dismissCoachmark = () => {
-    setShowCoachmark(false);
-    sessionStorage.setItem('mediai-coachmark-dismissed', 'true');
-  };
-
   return (
     <div className="flex min-h-screen">
       <Sidebar
@@ -66,7 +55,7 @@ export const Layout: React.FC = () => {
           onOpenCommand={() => setCommandOpen(true)}
           onOpenTaskInbox={() => setTaskDrawerOpen(true)}
           onOpenCopilot={() => setCopilotOpen(true)}
-          theme={theme}
+          isDark={isDark}
           onToggleTheme={toggleTheme}
           onLogout={() => window.location.assign('/login')}
         />
@@ -87,21 +76,6 @@ export const Layout: React.FC = () => {
         onClose={() => setCopilotOpen(false)}
       />
       <GuidedTour />
-      {!tourActive && showCoachmark && (
-        <div className="fixed bottom-6 left-6 z-40 max-w-xs rounded-2xl border glass-panel p-4 shadow-lg shadow-violet-500/20">
-          <p className="text-sm font-semibold text-white flex items-center gap-2">
-            <Command className="w-4 h-4" />
-            Try the Command Palette
-          </p>
-          <p className="text-xs text-white/60 mt-1">Press ⌘+K (or Ctrl+K) anytime to jump to patients, agents, or actions.</p>
-          <button
-            onClick={dismissCoachmark}
-            className="mt-3 text-xs text-violet-300 hover:text-white transition-colors"
-          >
-            Got it
-          </button>
-        </div>
-      )}
     </div>
   );
 };

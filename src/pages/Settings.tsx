@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { User, Bell, Shield, Palette, Save, LogOut } from 'lucide-react';
+import { User, Bell, Shield, Palette, Save, Check, Sun, Moon, LogOut } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassInput } from '../components/ui/GlassInput';
 import { GlassButton } from '../components/ui/GlassButton';
+import { useTheme } from '../context/ThemeContext';
+import { cn } from '../utils/cn';
 
 export const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('profile');
+  const { theme, themes, setTheme } = useTheme();
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -163,28 +166,55 @@ export const Settings: React.FC = () => {
 
           {activeTab === 'appearance' && (
             <GlassCard>
-              <h2 className="text-xl font-semibold text-white mb-6">Appearance</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
-                  <div>
-                    <p className="font-medium text-white">Dark Mode</p>
-                    <p className="text-sm text-white/50">Toggle dark mode theme</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
+              <h2 className="text-xl font-semibold text-app mb-1">Appearance</h2>
+              <p className="text-sm text-app-subtle mb-6">Choose a theme — it applies instantly across the app.</p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {themes.map((t) => {
+                  const active = theme === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setTheme(t.id)}
+                      className={cn(
+                        'relative rounded-2xl border p-3 text-left transition-all hover-lift',
+                        active ? 'border-[color:var(--primary)] ring-2 ring-[color:var(--ring)]' : 'border-[var(--border)] hover:border-[var(--border-strong)]'
+                      )}
+                    >
+                      {/* Theme preview swatch */}
+                      <div className="rounded-xl overflow-hidden border border-[var(--border)] h-20 flex" style={{ background: t.swatch[0] }}>
+                        <div className="w-1/3 h-full" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                        <div className="flex-1 p-2 flex flex-col justify-between">
+                          <div className="h-2 w-10 rounded-full" style={{ background: t.swatch[1] }} />
+                          <div className="flex gap-1.5">
+                            <div className="h-5 w-5 rounded-md" style={{ background: t.swatch[1] }} />
+                            <div className="h-5 w-5 rounded-md" style={{ background: t.swatch[2] }} />
+                            <div className="h-5 flex-1 rounded-md" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2.5">
+                        <span className="text-sm font-medium text-app flex items-center gap-1.5">
+                          {t.isDark ? <Moon className="w-3.5 h-3.5 text-app-subtle" /> : <Sun className="w-3.5 h-3.5 text-app-subtle" />}
+                          {t.name}
+                        </span>
+                        {active && (
+                          <span className="w-5 h-5 rounded-full bg-[color:var(--primary)] flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white" />
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 flex items-center justify-between p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+                <div>
+                  <p className="font-medium text-app">Reduced motion</p>
+                  <p className="text-sm text-app-subtle">Honors your system setting automatically</p>
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
-                  <div>
-                    <p className="font-medium text-white">Compact Mode</p>
-                    <p className="text-sm text-white/50">Reduce spacing for dense view</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only-peer" />
-                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
+                <span className="text-xs text-app-subtle px-2.5 py-1 rounded-full bg-[var(--surface-3)]">System</span>
               </div>
             </GlassCard>
           )}
