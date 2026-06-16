@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Star, Mail, Phone, Calendar, Clock, Users,
   Award, Globe, Stethoscope, TrendingUp, CheckCircle,
-  DollarSign, BarChart2, Video, UserRound, Activity, Edit
+  DollarSign, BarChart2, Video, UserRound, Activity, Edit,
+  ChevronDown, Pill, FileText, ArrowRight
 } from 'lucide-react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
@@ -14,6 +15,7 @@ import { GlassButton } from '../../components/ui/GlassButton';
 import { GlassBadge } from '../../components/ui/GlassBadge';
 import { useDoctors } from '../../context/DoctorsContext';
 import { db } from '../../data';
+import { cn } from '../../utils/cn';
 import type { Appointment } from '../../types';
 
 type TabId = 'overview' | 'schedule' | 'appointments' | 'patients';
@@ -386,98 +388,163 @@ const AppointmentsTab: React.FC<{
   filter: string;
   onFilterChange: (f: string) => void;
   scheduled: number; completed: number; cancelled: number; noShow: number;
-}> = ({ appointments, allAppointments, filter, onFilterChange, scheduled, completed, cancelled, noShow }) => (
-  <div className="space-y-5">
-    {/* Summary Cards */}
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      {[
-        { label: 'Scheduled', count: scheduled, color: 'text-indigo-400', bg: 'bg-indigo-500/20', border: 'border-indigo-500/30' },
-        { label: 'Completed', count: completed, color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30' },
-        { label: 'Cancelled', count: cancelled, color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/30' },
-        { label: 'No-Show',   count: noShow,    color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/30' },
-      ].map(s => (
-        <div key={s.label} className={`p-4 rounded-2xl border ${s.bg} ${s.border}`}>
-          <div className={`text-3xl font-bold ${s.color} mb-1`}>{s.count}</div>
-          <div className="text-sm text-white/60">{s.label}</div>
-        </div>
-      ))}
-    </div>
+}> = ({ appointments, allAppointments, filter, onFilterChange, scheduled, completed, cancelled, noShow }) => {
+  const navigate = useNavigate();
+  const [openId, setOpenId] = useState<string | null>(null);
 
-    {/* Filter */}
-    <div className="flex flex-wrap gap-2">
-      {['All', 'Scheduled', 'Completed', 'Cancelled', 'No-Show'].map(f => (
-        <button
-          key={f}
-          onClick={() => onFilterChange(f)}
-          className={`
-            px-4 py-2 rounded-xl text-sm font-medium transition-all
-            ${filter === f
-              ? 'bg-indigo-500 text-white'
-              : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10'
-            }
-          `}
-        >
-          {f}
-          {f !== 'All' && (
-            <span className="ml-2 px-1.5 py-0.5 rounded-full bg-white/20 text-xs">
-              {allAppointments.filter(a => a.status === f).length}
-            </span>
-          )}
-        </button>
-      ))}
-    </div>
+  return (
+    <div className="space-y-5">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: 'Scheduled', count: scheduled, color: 'text-indigo-400', bg: 'bg-indigo-500/15' },
+          { label: 'Completed', count: completed, color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+          { label: 'Cancelled', count: cancelled, color: 'text-red-400', bg: 'bg-red-500/15' },
+          { label: 'No-Show',   count: noShow,    color: 'text-amber-400', bg: 'bg-amber-500/15' },
+        ].map((s, i) => (
+          <div key={s.label} className={cn('reveal p-4 rounded-2xl border border-[var(--border)]', s.bg)} style={{ animationDelay: `${i * 60}ms` }}>
+            <div className={`text-3xl font-bold ${s.color} mb-1`}>{s.count}</div>
+            <div className="text-sm text-app-muted">{s.label}</div>
+          </div>
+        ))}
+      </div>
 
-    {/* Appointments List */}
-    <div className="space-y-3">
-      {appointments.length === 0 ? (
-        <GlassCard className="text-center py-10">
-          <Calendar className="w-12 h-12 text-white/20 mx-auto mb-3" />
-          <p className="text-white/50">No appointments found</p>
-        </GlassCard>
-      ) : (
-        appointments.map(apt => {
-          const patient = db.patients.find(p => p.id === apt.patientId);
-          const cfg = APT_STATUS_CONFIG[apt.status];
-          return (
-            <GlassCard key={apt.id} className="flex items-center gap-4 hover:bg-white/8 transition-colors">
-              {/* Status stripe */}
-              <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${
-                apt.status === 'Scheduled' ? 'bg-indigo-500' :
-                apt.status === 'Completed' ? 'bg-emerald-500' :
-                apt.status === 'Cancelled' ? 'bg-red-500' : 'bg-amber-500'
-              }`} />
+      {/* Filter */}
+      <div className="flex flex-wrap gap-2">
+        {['All', 'Scheduled', 'Completed', 'Cancelled', 'No-Show'].map(f => (
+          <button
+            key={f}
+            onClick={() => onFilterChange(f)}
+            className={cn(
+              'h-9 px-3.5 rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-all border',
+              filter === f
+                ? 'bg-primary/15 border-primary/40 text-app'
+                : 'bg-[var(--surface-2)] border-[var(--border)] text-app-muted hover:text-app hover:border-[var(--border-strong)]'
+            )}
+          >
+            {f}
+            {f !== 'All' && (
+              <span className={cn('px-1.5 rounded-full text-[11px]', filter === f ? 'bg-primary/20 text-app' : 'bg-[var(--surface-3)] text-app-subtle')}>
+                {allAppointments.filter(a => a.status === f).length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
-              {/* Patient avatar */}
-              {patient?.avatar ? (
-                <img src={patient.avatar} alt={apt.patientName} className="w-10 h-10 rounded-full border border-white/10 flex-shrink-0" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                  <UserRound className="w-5 h-5 text-white/40" />
-                </div>
-              )}
-
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                  <span className="font-semibold text-white">{apt.patientName}</span>
-                  <GlassBadge variant={cfg.variant} size="sm">{apt.status}</GlassBadge>
-                  {apt.type === 'Video' && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 text-xs">
-                      <Video className="w-3 h-3" /> Video
-                    </span>
+      {/* Appointments List */}
+      <div className="space-y-3">
+        {appointments.length === 0 ? (
+          <GlassCard className="text-center py-10">
+            <Calendar className="w-12 h-12 text-app-subtle opacity-50 mx-auto mb-3" />
+            <p className="text-app-muted">No appointments found</p>
+          </GlassCard>
+        ) : (
+          appointments.map((apt, i) => {
+            const patient = db.patients.find(p => p.id === apt.patientId);
+            const record = patient?.medicalHistory?.find(r => r.date === apt.date);
+            const isOpen = openId === apt.id;
+            const d = new Date(apt.date + 'T00:00:00');
+            return (
+              <GlassCard key={apt.id} hover={false} padding="none" className="reveal overflow-hidden" style={{ animationDelay: `${i * 40}ms` }}>
+                {/* Summary row — click to expand */}
+                <button onClick={() => setOpenId(isOpen ? null : apt.id)} className="w-full text-left flex items-center gap-3 sm:gap-4 p-4 hover:bg-[var(--surface-2)] transition-colors">
+                  <div className={cn('w-1.5 self-stretch rounded-full flex-shrink-0',
+                    apt.status === 'Scheduled' ? 'bg-indigo-500' : apt.status === 'Completed' ? 'bg-emerald-500' : apt.status === 'Cancelled' ? 'bg-red-500' : 'bg-amber-500')} />
+                  {patient?.avatar ? (
+                    <img src={patient.avatar} alt={apt.patientName} className="w-11 h-11 rounded-full border border-[var(--border)] object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-[var(--surface-3)] flex items-center justify-center flex-shrink-0"><UserRound className="w-5 h-5 text-app-subtle" /></div>
                   )}
-                </div>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-white/50">
-                  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{apt.date}</span>
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{apt.time}</span>
-                  {apt.notes && <span className="italic truncate max-w-[200px]">"{apt.notes}"</span>}
-                </div>
-              </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                      <span className="font-semibold text-app">{apt.patientName}</span>
+                      <GlassBadge variant={APT_STATUS_CONFIG[apt.status].variant} size="sm">{apt.status}</GlassBadge>
+                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs',
+                        apt.type === 'Video' ? 'bg-violet-500/15 text-violet-300' : apt.type === 'Phone' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-indigo-500/15 text-indigo-300')}>
+                        {apt.type === 'Video' ? <Video className="w-3 h-3" /> : apt.type === 'Phone' ? <Phone className="w-3 h-3" /> : <UserRound className="w-3 h-3" />}{apt.type}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-app-subtle">
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{apt.time}</span>
+                    </div>
+                  </div>
+                  <ChevronDown className={cn('w-5 h-5 text-app-subtle flex-shrink-0 transition-transform', isOpen && 'rotate-180')} />
+                </button>
 
-              <div className="text-xs text-white/30 flex-shrink-0">{apt.id}</div>
-            </GlassCard>
-          );
-        })
-      )}
+                {/* Expanded details */}
+                {isOpen && (
+                  <div className="px-4 pb-4 pt-1 border-t border-[var(--border)] reveal">
+                    {/* Patient + visit info */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                      <DetailItem icon={<UserRound className="w-4 h-4 text-white/40" />} label="Patient" value={`${apt.patientName}${patient ? ` · ${patient.age}y ${patient.gender}` : ''}`} />
+                      <DetailItem icon={<Clock className="w-4 h-4 text-white/40" />} label="Time" value={`${apt.time}`} />
+                      <DetailItem icon={<Calendar className="w-4 h-4 text-white/40" />} label="Date" value={d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} />
+                      <DetailItem icon={<FileText className="w-4 h-4 text-white/40" />} label="Reference" value={apt.id} />
+                      {patient && <DetailItem icon={<Phone className="w-4 h-4 text-white/40" />} label="Contact" value={patient.phone} />}
+                      <DetailItem icon={<Stethoscope className="w-4 h-4 text-white/40" />} label="Type" value={apt.type} />
+                    </div>
+
+                    {apt.notes && (
+                      <div className="mt-3 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+                        <p className="text-xs text-app-subtle mb-1 flex items-center gap-1"><FileText className="w-3.5 h-3.5" /> Appointment note</p>
+                        <p className="text-sm text-app-muted italic">"{apt.notes}"</p>
+                      </div>
+                    )}
+
+                    {/* What was recommended at this visit */}
+                    {record ? (
+                      <div className="mt-3 p-4 rounded-xl bg-emerald-500/[0.07] border border-emerald-500/20">
+                        <p className="text-xs text-emerald-300 mb-2 flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Diagnosis & recommendation</p>
+                        <p className="text-sm font-semibold text-app">{record.diagnosis}</p>
+                        {record.notes && <p className="text-sm text-app-muted italic mt-1">"{record.notes}"</p>}
+                        {record.medications.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-xs text-app-subtle mb-1.5">Prescribed</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {record.medications.map((m, mi) => (
+                                <span key={mi} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-[var(--surface-2)] text-app-muted">
+                                  <Pill className="w-3 h-3 text-emerald-400" />{m}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {record.followUpDate && (
+                          <p className="text-xs text-amber-300 mt-2.5 flex items-center gap-1"><Calendar className="w-3 h-3" /> Follow-up: {record.followUpDate}</p>
+                        )}
+                      </div>
+                    ) : apt.status === 'Completed' ? (
+                      <p className="mt-3 text-xs text-app-subtle italic">No clinical record was logged for this visit.</p>
+                    ) : null}
+
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <GlassButton variant="primary" size="sm" onClick={() => navigate(`/patients/${apt.patientId}`)}>
+                        <UserRound className="w-3.5 h-3.5" /> View patient
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </GlassButton>
+                      <GlassButton variant="ghost" size="sm" onClick={() => navigate(`/appointments/${apt.id}/edit`)}>
+                        <Edit className="w-3.5 h-3.5" /> Edit appointment
+                      </GlassButton>
+                    </div>
+                  </div>
+                )}
+              </GlassCard>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
+const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
+  <div className="flex items-start gap-2">
+    <div className="mt-0.5 flex-shrink-0">{icon}</div>
+    <div className="min-w-0">
+      <p className="text-xs text-app-subtle">{label}</p>
+      <p className="text-sm text-app truncate">{value}</p>
     </div>
   </div>
 );

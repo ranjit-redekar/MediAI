@@ -4,7 +4,8 @@ import {
   ArrowLeft, Calendar, Phone, Mail, Droplet, Brain, AlertTriangle,
   CheckCircle, Plus, MapPin, User, Activity, FlaskConical, Clock,
   Stethoscope, Heart, Thermometer, Wind, Weight, Sparkles,
-  CalendarPlus, FileText, Pill, ShieldAlert, TrendingUp, ExternalLink, ArrowRight, Pencil
+  CalendarPlus, FileText, Pill, ShieldAlert, TrendingUp, ExternalLink, ArrowRight, Pencil,
+  ChevronDown, Video, UserRound
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
@@ -15,6 +16,7 @@ import { GlassBadge } from '../../components/ui/GlassBadge';
 import { MedicalTimeline } from '../../components/timeline/MedicalTimeline';
 import { usePatients } from '../../context/PatientsContext';
 import { db } from '../../data';
+import { cn } from '../../utils/cn';
 import type { AIAgent, Appointment, MedicalRecord, Patient } from '../../types';
 
 type TabId = 'overview' | 'history' | 'labs' | 'appointments';
@@ -395,7 +397,7 @@ export const PatientDetail: React.FC = () => {
       )}
 
       {activeTab === 'appointments' && (
-        <AppointmentsTab appointments={patientAppointments} />
+        <AppointmentsTab appointments={patientAppointments} records={medicalRecords} />
       )}
     </div>
   );
@@ -835,44 +837,119 @@ const LabResultsTab: React.FC<{
 };
 
 // ─── Appointments Tab ─────────────────────────────────────────────────────────
+const aptStatusVariant = (status: string) =>
+  status === 'Completed' ? 'success' : status === 'Cancelled' ? 'danger' : status === 'No-Show' ? 'warning' : 'primary';
+const aptStripe = (status: string) =>
+  status === 'Scheduled' ? 'bg-indigo-500' : status === 'Completed' ? 'bg-emerald-500' : status === 'Cancelled' ? 'bg-red-500' : 'bg-amber-500';
+
 const AppointmentsTab: React.FC<{
-  appointments: typeof db.appointments;
-}> = ({ appointments }) => {
+  appointments: Appointment[];
+  records: MedicalRecord[];
+}> = ({ appointments, records }) => {
+  const navigate = useNavigate();
+  const [openId, setOpenId] = useState<string | null>(null);
+
   if (appointments.length === 0) {
     return (
       <GlassCard className="text-center py-12">
-        <Calendar className="w-12 h-12 text-white/20 mx-auto mb-3" />
-        <p className="text-white/50">No appointments found for this patient</p>
+        <Calendar className="w-12 h-12 text-app-subtle opacity-50 mx-auto mb-3" />
+        <p className="text-app-muted">No appointments found for this patient</p>
+        <GlassButton variant="primary" size="sm" className="mt-4" onClick={() => navigate('/appointments/new')}>
+          <Plus className="w-4 h-4" /> Schedule appointment
+        </GlassButton>
       </GlassCard>
     );
   }
+
+  // Most recent first
+  const sorted = [...appointments].sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
+
   return (
     <div className="space-y-3">
-      {appointments.map(apt => (
-        <GlassCard key={apt.id} className="flex items-center gap-4">
-          <div className={`
-            w-2 self-stretch rounded-full flex-shrink-0
-            ${apt.status === 'Scheduled' ? 'bg-indigo-500' :
-              apt.status === 'Completed' ? 'bg-emerald-500' :
-              apt.status === 'Cancelled' ? 'bg-red-500' : 'bg-amber-500'}
-          `} />
-          <div className="flex-1">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="font-semibold text-white">{apt.date} at {apt.time}</span>
-              <GlassBadge variant={
-                apt.status === 'Completed' ? 'success' :
-                apt.status === 'Cancelled' ? 'danger' :
-                apt.status === 'No-Show' ? 'warning' : 'primary'
-              } size="sm">{apt.status}</GlassBadge>
-              {apt.type === 'Video' && (
-                <span className="px-2 py-0.5 rounded-full text-xs bg-violet-500/20 text-violet-400">Video</span>
-              )}
-            </div>
-            <p className="text-sm text-white/60">Dr. {apt.doctorName} · {apt.specialty}</p>
-            {apt.notes && <p className="text-xs text-white/40 mt-1 italic">"{apt.notes}"</p>}
-          </div>
-        </GlassCard>
-      ))}
+      {sorted.map((apt, i) => {
+        const isOpen = openId === apt.id;
+        const linkedRecord = records.find(r => r.date === apt.date);
+        const d = new Date(apt.date + 'T00:00:00');
+        return (
+          <GlassCard
+            key={apt.id}
+            hover={false}
+            padding="none"
+            className="reveal overflow-hidden"
+            style={{ animationDelay: `${i * 45}ms` }}
+          >
+            {/* Summary row — click to expand */}
+            <button
+              onClick={() => setOpenId(isOpen ? null : apt.id)}
+              className="w-full text-left flex items-center gap-3 sm:gap-4 p-4 hover:bg-[var(--surface-2)] transition-colors"
+            >
+              <div className={cn('w-1.5 self-stretch rounded-full flex-shrink-0', aptStripe(apt.status))} />
+              <div className="flex flex-col items-center justify-center w-12 flex-shrink-0">
+                <span className="text-[10px] font-semibold uppercase text-app-subtle">{d.toLocaleDateString('en-US', { month: 'short' })}</span>
+                <span className="text-xl font-bold text-app leading-none">{d.getDate()}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-app">{apt.time}</span>
+                  <GlassBadge variant={aptStatusVariant(apt.status)} size="sm">{apt.status}</GlassBadge>
+                  <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs',
+                    apt.type === 'Video' ? 'bg-violet-500/15 text-violet-300' : apt.type === 'Phone' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-indigo-500/15 text-indigo-300')}>
+                    {apt.type === 'Video' ? <Video className="w-3 h-3" /> : apt.type === 'Phone' ? <Phone className="w-3 h-3" /> : <UserRound className="w-3 h-3" />}
+                    {apt.type}
+                  </span>
+                </div>
+                <p className="text-sm text-app-muted mt-0.5 truncate">{apt.doctorName} · {apt.specialty}</p>
+              </div>
+              <ChevronDown className={cn('w-5 h-5 text-app-subtle flex-shrink-0 transition-transform', isOpen && 'rotate-180')} />
+            </button>
+
+            {/* Expanded details */}
+            {isOpen && (
+              <div className="px-4 pb-4 pt-1 border-t border-[var(--border)] reveal">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                  <DetailRow icon={<Stethoscope className="w-4 h-4 text-white/40" />} label="Doctor" value={apt.doctorName} />
+                  <DetailRow icon={<Activity className="w-4 h-4 text-white/40" />} label="Specialty" value={apt.specialty} />
+                  <DetailRow icon={<Calendar className="w-4 h-4 text-white/40" />} label="Date" value={d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} />
+                  <DetailRow icon={<Clock className="w-4 h-4 text-white/40" />} label="Reference" value={apt.id} />
+                </div>
+
+                {apt.notes && (
+                  <div className="mt-3 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+                    <p className="text-xs text-app-subtle mb-1 flex items-center gap-1"><FileText className="w-3.5 h-3.5" /> Notes</p>
+                    <p className="text-sm text-app-muted italic">"{apt.notes}"</p>
+                  </div>
+                )}
+
+                {/* Linked visit outcome (for completed appointments that produced a record) */}
+                {linkedRecord && (
+                  <div className="mt-3 p-3 rounded-xl bg-emerald-500/[0.07] border border-emerald-500/20">
+                    <p className="text-xs text-emerald-300 mb-2 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Visit outcome</p>
+                    <p className="text-sm font-medium text-app">{linkedRecord.diagnosis}</p>
+                    {linkedRecord.medications.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {linkedRecord.medications.map((m, mi) => (
+                          <span key={mi} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-[var(--surface-2)] text-app-muted">
+                            <Pill className="w-3 h-3 text-emerald-400" />{m}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <GlassButton variant="primary" size="sm" onClick={() => navigate(`/appointments/${apt.id}/edit`)}>
+                    <Pencil className="w-3.5 h-3.5" /> Edit appointment
+                  </GlassButton>
+                  <GlassButton variant="ghost" size="sm" onClick={() => navigate(`/doctors/${apt.doctorId}`)}>
+                    <UserRound className="w-3.5 h-3.5" /> View doctor
+                  </GlassButton>
+                </div>
+              </div>
+            )}
+          </GlassCard>
+        );
+      })}
     </div>
   );
 };
