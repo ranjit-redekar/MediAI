@@ -49,5 +49,3 @@ export const db = {
   recentActivities,
   roles
 };
-
-export default db;

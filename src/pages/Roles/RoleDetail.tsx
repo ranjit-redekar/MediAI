@@ -303,5 +303,3 @@ export const RoleDetail: React.FC = () => {
     </div>
   );
 };
-
-export default RoleDetail;

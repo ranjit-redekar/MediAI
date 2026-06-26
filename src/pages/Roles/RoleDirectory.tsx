@@ -127,5 +127,3 @@ export const RoleDirectory: React.FC = () => {
     </div>
   );
 };
-
-export default RoleDirectory;

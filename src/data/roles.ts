@@ -149,5 +149,3 @@ export const roles: RoleDefinition[] = [
     ]
   }
 ];
-
-export default roles;
