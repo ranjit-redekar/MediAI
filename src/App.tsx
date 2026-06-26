@@ -21,6 +21,7 @@ import { AIInsights } from './pages/AIInsights';
 import { AIAgentDetail } from './pages/AIAgentDetail';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
+import { ForgotPassword } from './pages/ForgotPassword';
 import { RoleDirectory } from './pages/Roles/RoleDirectory';
 import { RoleDetail } from './pages/Roles/RoleDetail';
 
@@ -29,6 +30,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="patients" element={<PatientList />} />
