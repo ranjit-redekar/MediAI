@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Brain, Sparkles, Moon, Sun, Stethoscope, UserRound, HeartPulse, Pill,
   FlaskConical, ClipboardList, Shield, User, ArrowRight, Check, Lock, Mail,
@@ -11,6 +11,7 @@ import { GlassInput } from '../components/ui/GlassInput';
 import { RoleWorkspacePreview } from '../components/auth/RoleWorkspacePreview';
 import { useTheme } from '../context/ThemeContext';
 import { useSession } from '../context/SessionContext';
+import { canAccess } from '../data/accessRoles';
 import { useToast } from '../context/ToastContext';
 import { cn } from '../utils/cn';
 import type { RoleId } from '../types/access';
@@ -28,6 +29,7 @@ const ROLE_ICONS: Record<RoleId, LucideIcon> = {
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const { role, roles, signInAs } = useSession();
   const { toast } = useToast();
@@ -97,8 +99,12 @@ export const Login: React.FC = () => {
     setError(null);
     setLoading(true);
     window.setTimeout(() => {
-      signInAs(match.id);
-      navigate(match.home);
+      signInAs(match.id, username);
+      // Return to whatever the guard interrupted, but only if this role can
+      // actually open it — otherwise signing in would land on a lock screen.
+      const from = (location.state as { from?: string } | null)?.from;
+      const target = from && match.shell === 'admin' && canAccess(match, from) ? from : match.home;
+      navigate(target, { replace: true });
     }, 550);
   };
 

@@ -18,6 +18,9 @@ export const THEMES: ThemeDef[] = [
 ];
 
 const THEME_IDS = THEMES.map(t => t.id);
+
+/** Light is the default: a hospital console is read under ward lighting. */
+export const DEFAULT_THEME = 'light';
 const STORAGE_KEY = 'mediai-theme';
 
 interface ThemeContextValue {
@@ -32,7 +35,7 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 function applyTheme(id: string) {
   if (typeof document === 'undefined') return;
-  const def = THEMES.find(t => t.id === id) ?? THEMES[0];
+  const def = THEMES.find(t => t.id === id) ?? THEMES.find(t => t.id === DEFAULT_THEME)!;
   document.documentElement.setAttribute('data-theme', def.id);
   document.body.setAttribute('data-theme', def.id);
   document.body.classList.toggle('is-light', !def.isDark);
@@ -40,9 +43,9 @@ function applyTheme(id: string) {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'dark';
+    if (typeof window === 'undefined') return DEFAULT_THEME;
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved && THEME_IDS.includes(saved) ? saved : 'dark';
+    return saved && THEME_IDS.includes(saved) ? saved : DEFAULT_THEME;
   });
 
   useEffect(() => {
@@ -54,7 +57,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (THEME_IDS.includes(id)) setThemeState(id);
   };
 
-  const isDark = THEMES.find(t => t.id === theme)?.isDark ?? true;
+  const isDark = THEMES.find(t => t.id === theme)?.isDark ?? false;
 
   // Quick toggle: jump between the current dark theme and Light.
   const toggleTheme = () => setThemeState(prev => (prev === 'light' ? 'dark' : 'light'));

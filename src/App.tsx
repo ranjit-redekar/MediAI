@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { PortalLayout } from './components/layout/PortalLayout';
+import { RequireAuth } from './components/layout/RequireAuth';
 import { RouteFallback } from './components/ui/RouteFallback';
 
 // Only the app shell loads eagerly; every page is code-split so the first paint
@@ -41,11 +42,11 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* Patients get their own shell — never the admin chrome. */}
-          <Route path="/portal" element={<PortalLayout />}>
+          <Route path="/portal" element={<RequireAuth><PortalLayout /></RequireAuth>}>
             <Route index element={<PortalHome />} />
           </Route>
 
-          <Route path="/" element={<Layout />}>
+          <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
             <Route index element={<Dashboard />} />
             <Route path="patients" element={<PatientList />} />
             <Route path="patients/new" element={<PatientFormPage />} />

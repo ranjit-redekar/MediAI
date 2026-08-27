@@ -13,7 +13,7 @@ import { cn } from '../../utils/cn';
  * like an admin console.
  */
 export const PortalLayout: React.FC = () => {
-  const { role, roles, signInAs } = useSession();
+  const { role, roles, signInAs, signOut } = useSession();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -86,7 +86,7 @@ export const PortalLayout: React.FC = () => {
                   <div className="h-px bg-[var(--border)] my-1.5" />
                   <button
                     role="menuitem"
-                    onClick={() => { setMenuOpen(false); navigate('/login'); }}
+                    onClick={() => { setMenuOpen(false); signOut(); navigate('/login'); }}
                     className="w-full flex items-center gap-2.5 text-left text-sm text-red-300 hover:bg-red-500/10 rounded-lg px-3 py-2 transition-colors focus-ring"
                   >
                     <LogOut className="w-4 h-4" /> Sign out

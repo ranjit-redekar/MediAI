@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
-import { ThemeProvider } from './context/ThemeContext.tsx';
+import { ThemeProvider, DEFAULT_THEME } from './context/ThemeContext.tsx';
 import { JourneyProvider } from './context/JourneyContext.tsx';
 import { TourProvider } from './context/TourContext.tsx';
 import { StaffProvider } from './context/StaffContext.tsx';
@@ -14,7 +14,7 @@ import { AIActionsProvider } from './context/AIActionsContext.tsx';
 import { SessionProvider } from './context/SessionContext.tsx';
 
 // Apply the saved theme before first paint to avoid a flash.
-const savedTheme = (typeof window !== 'undefined' && localStorage.getItem('mediai-theme')) || 'dark';
+const savedTheme = (typeof window !== 'undefined' && localStorage.getItem('mediai-theme')) || DEFAULT_THEME;
 document.documentElement.setAttribute('data-theme', savedTheme);
 document.body.setAttribute('data-theme', savedTheme);
 document.body.classList.toggle('is-light', savedTheme === 'light');

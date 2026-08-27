@@ -11,6 +11,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useTour } from '../../context/TourContext';
 import { useAIActions } from '../../context/AIActionsContext';
 import { RoleGuard } from './RoleGuard';
+import { useSession } from '../../context/SessionContext';
 
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -22,6 +23,7 @@ export const Layout: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
   const { start: startTour, hasCompleted } = useTour();
   const { pending } = useAIActions();
+  const { signOut } = useSession();
   const mainRef = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -71,7 +73,7 @@ export const Layout: React.FC = () => {
           onOpenCopilot={() => setCopilotOpen(true)}
           isDark={isDark}
           onToggleTheme={toggleTheme}
-          onLogout={() => navigate('/login')}
+          onLogout={() => { signOut(); navigate('/login'); }}
           taskCount={pending.length}
         />
 
