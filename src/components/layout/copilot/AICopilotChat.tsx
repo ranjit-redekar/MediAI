@@ -8,6 +8,7 @@ import { db } from '../../../data';
 import { cn } from '../../../utils/cn';
 import { useAIActions } from '../../../context/AIActionsContext';
 import { useToast } from '../../../context/ToastContext';
+import { todayKey } from '../../../utils/date';
 
 interface AICopilotChatProps {
   isOpen: boolean;
@@ -104,7 +105,7 @@ function generateReply(raw: string, pendingCount: number, safeCount: number, saf
   }
 
   if (/(appointment|schedule|today|booking)/.test(q)) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayKey();
     const todays = db.appointments.filter(a => a.date === today);
     const scheduled = todays.filter(a => a.status === 'Scheduled').length;
     return {

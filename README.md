@@ -110,8 +110,11 @@ Switch roles from the account menu without signing out, which makes the differen
   keyboard-first command palette (`⌘K` / `Ctrl+K`).
 - **Command palette** — fuzzy search across patients, doctors, modules, AI agents, and quick
   actions, with full arrow-key navigation and `↵` to open.
-- **Operational dashboards** — animated KPI cards with sparklines, revenue and demographics charts,
-  a live activity feed, and AI critical alerts.
+- **Operational dashboards** — a compact KPI strip, the approval queue, a live activity feed, and
+  revenue/demographics charts, all scoped to the signed-in role.
+- **Today's Schedule** — clinicians see their own list for today with the next slot highlighted and
+  one-click start/join; desk roles see the whole day. Mock appointment dates are anchored to the
+  current date at load, so the demo never drifts into an empty past.
 - **Patients & doctors** — searchable, sortable rosters with AI risk meters, plus deep profile pages
   covering vitals, medical timelines, labs, and appointments.
 - **Appointments** — calendar and agenda views, rich filtering, and full booking/edit flows.

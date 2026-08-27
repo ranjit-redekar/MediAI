@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { StaffMember, StaffStatus } from '../types/staff';
 import { staffMembers as seed } from '../data/staff';
+import { todayKey } from '../utils/date';
 
 export type NewStaffInput = Omit<StaffMember, 'id' | 'avatar' | 'joinedDate'> & {
   joinedDate?: string;
@@ -19,7 +20,6 @@ const StaffContext = createContext<StaffContextValue | undefined>(undefined);
 let seq = 9100;
 const nextId = () => `EMP-${++seq}`;
 
-const todayISO = () => new Date().toISOString().split('T')[0];
 
 export const StaffProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [staff, setStaff] = useState<StaffMember[]>(seed);
@@ -30,7 +30,7 @@ export const StaffProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ...input,
       id,
       avatar: `https://i.pravatar.cc/150?u=${id}`,
-      joinedDate: input.joinedDate ?? todayISO()
+      joinedDate: input.joinedDate ?? todayKey()
     };
     setStaff(prev => [member, ...prev]);
   }, []);

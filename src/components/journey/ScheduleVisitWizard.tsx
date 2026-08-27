@@ -21,6 +21,7 @@ import { useJourney } from '../../context/JourneyContext';
 import { db } from '../../data';
 import { cn } from '../../utils/cn';
 import type { Patient } from '../../types';
+import { todayKey } from '../../utils/date';
 
 interface ScheduleVisitWizardProps {
   open: boolean;
@@ -40,7 +41,6 @@ const emptyNewPatient = {
   bloodGroup: 'O+'
 };
 
-const todayISO = () => new Date().toISOString().split('T')[0];
 
 function registerPatient(input: typeof emptyNewPatient): Patient {
   const id = 'P' + String(db.patients.length + 1).padStart(3, '0');
@@ -53,8 +53,8 @@ function registerPatient(input: typeof emptyNewPatient): Patient {
     phone: input.phone.trim(),
     email: input.email.trim() || `${input.name.trim().toLowerCase().replace(/\s+/g, '.')}@email.com`,
     address: '—',
-    registrationDate: todayISO(),
-    lastVisit: todayISO(),
+    registrationDate: todayKey(),
+    lastVisit: todayKey(),
     status: 'Active',
     avatar: `https://i.pravatar.cc/150?u=${id}`,
     medicalHistory: []

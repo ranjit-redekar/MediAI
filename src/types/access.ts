@@ -44,6 +44,11 @@ export interface AccessRole {
    * behind them; the login screen matches against these strings so each role
    * has its own way in.
    */
+  /**
+   * Doctor this role's schedule belongs to. Set for clinicians so the dashboard
+   * shows their own list; omitted for desk roles, which see the whole day.
+   */
+  doctorId?: string;
   credentials: { username: string; password: string };
   demoUser: { name: string; email: string; avatar: string };
 }

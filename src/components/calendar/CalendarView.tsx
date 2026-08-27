@@ -8,6 +8,7 @@ import { GlassCard } from '../ui/GlassCard';
 import { GlassBadge } from '../ui/GlassBadge';
 import { db } from '../../data';
 import type { Appointment } from '../../types';
+import { toDateKey, todayKey } from '../../utils/date';
 
 interface CalendarViewProps {
   appointments: Appointment[];
@@ -63,16 +64,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
     for (let i = firstDay - 1; i >= 0; i--) {
       const d = new Date(year, month - 1, daysInPrevMonth - i);
-      result.push({ date: daysInPrevMonth - i, month: 'prev', fullDate: d.toISOString().split('T')[0] });
+      result.push({ date: daysInPrevMonth - i, month: 'prev', fullDate: toDateKey(d) });
     }
     for (let i = 1; i <= daysInMonth; i++) {
       const d = new Date(year, month, i);
-      result.push({ date: i, month: 'current', fullDate: d.toISOString().split('T')[0] });
+      result.push({ date: i, month: 'current', fullDate: toDateKey(d) });
     }
     const remaining = 42 - result.length;
     for (let i = 1; i <= remaining; i++) {
       const d = new Date(year, month + 1, i);
-      result.push({ date: i, month: 'next', fullDate: d.toISOString().split('T')[0] });
+      result.push({ date: i, month: 'next', fullDate: toDateKey(d) });
     }
     return result;
   }, [year, month]);
@@ -89,11 +90,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const noShow     = monthApts.filter(a => a.status === 'No-Show').length;
 
   // Upcoming (next 7 days from today)
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayKey();
   const upcoming = useMemo(() => {
     const limit = new Date();
     limit.setDate(limit.getDate() + 7);
-    const limitStr = limit.toISOString().split('T')[0];
+    const limitStr = toDateKey(limit);
     return [...appointments]
       .filter(a => a.date >= today && a.date <= limitStr && a.status === 'Scheduled')
       .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))

@@ -5,8 +5,8 @@ import { FormPageLayout } from '../../components/ui/FormPageLayout';
 import { MedicalRecordForm } from '../../components/forms/MedicalRecordForm';
 import { usePatients } from '../../context/PatientsContext';
 import type { MedicalRecord } from '../../types';
+import { todayKey } from '../../utils/date';
 
-const todayISO = () => new Date().toISOString().split('T')[0];
 
 export const MedicalRecordFormPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export const MedicalRecordFormPage: React.FC = () => {
     const newRecord = {
       ...record,
       id: `MR${String(history.length + 1).padStart(3, '0')}`,
-      date: todayISO()
+      date: todayKey()
     } as MedicalRecord;
     updatePatient(patient.id, { medicalHistory: [newRecord, ...history] });
     navigate(`/patients/${patient.id}`);

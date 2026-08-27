@@ -1,6 +1,33 @@
 import type { Appointment } from '../types';
+import { toDateKey, fromDateKey } from '../utils/date';
 
-export const appointments: Appointment[] = [
+/**
+ * The date this dataset was authored around: everything before it is Completed,
+ * and it carries the first full day of Scheduled visits.
+ */
+const DEMO_TODAY = '2026-03-06';
+
+/**
+ * The mock schedule is anchored to a fixed date, so left alone it would drift
+ * into the past and leave "Today's Schedule" permanently empty. Shifting every
+ * date by the same offset keeps the authored past/future shape intact while
+ * always landing a realistic day of visits on today.
+ */
+function shiftToToday(list: Appointment[]): Appointment[] {
+  const anchor = fromDateKey(DEMO_TODAY);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const offsetDays = Math.round((today.getTime() - anchor.getTime()) / 86_400_000);
+  if (offsetDays === 0) return list;
+
+  return list.map(appointment => {
+    const shifted = fromDateKey(appointment.date);
+    shifted.setDate(shifted.getDate() + offsetDays);
+    return { ...appointment, date: toDateKey(shifted) };
+  });
+}
+
+const rawAppointments: Appointment[] = [
   // ── D001 Dr. James Wilson (Internal Medicine) ──────────────────────────────
   {
     id: 'A001', patientId: 'P001', patientName: 'Sarah Johnson',
@@ -40,6 +67,62 @@ export const appointments: Appointment[] = [
   },
 
   // ── D002 Dr. Maria Garcia (Endocrinology) ──────────────────────────────────
+  // Full clinic day on the anchor date — earlier slots done, later ones pending.
+  {
+    id: 'A101', patientId: 'P002', patientName: 'Michael Chen',
+    doctorId: 'D002', doctorName: 'Dr. Maria Garcia', specialty: 'Endocrinology',
+    date: '2026-03-06', time: '09:00', status: 'Completed', type: 'In-Person',
+    notes: 'Thyroid function review'
+  },
+  {
+    id: 'A102', patientId: 'P007', patientName: 'Amanda Thompson',
+    doctorId: 'D002', doctorName: 'Dr. Maria Garcia', specialty: 'Endocrinology',
+    date: '2026-03-06', time: '09:45', status: 'Completed', type: 'In-Person',
+    notes: 'HbA1c follow-up — improving'
+  },
+  {
+    id: 'A103', patientId: 'P004', patientName: 'Robert Williams',
+    doctorId: 'D002', doctorName: 'Dr. Maria Garcia', specialty: 'Endocrinology',
+    date: '2026-03-06', time: '10:30', status: 'No-Show', type: 'In-Person',
+    notes: 'Insulin titration review'
+  },
+  {
+    id: 'A104', patientId: 'P001', patientName: 'Sarah Johnson',
+    doctorId: 'D002', doctorName: 'Dr. Maria Garcia', specialty: 'Endocrinology',
+    date: '2026-03-06', time: '11:15', status: 'Scheduled', type: 'In-Person',
+    notes: 'New referral — fatigue workup'
+  },
+  {
+    id: 'A105', patientId: 'P006', patientName: 'David Martinez',
+    doctorId: 'D002', doctorName: 'Dr. Maria Garcia', specialty: 'Endocrinology',
+    date: '2026-03-06', time: '14:00', status: 'Scheduled', type: 'Phone',
+    notes: 'Medication side-effect check'
+  },
+  {
+    id: 'A106', patientId: 'P003', patientName: 'Emily Rodriguez',
+    doctorId: 'D002', doctorName: 'Dr. Maria Garcia', specialty: 'Endocrinology',
+    date: '2026-03-06', time: '16:15', status: 'Scheduled', type: 'In-Person',
+    notes: 'Gestational glucose screening'
+  },
+  // Anchor-date clinic list for the supervising doctor the resident assists.
+  {
+    id: 'A111', patientId: 'P008', patientName: 'Christopher Brown',
+    doctorId: 'D001', doctorName: 'Dr. James Wilson', specialty: 'Internal Medicine',
+    date: '2026-03-06', time: '08:45', status: 'Completed', type: 'In-Person',
+    notes: 'Hypertension review'
+  },
+  {
+    id: 'A112', patientId: 'P005', patientName: 'Jennifer Lee',
+    doctorId: 'D001', doctorName: 'Dr. James Wilson', specialty: 'Internal Medicine',
+    date: '2026-03-06', time: '11:00', status: 'Scheduled', type: 'Video',
+    notes: 'Chronic care check-in'
+  },
+  {
+    id: 'A113', patientId: 'P006', patientName: 'David Martinez',
+    doctorId: 'D001', doctorName: 'Dr. James Wilson', specialty: 'Internal Medicine',
+    date: '2026-03-06', time: '15:00', status: 'Scheduled', type: 'In-Person',
+    notes: 'Back pain — imaging results'
+  },
   {
     id: 'A005', patientId: 'P005', patientName: 'Jennifer Lee',
     doctorId: 'D002', doctorName: 'Dr. Maria Garcia', specialty: 'Endocrinology',
@@ -599,3 +682,5 @@ export const appointments: Appointment[] = [
     notes: 'Post-flu recovery check'
   },
 ];
+
+export const appointments: Appointment[] = shiftToToday(rawAppointments);

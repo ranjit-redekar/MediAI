@@ -12,6 +12,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { StatCard } from '../components/ui/StatCard';
 import { AIActionQueue } from '../components/ai/AIActionQueue';
 import { ActivityFeed } from '../components/dashboard/ActivityFeed';
+import { TodaySchedule } from '../components/dashboard/TodaySchedule';
 import { db } from '../data';
 import { useSession } from '../context/SessionContext';
 import { cn } from '../utils/cn';
@@ -64,6 +65,8 @@ export const Dashboard: React.FC = () => {
   // use for monthly revenue, and a lab tech has none for the doctor roster.
   const visibleStats = statCards.filter(card => canSeeNav(card.navId));
   const showFinance = canSeeNav('billing');
+  // Roles that run a clinic day get their list; pharmacy and lab do not.
+  const showSchedule = canSeeNav('appointments');
   const firstName = role.demoUser.name.replace(/^Dr\.\s+/, '').split(' ')[0];
 
   return (
@@ -93,15 +96,29 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Working area: what needs you, beside what just happened */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 min-w-0">
-          <AIActionQueue limit={3} />
+      {/* Working area: what needs you, and what your day looks like */}
+      {showSchedule ? (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="min-w-0">
+              <TodaySchedule />
+            </div>
+            <div className="min-w-0">
+              <AIActionQueue limit={3} />
+            </div>
+          </div>
+          <ActivityFeed onViewAll={() => navigate('/patients')} limit={4} horizontal />
+        </>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 min-w-0">
+            <AIActionQueue limit={3} />
+          </div>
+          <div className="min-w-0">
+            <ActivityFeed onViewAll={() => navigate('/patients')} />
+          </div>
         </div>
-        <div className="min-w-0">
-          <ActivityFeed onViewAll={() => navigate('/patients')} />
-        </div>
-      </div>
+      )}
 
       {/* Charts */}
       <div className={cn('grid grid-cols-1 gap-4', showFinance && 'lg:grid-cols-3')}>

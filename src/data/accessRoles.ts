@@ -35,6 +35,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     // The only role that may sign off medication drafts.
     actionKinds: ['appointment', 'referral', 'lab', 'medication', 'monitoring', 'outreach', 'education'],
     accent: { text: 'text-sky-300', bg: 'bg-sky-500/15', ring: 'ring-sky-500/40' },
+    doctorId: 'D002',
     credentials: { username: 'doctor@mediai.com', password: 'Doctor@123' },
     demoUser: { name: 'Dr. Maria Garcia', email: 'm.garcia@hospital.com', avatar: 'https://i.pravatar.cc/150?u=garcia' },
   },
@@ -49,6 +50,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     // Deliberately excludes 'medication' — drafts route to the attending instead.
     actionKinds: ['appointment', 'referral', 'lab', 'monitoring', 'outreach', 'education'],
     accent: { text: 'text-cyan-300', bg: 'bg-cyan-500/15', ring: 'ring-cyan-500/40' },
+    doctorId: 'D001',
     credentials: { username: 'assistant@mediai.com', password: 'Assist@123' },
     demoUser: { name: 'Dr. Arjun Mehta', email: 'a.mehta@hospital.com', avatar: 'https://i.pravatar.cc/150?u=mehta' },
   },

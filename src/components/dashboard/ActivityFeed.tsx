@@ -15,9 +15,15 @@ const TYPE_STYLE: Record<string, { ring: string; icon: React.ReactNode }> = {
  * Narrow-column activity feed. Rows stay compact so the list is scannable at a
  * third of the dashboard width instead of sprawling across the full row.
  */
-export const ActivityFeed: React.FC<{ onViewAll: () => void; limit?: number }> = ({
+export const ActivityFeed: React.FC<{
+  onViewAll: () => void;
+  limit?: number;
+  /** Lay items out in columns — for when the feed spans a full-width row. */
+  horizontal?: boolean;
+}> = ({
   onViewAll,
   limit = 6,
+  horizontal = false,
 }) => (
   <GlassCard hover={false} padding="sm" className="reveal h-full flex flex-col" style={{ animationDelay: '160ms' }}>
     <div className="flex items-center justify-between gap-2 mb-3">
@@ -33,7 +39,7 @@ export const ActivityFeed: React.FC<{ onViewAll: () => void; limit?: number }> =
       </span>
     </div>
 
-    <div className="space-y-0.5 flex-1">
+    <div className={cn('flex-1', horizontal ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-1.5' : 'space-y-0.5')}>
       {db.recentActivities.slice(0, limit).map((activity, i) => {
         const style = TYPE_STYLE[activity.type] ?? TYPE_STYLE.patient;
         return (

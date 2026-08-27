@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { Patient } from '../types';
 import { patients as seed } from '../data/patients';
+import { todayKey } from '../utils/date';
 
 interface PatientsContextValue {
   patients: Patient[];
@@ -12,7 +13,6 @@ interface PatientsContextValue {
 
 const PatientsContext = createContext<PatientsContextValue | undefined>(undefined);
 
-const todayISO = () => new Date().toISOString().split('T')[0];
 
 export const PatientsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [patients, setPatients] = useState<Patient[]>(seed);
@@ -24,8 +24,8 @@ export const PatientsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const patient = {
       ...data,
       id,
-      registrationDate: todayISO(),
-      lastVisit: todayISO(),
+      registrationDate: todayKey(),
+      lastVisit: todayKey(),
       avatar: data.avatar ?? `https://i.pravatar.cc/150?u=${id}`,
       medicalHistory: data.medicalHistory ?? []
     } as Patient;

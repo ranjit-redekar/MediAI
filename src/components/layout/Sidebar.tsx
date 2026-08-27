@@ -18,6 +18,7 @@ import { useSession } from '../../context/SessionContext';
 import { navSections } from '../../data/navigation';
 import type { LucideIcon } from 'lucide-react';
 import type { AIAgent } from '../../types';
+import { todayKey } from '../../utils/date';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -49,7 +50,7 @@ const agentStatusText: Record<AIAgent['status'], string> = {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, onToggleCompact, onOpenAgents }) => {
   const { role, canSeeNav } = useSession();
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayKey();
   const todaysAppointments = db.appointments.filter(a => a.date === today && a.status === 'Scheduled').length;
   const pendingBills = db.bills.filter(b => b.status !== 'Paid').length;
   const pendingLabs = db.labTests.filter(l => l.status !== 'Completed').length;
