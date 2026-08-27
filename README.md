@@ -26,6 +26,33 @@ Please get in touch before using this in a commercial or production setting.
 
 ---
 
+## The AI-first idea
+
+Most "AI-powered" admin tools add a layer: the AI writes advice, and a human still does the work —
+so the AI has *added* a reading step rather than removed a task.
+
+MediAI inverts that. **The AI drafts the work; the human approves it.** When an agent detects a
+risk, it does not print "cardiology consultation within 48 hours" and leave you to go book it. It
+picks the right specialist, finds a slot on their actual rota, fills in the details, and hands you
+one button:
+
+> **Book specialist consult** — Dr. Maria Garcia · Cardiology · Thu 4 Sep, 10:30
+> *Why this?* · **Edit** · **Dismiss** · **Approve**
+
+Three principles hold this together:
+
+1. **Every AI output is executable.** Recommendations are pre-filled actions, not bullet points.
+   The approval queue tracks the manual minutes each one saves.
+2. **Clinical decisions always need a human.** Medication and monitoring changes are flagged
+   `Clinician sign-off` and are deliberately excluded from bulk approval. Administrative work —
+   booking, referrals, labs, outreach, enrolment — can be cleared in one click.
+3. **Reasoning is always available, never forced.** Every draft carries a "Why this?" explaining
+   the specialty match, the slot choice, and the signal it came from.
+
+There is also exactly **one queue**. An alert you can't act on isn't worth a notification, so the
+task inbox and the action queue are the same surface — reachable from the dashboard, the header,
+the Copilot, or AI Insights.
+
 ## Key Features
 
 - **Unified shell** — responsive sidebar + header, compact mode, skip-to-content link, and a
@@ -41,9 +68,12 @@ Please get in touch before using this in a commercial or production setting.
   with line items and totals.
 - **Pharmacy** — stock-level meters, expiry-window warnings, supply-risk banner, and reorder actions.
 - **Laboratory** — order queue with expandable results and critical-value flagging.
-- **Task inbox** — AI-raised alerts you can review or resolve, with undo.
-- **AI Intelligence Center** — severity filters, confidence scoring, expandable recommendations, and
-  a library of operational AI agents with dedicated viewbooks.
+- **Approval queue** — every AI-drafted action in one place, grouped by patient, with batch approve,
+  inline editing, per-action reasoning, and undo on everything.
+- **AI Intelligence Center** — severity filters, confidence scoring, drafted actions attached to every
+  insight, and a library of operational AI agents with dedicated viewbooks.
+- **Copilot that acts** — answers end in buttons that do the work: approve the safe queue, chase
+  unpaid invoices, draft supplier reorders.
 - **Role workspaces** — tailored views for receptionists, attending doctors, and pharmacy/lab leads.
 - **Six themes** — five dark variants plus a full light mode, driven entirely by CSS design tokens.
 
@@ -66,6 +96,8 @@ Shared primitives live in `src/components/ui`:
 | `DataTable` (`SortableHeader`, `useSort`) | Sortable table headers with `aria-sort` |
 | `Skeleton`, `RouteFallback` | Loading placeholders for code-split routes |
 | `StatCard`, `MiniStat`, `Sparkline` | Animated metric tiles |
+| `AIActionCard` | One drafted action — approve, edit, dismiss, or read the reasoning |
+| `AIActionQueue`, `AIWorkSummary` | Dashboard and page-level views of the approval queue |
 
 ## Accessibility
 
@@ -132,7 +164,7 @@ A stakeholder-friendly walkthrough of every module lives in
 
 1. Connect the context layer to real APIs and persist mutations.
 2. Add authentication and role-based access control for billing and AI modules.
-3. Introduce bed/ward occupancy and emergency triage boards.
+3. Extend drafted actions to intake — AI-prefilled registration and visit notes for human review.
 4. Add Vitest/RTL smoke tests and Playwright journeys for routing and modal flows.
 
 ---

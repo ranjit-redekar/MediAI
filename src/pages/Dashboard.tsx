@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Users, UserRound, Calendar, CreditCard, Activity, Brain,
-  AlertCircle, Sparkles, Zap, Shield, ChevronRight, ArrowUpRight
+  Sparkles, Zap, Shield, ArrowUpRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -15,6 +15,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { StatCard } from '../components/ui/StatCard';
 import { AIDashboardWidget } from '../components/ai/AIDashboardWidget';
 import { AIAgentShowcase } from '../components/ai/AIAgentShowcase';
+import { AIActionQueue } from '../components/ai/AIActionQueue';
 import { db } from '../data';
 
 const COLORS = ['#6366f1', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
@@ -45,7 +46,6 @@ const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: 
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const criticalAlerts = db.aiInsights.filter(i => i.severity === 'Critical' || i.severity === 'High');
   const totalPatients = db.patientDemographics.reduce((s, d) => s + d.value, 0);
 
   return (
@@ -160,53 +160,8 @@ export const Dashboard: React.FC = () => {
 
       {/* Alerts + Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Critical alerts */}
-        <GlassCard className="relative overflow-hidden reveal" style={{ animationDelay: '120ms' }}>
-          <div className="absolute inset-0 bg-gradient-to-br from-red-500/[0.06] to-transparent pointer-events-none" />
-          <div className="relative">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-red-500/15">
-                  <Brain className="w-5 h-5 text-red-400" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-app flex items-center gap-1.5">
-                    AI Critical Alerts <Sparkles className="w-3.5 h-3.5 text-red-400" />
-                  </h3>
-                  <p className="text-xs text-app-subtle">Requires immediate attention</p>
-                </div>
-              </div>
-              <GlassBadge variant="danger">{criticalAlerts.length} Active</GlassBadge>
-            </div>
-            <div className="space-y-2.5">
-              {criticalAlerts.slice(0, 3).map((alert, i) => (
-                <button
-                  key={alert.id}
-                  onClick={() => navigate('/ai-insights')}
-                  className="reveal w-full text-left flex items-start gap-3 p-3.5 rounded-xl bg-red-500/[0.07] border border-red-500/15 hover:bg-red-500/[0.12] transition-colors group"
-                  style={{ animationDelay: `${160 + i * 70}ms` }}
-                >
-                  <div className="p-1.5 rounded-lg bg-red-500/15 mt-0.5">
-                    <AlertCircle className="w-4 h-4 text-red-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-sm font-medium text-app truncate">{alert.type}</p>
-                      <GlassBadge variant={alert.severity === 'Critical' ? 'danger' : 'warning'} size="sm">{alert.severity}</GlassBadge>
-                    </div>
-                    <p className="text-xs text-app-muted truncate">{alert.description}</p>
-                    <div className="flex items-center gap-2 mt-1.5 text-xs">
-                      <span className="text-app-subtle">{db.patients.find(p => p.id === alert.patientId)?.name}</span>
-                      <span className="text-app-subtle">·</span>
-                      <span className="text-violet-400 font-medium">{alert.confidence}% confident</span>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-app-subtle group-hover:translate-x-0.5 transition-transform mt-1" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </GlassCard>
+        {/* AI approval queue — clear the day's work without leaving the dashboard */}
+        <AIActionQueue />
 
         {/* Recent activity */}
         <GlassCard className="reveal" style={{ animationDelay: '160ms' }}>

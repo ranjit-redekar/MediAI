@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Brain, AlertTriangle, CheckCircle, Activity, Shield,
   Sparkles, Zap, Eye, ChevronDown, ChevronUp, Users,
@@ -14,6 +15,9 @@ import { GlassBadge } from '../components/ui/GlassBadge';
 import { GlassButton } from '../components/ui/GlassButton';
 import { CountUp } from '../components/ui/StatCard';
 import { AIAgentShowcase } from '../components/ai/AIAgentShowcase';
+import { AIActionCard } from '../components/ai/AIActionCard';
+import { AIWorkSummary } from '../components/ai/AIWorkSummary';
+import { useAIActions } from '../context/AIActionsContext';
 import { db } from '../data';
 import { cn } from '../utils/cn';
 
@@ -36,6 +40,8 @@ const aiAccuracyData = [
 ];
 
 export const AIInsights: React.FC = () => {
+  const navigate = useNavigate();
+  const { actions, statusOf } = useAIActions();
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [isScanning, setIsScanning] = useState(false);
@@ -252,6 +258,8 @@ export const AIInsights: React.FC = () => {
       </div>
 
       {/* Alert Insights List */}
+      <AIWorkSummary />
+
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold text-app">
@@ -274,6 +282,8 @@ export const AIInsights: React.FC = () => {
             const config = getSeverityConfig(insight.severity);
             const isExpanded = expandedInsight === insight.id;
             const agentMeta = insight.agentId ? db.aiAgents.find(a => a.id === insight.agentId) : null;
+            const insightActions = actions.filter(a => a.insightId === insight.id);
+            const openActions = insightActions.filter(a => statusOf(a.id) === 'pending').length;
 
             return (
               <div
@@ -306,6 +316,15 @@ export const AIInsights: React.FC = () => {
                       {insight.severity === 'Critical' && (
                         <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/30 text-red-300 border border-red-500/30 animate-pulse">
                           Urgent Action Needed
+                        </span>
+                      )}
+                      {openActions > 0 ? (
+                        <span className="px-2 py-0.5 rounded-full text-xs bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                          {openActions} draft{openActions === 1 ? '' : 's'} ready
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+                          All handled
                         </span>
                       )}
                     </div>
@@ -372,30 +391,23 @@ export const AIInsights: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Recommendations */}
+                      {/* Drafted actions — approve to apply, no re-typing */}
                       <div>
-                        <p className="text-sm font-medium text-white/50 mb-3 flex items-center gap-1">
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> AI Recommendations
+                        <p className="text-sm font-medium text-app-muted mb-3 flex items-center gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                          AI has drafted {insightActions.length} action{insightActions.length === 1 ? '' : 's'}
                         </p>
-                        <ul className="space-y-2">
-                          {insight.recommendations.map((rec, idx) => (
-                            <li key={idx} className="flex items-start gap-2.5 text-sm text-white/80">
-                              <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <span className="text-emerald-400 text-xs">{idx + 1}</span>
-                              </div>
-                              {rec}
-                            </li>
+                        <div className="space-y-2">
+                          {insightActions.map((action, idx) => (
+                            <AIActionCard key={action.id} action={action} index={idx} />
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex gap-3 mt-4 pt-4 border-t border-white/10">
-                      <GlassButton variant="primary" size="sm">
-                        <Eye className="w-4 h-4 mr-1.5" /> View Patient
-                      </GlassButton>
-                      <GlassButton variant="ghost" size="sm">
-                        <CheckCircle className="w-4 h-4 mr-1.5" /> Mark Reviewed
+                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[var(--border)]">
+                      <GlassButton variant="ghost" size="sm" onClick={() => navigate(`/patients/${insight.patientId}`)}>
+                        <Eye className="w-4 h-4" /> Open patient record
                       </GlassButton>
                     </div>
                   </div>

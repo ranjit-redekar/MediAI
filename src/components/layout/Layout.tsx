@@ -9,7 +9,7 @@ import { AICopilotChat } from './copilot/AICopilotChat';
 import { GuidedTour } from '../tour/GuidedTour';
 import { useTheme } from '../../context/ThemeContext';
 import { useTour } from '../../context/TourContext';
-import { useTasks } from '../../context/TasksContext';
+import { useAIActions } from '../../context/AIActionsContext';
 
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -20,7 +20,7 @@ export const Layout: React.FC = () => {
   const [copilotOpen, setCopilotOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   const { start: startTour, hasCompleted } = useTour();
-  const { openCount } = useTasks();
+  const { pending } = useAIActions();
   const mainRef = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
 
@@ -70,7 +70,7 @@ export const Layout: React.FC = () => {
           isDark={isDark}
           onToggleTheme={toggleTheme}
           onLogout={() => window.location.assign('/login')}
-          taskCount={openCount}
+          taskCount={pending.length}
         />
 
         <main
