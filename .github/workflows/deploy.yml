@@ -22,21 +22,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
 
-      # `npm ci` installs strictly from the lockfile, and npm only records the
-      # optional native binaries for the platform the lockfile was generated on.
-      # This lockfile was written on macOS, so `npm ci` on Linux would leave
-      # Vite's rolldown binding (@rolldown/binding-linux-x64-gnu) uninstalled
-      # and the build would fail. `npm install` resolves the right binary for
-      # whichever platform the runner is on.
+      # Vite 8 uses rolldown, whose native binding is an optional dependency
+      # resolved per platform. npm only records the binding for the machine the
+      # lockfile was generated on — this one is macOS — so installing from it on
+      # Linux leaves @rolldown/binding-linux-x64-gnu missing and `vite build`
+      # fails. Resolving without the lockfile lets npm pick the runner's binary.
+      #
+      # Vite is pinned to an exact version in package.json so dropping the
+      # lockfile cannot drift us onto a different beta.
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          rm -f package-lock.json
+          npm install --no-audit --no-fund
 
       - name: Type check
         run: npx tsc -b
