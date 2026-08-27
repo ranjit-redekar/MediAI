@@ -11,6 +11,7 @@ import { DoctorsProvider } from './context/DoctorsContext.tsx';
 import { AppointmentsProvider } from './context/AppointmentsContext.tsx';
 import { ToastProvider } from './context/ToastContext.tsx';
 import { AIActionsProvider } from './context/AIActionsContext.tsx';
+import { SessionProvider } from './context/SessionContext.tsx';
 
 // Apply the saved theme before first paint to avoid a flash.
 const savedTheme = (typeof window !== 'undefined' && localStorage.getItem('mediai-theme')) || 'dark';
@@ -22,7 +23,8 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <ToastProvider>
-        <AIActionsProvider>
+        <SessionProvider>
+          <AIActionsProvider>
           <PatientsProvider>
             <DoctorsProvider>
               <AppointmentsProvider>
@@ -36,7 +38,8 @@ createRoot(document.getElementById('root')!).render(
               </AppointmentsProvider>
             </DoctorsProvider>
           </PatientsProvider>
-        </AIActionsProvider>
+          </AIActionsProvider>
+        </SessionProvider>
       </ToastProvider>
     </ThemeProvider>
   </StrictMode>

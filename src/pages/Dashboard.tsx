@@ -17,16 +17,31 @@ import { AIDashboardWidget } from '../components/ai/AIDashboardWidget';
 import { AIAgentShowcase } from '../components/ai/AIAgentShowcase';
 import { AIActionQueue } from '../components/ai/AIActionQueue';
 import { db } from '../data';
+import { useSession } from '../context/SessionContext';
+import { cn } from '../utils/cn';
 
 const COLORS = ['#6366f1', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
+
+/** Shape of a dashboard KPI tile, before role filtering. */
+interface StatCardSpec {
+  label: string;
+  value: number;
+  icon: typeof Users;
+  gradient: string;
+  accent: string;
+  prefix?: string;
+  change: string;
+  trend: 'up' | 'down';
+  sparkline: number[];
+}
 const revenueSpark = db.revenueChartData.map(d => d.revenue);
 const apptSpark = db.revenueChartData.map(d => d.appointments);
 
-const statCards = [
-  { label: 'Total Patients', value: db.dashboardStats.totalPatients, icon: Users, gradient: 'from-blue-500 to-cyan-500', accent: '#22d3ee', change: `+${db.dashboardStats.patientGrowth}%`, trend: 'up' as const, sparkline: [2410, 2520, 2605, 2690, 2780, 2847] },
-  { label: 'Total Doctors', value: db.dashboardStats.totalDoctors, icon: UserRound, gradient: 'from-violet-500 to-fuchsia-500', accent: '#c084fc', change: '+3', trend: 'up' as const, sparkline: [42, 43, 45, 46, 47, 48] },
-  { label: "Today's Appointments", value: db.dashboardStats.todayAppointments, icon: Calendar, gradient: 'from-emerald-500 to-teal-500', accent: '#34d399', change: `+${db.dashboardStats.appointmentGrowth}%`, trend: 'up' as const, sparkline: apptSpark },
-  { label: 'Monthly Revenue', value: db.dashboardStats.monthlyRevenue, icon: CreditCard, gradient: 'from-amber-500 to-orange-500', accent: '#fbbf24', prefix: '$', change: `+${db.dashboardStats.revenueGrowth}%`, trend: 'up' as const, sparkline: revenueSpark },
+const statCards: (StatCardSpec & { navId: string })[] = [
+  { navId: 'patients', label: 'Total Patients', value: db.dashboardStats.totalPatients, icon: Users, gradient: 'from-blue-500 to-cyan-500', accent: '#22d3ee', change: `+${db.dashboardStats.patientGrowth}%`, trend: 'up' as const, sparkline: [2410, 2520, 2605, 2690, 2780, 2847] },
+  { navId: 'doctors', label: 'Total Doctors', value: db.dashboardStats.totalDoctors, icon: UserRound, gradient: 'from-violet-500 to-fuchsia-500', accent: '#c084fc', change: '+3', trend: 'up' as const, sparkline: [42, 43, 45, 46, 47, 48] },
+  { navId: 'appointments', label: "Today's Appointments", value: db.dashboardStats.todayAppointments, icon: Calendar, gradient: 'from-emerald-500 to-teal-500', accent: '#34d399', change: `+${db.dashboardStats.appointmentGrowth}%`, trend: 'up' as const, sparkline: apptSpark },
+  { navId: 'billing', label: 'Monthly Revenue', value: db.dashboardStats.monthlyRevenue, icon: CreditCard, gradient: 'from-amber-500 to-orange-500', accent: '#fbbf24', prefix: '$', change: `+${db.dashboardStats.revenueGrowth}%`, trend: 'up' as const, sparkline: revenueSpark },
 ];
 
 const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) => {
@@ -46,13 +61,26 @@ const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: 
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { role, canSeeNav } = useSession();
   const totalPatients = db.patientDemographics.reduce((s, d) => s + d.value, 0);
+
+  // A dashboard should only show numbers the viewer can act on. A nurse has no
+  // use for monthly revenue, and a lab tech has none for the doctor roster.
+  const visibleStats = statCards.filter(card => canSeeNav(card.navId));
+  const showFinance = canSeeNav('billing');
+  const showAgents = role.actionKinds.length > 2;
+  const firstName = role.demoUser.name.replace(/^Dr\.\s+/, '').split(' ')[0];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard"
-        subtitle="Welcome back, Dr. Admin — here's what's happening today."
+        title={`Good to see you, ${firstName}`}
+        subtitle={role.persona}
+        eyebrow={
+          <span className={cn('inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold', role.accent.bg, role.accent.text)}>
+            {role.name}
+          </span>
+        }
         actions={
           <>
             <GlassBadge variant="primary" size="md">
@@ -67,12 +95,14 @@ export const Dashboard: React.FC = () => {
         }
       />
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {statCards.map((s, i) => (
-          <StatCard key={s.label} {...s} index={i} />
-        ))}
-      </div>
+      {/* KPI cards — scoped to what this role owns */}
+      {visibleStats.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {visibleStats.map((s, i) => (
+            <StatCard key={s.label} {...s} index={i} />
+          ))}
+        </div>
+      )}
 
       {/* AI Intelligence Hub */}
       <div className="reveal" style={{ animationDelay: '120ms' }}>
@@ -80,8 +110,9 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className={cn('grid grid-cols-1 gap-5', showFinance && 'lg:grid-cols-3')}>
         {/* Revenue */}
+        {showFinance && (
         <GlassCard className="lg:col-span-2 reveal" style={{ animationDelay: '160ms' }}>
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -113,6 +144,7 @@ export const Dashboard: React.FC = () => {
             </ResponsiveContainer>
           </div>
         </GlassCard>
+        )}
 
         {/* Demographics donut */}
         <GlassCard className="reveal" style={{ animationDelay: '200ms' }}>
@@ -154,9 +186,11 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* AI Agents */}
-      <div className="reveal" style={{ animationDelay: '120ms' }}>
-        <AIAgentShowcase />
-      </div>
+      {showAgents && (
+        <div className="reveal" style={{ animationDelay: '120ms' }}>
+          <AIAgentShowcase />
+        </div>
+      )}
 
       {/* Alerts + Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

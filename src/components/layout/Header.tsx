@@ -3,6 +3,8 @@ import { Menu, Bell, Search, Moon, Sun, Sparkles, ChevronDown, HelpCircle, User,
 import { useNavigate } from 'react-router-dom';
 import { GlassButton } from '../ui/GlassButton';
 import { useTour } from '../../context/TourContext';
+import { useSession } from '../../context/SessionContext';
+import { cn } from '../../utils/cn';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -23,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const { start: startTour } = useTour();
+  const { role } = useSession();
   const navigate = useNavigate();
 
   // Close the profile menu on outside click or Escape.
@@ -138,13 +141,13 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label="Account menu"
             >
               <img
-                src="https://i.pravatar.cc/80?u=admin"
+                src={role.demoUser.avatar}
                 alt=""
                 className="w-8 h-8 rounded-lg object-cover"
               />
               <div className="text-left hidden sm:block leading-tight">
-                <p className="text-sm font-semibold text-app">Dr. Admin</p>
-                <p className="text-[11px] text-app-subtle">Administrator</p>
+                <p className="text-sm font-semibold text-app">{role.demoUser.name}</p>
+                <p className={cn('text-[11px] font-medium', role.accent.text)}>{role.name}</p>
               </div>
               <ChevronDown className={`w-4 h-4 text-app-subtle transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -152,8 +155,8 @@ export const Header: React.FC<HeaderProps> = ({
             {profileOpen && (
               <div role="menu" className="reveal-pop absolute right-0 mt-2 w-56 glass-modal border rounded-2xl p-1.5 z-50 shadow-lifted">
                 <div className="px-3 py-2 border-b border-[var(--border)] mb-1.5">
-                  <p className="text-sm font-semibold text-app truncate">Dr. Admin</p>
-                  <p className="text-xs text-app-subtle truncate">admin@mediai.com</p>
+                  <p className="text-sm font-semibold text-app truncate">{role.demoUser.name}</p>
+                  <p className="text-xs text-app-subtle truncate">{role.demoUser.email}</p>
                 </div>
 
                 <button role="menuitem" onClick={() => goTo('/settings')} className="w-full flex items-center gap-2.5 text-left text-sm text-app-muted hover:text-app hover:bg-[var(--surface-2)] rounded-lg px-3 py-2 transition-colors focus-ring">

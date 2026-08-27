@@ -10,6 +10,7 @@ import { GuidedTour } from '../tour/GuidedTour';
 import { useTheme } from '../../context/ThemeContext';
 import { useTour } from '../../context/TourContext';
 import { useAIActions } from '../../context/AIActionsContext';
+import { RoleGuard } from './RoleGuard';
 
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -80,7 +81,9 @@ export const Layout: React.FC = () => {
           className="flex-1 p-4 sm:p-6 overflow-y-auto focus:outline-none"
         >
           <div className="animate-fade-in">
-            <Outlet />
+            <RoleGuard>
+              <Outlet />
+            </RoleGuard>
           </div>
         </main>
       </div>

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { db } from '../../data';
+import { useSession } from '../../context/SessionContext';
 import type { LucideIcon } from 'lucide-react';
 import type { AIAgent } from '../../types';
 
@@ -90,6 +91,7 @@ const agentStatusText: Record<AIAgent['status'], string> = {
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, onToggleCompact, onOpenAgents }) => {
+  const { role, canSeeNav } = useSession();
   const today = new Date().toISOString().split('T')[0];
   const todaysAppointments = db.appointments.filter(a => a.date === today && a.status === 'Scheduled').length;
   const pendingBills = db.bills.filter(b => b.status !== 'Paid').length;
@@ -106,6 +108,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
   };
 
   const widthClass = isCompact ? 'w-72 lg:w-20' : 'w-72 lg:w-72';
+
+  // Each role sees only the modules its job needs. Sections that end up empty
+  // are dropped entirely rather than left as bare headings.
+  const visibleSections = navSections
+    .map(section => ({ ...section, items: section.items.filter(item => canSeeNav(item.id)) }))
+    .filter(section => section.items.length > 0);
+
+  // AI agents belong to clinical roles; support roles get a cleaner sidebar.
+  const showAgents = role.actionKinds.length > 2;
 
   return (
     <>
@@ -144,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
                     MediAI
                     <Sparkles className="w-3.5 h-3.5 text-violet-400" />
                   </h1>
-                  <p className="text-xs text-white/50">AI-Powered Hospital Admin</p>
+                  <p className={cn('text-xs font-medium', role.accent.text)}>{role.name} workspace</p>
                 </div>
               )}
             </div>
@@ -159,7 +170,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
 
         {/* Navigation */}
         <nav data-tour="nav" className="flex-1 overflow-y-auto p-4 space-y-6">
-          {navSections.map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.id}>
               {!isCompact && (
                 <p className="px-3 text-[11px] uppercase tracking-wider font-semibold text-app-subtle mb-2">
@@ -209,6 +220,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
           ))}
 
           {/* AI Agents — secondary, below primary navigation */}
+          {showAgents && (
           <div data-tour="agents">
             {!isCompact ? (
               <>
@@ -290,14 +302,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
               </div>
             )}
           </div>
+          )}
 
-          {!isCompact && (
+          {showAgents && !isCompact && (
             <div className="p-3 rounded-xl bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20">
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-xs font-medium text-violet-300">AI Engine Active</span>
               </div>
-              <p className="text-xs text-white/40 leading-relaxed">
+              <p className="text-xs text-app-subtle leading-relaxed">
                 Monitoring {monitoredCount} patients in real-time
               </p>
             </div>
@@ -306,17 +319,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
 
         {/* Bottom Actions */}
         <div className="p-4 border-t border-white/10 space-y-3">
-          <button
-            onClick={onOpenAgents}
-            className={cn(
-              'w-full flex items-center gap-2 rounded-xl border border-violet-500/30 bg-gradient-to-r from-violet-500/20 to-fuchsia-500/10 text-white font-medium transition-all',
-              isCompact ? 'justify-center px-3 py-2' : 'px-4 py-2.5'
-            )}
-            title="Open AI Agents"
-          >
-            <Sparkles className="w-4 h-4" />
-            {!isCompact && <span>Open AI Agents</span>}
-          </button>
+          {showAgents && (
+            <button
+              onClick={onOpenAgents}
+              className={cn(
+                'w-full flex items-center gap-2 rounded-xl border border-violet-500/30 bg-gradient-to-r from-violet-500/20 to-fuchsia-500/10 text-white font-medium transition-all focus-ring',
+                isCompact ? 'justify-center px-3 py-2' : 'px-4 py-2.5'
+              )}
+              title="Open AI Agents"
+            >
+              <Sparkles className="w-4 h-4" />
+              {!isCompact && <span>Open AI Agents</span>}
+            </button>
+          )}
 
           <button
             onClick={onToggleCompact}
@@ -330,16 +345,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
             {!isCompact && <span>{isCompact ? 'Expand Menu' : 'Compact Menu'}</span>}
           </button>
 
-          <div className={cn('flex items-center gap-3 p-3 rounded-xl bg-white/5', isCompact && 'justify-center')}>
+          <div className={cn('flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-2)]', isCompact && 'justify-center')}>
             <img
-              src="https://i.pravatar.cc/150?u=admin"
-              alt="Admin"
-              className="w-10 h-10 rounded-full border-2 border-primary/30"
+              src={role.demoUser.avatar}
+              alt=""
+              className="w-10 h-10 rounded-full border-2 border-primary/30 flex-shrink-0"
             />
             {!isCompact && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">Dr. Admin</p>
-                <p className="text-xs text-white/50 truncate">admin@mediai.com</p>
+                <p className="text-sm font-medium text-app truncate">{role.demoUser.name}</p>
+                <p className={cn('text-xs truncate font-medium', role.accent.text)}>{role.name}</p>
               </div>
             )}
           </div>

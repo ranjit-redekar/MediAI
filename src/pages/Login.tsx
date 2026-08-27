@@ -1,156 +1,176 @@
 import React, { useState } from 'react';
-import { Brain, Lock, Mail, Sparkles, Moon, Sun } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Brain, Lock, Mail, Sparkles, Moon, Sun, Stethoscope, UserRound,
+  HeartPulse, Pill, FlaskConical, ClipboardList, Shield, User, ArrowRight,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
 import { GlassInput } from '../components/ui/GlassInput';
-import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { useSession } from '../context/SessionContext';
+import { cn } from '../utils/cn';
+import type { RoleId } from '../types/access';
+
+const ROLE_ICONS: Record<RoleId, LucideIcon> = {
+  admin: Shield,
+  doctor: Stethoscope,
+  'assistant-doctor': UserRound,
+  nurse: HeartPulse,
+  pharmacist: Pill,
+  'lab-technician': FlaskConical,
+  receptionist: ClipboardList,
+  patient: User,
+};
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { isDark, toggleTheme } = useTheme();
+  const { role, roles, signInAs } = useSession();
+  const [selected, setSelected] = useState<RoleId>(role.id);
   const [loading, setLoading] = useState(false);
+
+  const active = roles.find(r => r.id === selected) ?? roles[0];
+  const staffRoles = roles.filter(r => r.shell === 'admin');
+  const patientRole = roles.find(r => r.id === 'patient');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigate('/');
-    }, 800);
+    window.setTimeout(() => {
+      signInAs(selected);
+      navigate(active.home);
+    }, 600);
   };
 
   return (
-    <div
-      className="relative min-h-screen flex items-center justify-center p-4"
-      style={{ background: 'var(--app-bg)' }}
-    >
+    <div className="relative min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--app-bg)' }}>
       <GlassButton
         type="button"
         variant="ghost"
         size="sm"
         onClick={toggleTheme}
-        className="absolute top-6 right-6 flex items-center gap-2"
+        className="absolute top-6 right-6"
+        aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
       >
-        {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+        {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        <span className="hidden sm:inline">{isDark ? 'Light mode' : 'Dark mode'}</span>
       </GlassButton>
+
       <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GlassCard className="bg-white/5 border-white/10">
-          <div className="flex items-center gap-3 mb-4">
+        {/* Role picker — the app looks different for each of these */}
+        <GlassCard hover={false}>
+          <div className="flex items-center gap-3 mb-5">
             <div className="p-3 rounded-2xl bg-gradient-to-br from-primary to-accent">
               <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                MediAI
-                <Sparkles className="w-4 h-4 text-violet-300" />
+              <h1 className="text-2xl font-bold text-app flex items-center gap-2">
+                MediAI <Sparkles className="w-4 h-4 text-violet-400" />
               </h1>
-              <p className="text-white/60 text-sm">AI-powered hospital admin suite</p>
+              <p className="text-app-muted text-sm">AI-powered hospital suite</p>
             </div>
           </div>
-          <p className="text-white/70 text-sm leading-relaxed">
-            Stay on top of clinical insights, billing, staffing, and operational AI agents in one unified workspace.
-            Log in to continue managing your hospital dashboard in real time.
+
+          <p className="text-xs uppercase tracking-wider font-semibold text-app-subtle mb-2.5">
+            Sign in as
           </p>
-          <div className="mt-8 space-y-4 text-white/70 text-sm">
-            <div className="flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              Live AI alerts synced
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-cyan-400" />
-              Patient + staff data updated hourly
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              Secure SSO ready
-            </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {staffRoles.map(r => {
+              const Icon = ROLE_ICONS[r.id];
+              const isActive = selected === r.id;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setSelected(r.id)}
+                  aria-pressed={isActive}
+                  className={cn(
+                    'flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all focus-ring',
+                    isActive
+                      ? cn('border-transparent ring-2', r.accent.bg, r.accent.ring)
+                      : 'bg-[var(--surface-2)] border-[var(--border)] hover:border-[var(--border-strong)]'
+                  )}
+                >
+                  <Icon className={cn('w-4 h-4 flex-shrink-0', isActive ? r.accent.text : 'text-app-subtle')} />
+                  <span className={cn('text-sm font-medium truncate', isActive ? 'text-app' : 'text-app-muted')}>
+                    {r.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {patientRole && (
+            <>
+              <p className="text-xs uppercase tracking-wider font-semibold text-app-subtle mt-5 mb-2.5">
+                Or as a patient
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelected('patient')}
+                aria-pressed={selected === 'patient'}
+                className={cn(
+                  'w-full flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all focus-ring',
+                  selected === 'patient'
+                    ? cn('border-transparent ring-2', patientRole.accent.bg, patientRole.accent.ring)
+                    : 'bg-[var(--surface-2)] border-[var(--border)] hover:border-[var(--border-strong)]'
+                )}
+              >
+                <User className={cn('w-4 h-4 flex-shrink-0', selected === 'patient' ? patientRole.accent.text : 'text-app-subtle')} />
+                <span className={cn('text-sm font-medium', selected === 'patient' ? 'text-app' : 'text-app-muted')}>
+                  Patient portal
+                </span>
+              </button>
+            </>
+          )}
+
+          <div className="mt-5 pt-5 border-t border-[var(--border)]">
+            <p className="text-sm text-app-muted leading-relaxed">
+              <span className={cn('font-semibold', active.accent.text)}>{active.name}</span> — {active.persona}
+            </p>
           </div>
         </GlassCard>
 
-        <GlassCard className="bg-white/5 border-white/10">
-          <h2 className="text-xl font-semibold text-white mb-2">Welcome back</h2>
-          <p className="text-white/50 text-sm mb-6">Sign in to continue to MediAI Console</p>
+        {/* Credentials */}
+        <GlassCard hover={false}>
+          <h2 className="text-xl font-semibold text-app mb-2">Welcome back</h2>
+          <p className="text-app-subtle text-sm mb-6">
+            Continuing as <span className={cn('font-medium', active.accent.text)}>{active.demoUser.name}</span>
+          </p>
+
           <form className="space-y-4" onSubmit={handleSubmit}>
             <GlassInput
               label="Email"
               type="email"
-              placeholder="you@hospital.com"
+              value={active.demoUser.email}
+              readOnly
               icon={<Mail className="w-4 h-4" />}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
             />
             <GlassInput
               label="Password"
               type="password"
-              placeholder="••••••••"
+              defaultValue="demo-password"
               icon={<Lock className="w-4 h-4" />}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
             />
-             <div className="flex items-center justify-between text-xs text-white/50">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="accent-primary rounded" />
-                Remember me
-              </label>
-              <button
-                type="button"
-                onClick={() => navigate('/forgot-password')}
-                className="text-primary-light hover:underline cursor-pointer"
-              >
-                Forgot password?
-              </button>
-            </div>
-            <GlassButton variant="primary" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
+
+            <GlassButton type="submit" variant="primary" size="lg" className="w-full" disabled={loading}>
+              {loading ? 'Signing in…' : <>Continue to {active.shell === 'patient' ? 'portal' : 'workspace'} <ArrowRight className="w-4 h-4" /></>}
             </GlassButton>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-[11px] font-semibold text-white/40 uppercase tracking-wider">Demo Credentials</span>
-              <span className="text-[10px] bg-emerald-500/10 text-emerald-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Click to Auto-fill
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('admin@mediai.com');
-                  setPassword('admin123');
-                }}
-                className="flex flex-col items-start p-2.5 rounded-xl bg-white/5 hover:bg-white/10 active:scale-[0.98] transition-all text-left border border-white/5 hover:border-white/10 group cursor-pointer"
-              >
-                <span className="text-white/40 text-[10px]">Email</span>
-                <span className="text-white font-medium text-xs truncate w-full group-hover:text-primary-light transition-colors">
-                  admin@mediai.com
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('admin@mediai.com');
-                  setPassword('admin123');
-                }}
-                className="flex flex-col items-start p-2.5 rounded-xl bg-white/5 hover:bg-white/10 active:scale-[0.98] transition-all text-left border border-white/5 hover:border-white/10 group cursor-pointer"
-              >
-                <span className="text-white/40 text-[10px]">Password</span>
-                <span className="text-white font-medium text-xs truncate w-full group-hover:text-primary-light transition-colors">
-                  admin123
-                </span>
-              </button>
-            </div>
-          </div>
+          <button
+            onClick={() => navigate('/forgot-password')}
+            className="w-full text-center text-sm text-app-muted hover:text-app transition-colors mt-4 focus-ring rounded"
+          >
+            Forgot your password?
+          </button>
 
-          <p className="text-xs text-white/40 mt-6 text-center">
-            By continuing you agree to MediAI's Privacy Policy and Terms of Service
+          <p className="text-xs text-app-subtle text-center mt-6 leading-relaxed">
+            UI preview — no real authentication. Pick any role to see how the app
+            adapts to that person's job.
           </p>
         </GlassCard>
       </div>

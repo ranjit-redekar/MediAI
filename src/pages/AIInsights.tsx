@@ -41,7 +41,7 @@ const aiAccuracyData = [
 
 export const AIInsights: React.FC = () => {
   const navigate = useNavigate();
-  const { actions, statusOf } = useAIActions();
+  const { allActions, statusOf } = useAIActions();
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [isScanning, setIsScanning] = useState(false);
@@ -282,7 +282,7 @@ export const AIInsights: React.FC = () => {
             const config = getSeverityConfig(insight.severity);
             const isExpanded = expandedInsight === insight.id;
             const agentMeta = insight.agentId ? db.aiAgents.find(a => a.id === insight.agentId) : null;
-            const insightActions = actions.filter(a => a.insightId === insight.id);
+            const insightActions = allActions.filter(a => a.insightId === insight.id);
             const openActions = insightActions.filter(a => statusOf(a.id) === 'pending').length;
 
             return (

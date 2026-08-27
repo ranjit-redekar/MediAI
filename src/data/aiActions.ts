@@ -84,10 +84,15 @@ interface Intent {
 function classify(recommendation: string): Intent {
   const t = recommendation.toLowerCase();
 
+  // Referral wording is checked first: "physical therapy referral" names the
+  // action explicitly, and must not be routed to a prescriber as a drug order.
+  if (/consult|referral|refer /.test(t)) {
+    return { kind: 'referral', label: 'Book specialist consult', minutesSaved: 12, requiresClinician: false };
+  }
   if (/therapy|statin|agonist|anticoagul|medication|regimen|dose|antibiotic/.test(t)) {
     return { kind: 'medication', label: 'Draft medication order', minutesSaved: 8, requiresClinician: true };
   }
-  if (/consult|referral|refer |cardiology|nutritionist|specialist|physical therapy/.test(t)) {
+  if (/cardiology|nutritionist|specialist/.test(t)) {
     return { kind: 'referral', label: 'Book specialist consult', minutesSaved: 12, requiresClinician: false };
   }
   if (/lab|panel|recheck|screening|hba1c|lipid|glucose screening|culture/.test(t)) {
@@ -96,7 +101,7 @@ function classify(recommendation: string): Intent {
   if (/monitor|monitoring|twice daily|continuous|frequency|telemetry/.test(t)) {
     return { kind: 'monitoring', label: 'Raise monitoring level', minutesSaved: 5, requiresClinician: true };
   }
-  if (/education|counseling|program|enrollment|nutrition|lifestyle|ergonom/.test(t)) {
+  if (/education|counseling|program|enrollment|nutrition|lifestyle|ergonom|exercise|strengthening/.test(t)) {
     return { kind: 'education', label: 'Enrol in care program', minutesSaved: 10, requiresClinician: false };
   }
   if (/follow-up|follow up|week|routine|prenatal|maintain/.test(t)) {

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
+import { PortalLayout } from './components/layout/PortalLayout';
 import { RouteFallback } from './components/ui/RouteFallback';
 
 // Only the app shell loads eagerly; every page is code-split so the first paint
@@ -30,6 +31,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ 
 const RoleDirectory = lazy(() => import('./pages/Roles/RoleDirectory').then(m => ({ default: m.RoleDirectory })));
 const RoleDetail = lazy(() => import('./pages/Roles/RoleDetail').then(m => ({ default: m.RoleDetail })));
 const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
+const PortalHome = lazy(() => import('./pages/Portal/PortalHome').then(m => ({ default: m.PortalHome })));
 
 function App() {
   return (
@@ -38,6 +40,11 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          {/* Patients get their own shell — never the admin chrome. */}
+          <Route path="/portal" element={<PortalLayout />}>
+            <Route index element={<PortalHome />} />
+          </Route>
+
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="patients" element={<PatientList />} />

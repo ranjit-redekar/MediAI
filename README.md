@@ -53,6 +53,38 @@ There is also exactly **one queue**. An alert you can't act on isn't worth a not
 task inbox and the action queue are the same surface — reachable from the dashboard, the header,
 the Copilot, or AI Insights.
 
+## Roles
+
+Eight roles, chosen at login. The role is not a label — it changes the sidebar, the dashboard, the
+command palette, the routes you may open, and **which drafted actions reach your queue**.
+
+| Role | Sees | Approves | Queue |
+| --- | --- | --- | --- |
+| Administrator | Everything | Everything | 18 |
+| Doctor | Clinical modules | Everything, including medication | 18 |
+| Assistant Doctor | Clinical modules | Everything **except** medication | 14 |
+| Nurse | Wards, patients, labs | Monitoring, outreach, education, visits | 9 |
+| Pharmacist | Pharmacy, patients | Medication orders only | 4 |
+| Lab Technician | Laboratory, patients | Lab orders only | 2 |
+| Receptionist | Front desk, billing | Bookings, referrals, outreach | 4 |
+| Patient | Their own care only | — | — |
+
+A pharmacist signs in to four medication drafts and a four-item sidebar, not twenty-one items and
+thirteen nav entries belonging to other people. That is the whole point: **the role removes work
+rather than adding a permissions screen.**
+
+Three details worth calling out:
+
+- **Assistant Doctor vs Doctor is a real distinction, not cosmetic.** Residents get the full
+  clinical picture but cannot sign medication orders — those drafts route to the attending instead.
+- **Drafts belonging to another role stay visible but locked** ("Not your queue"), so nobody is left
+  wondering where an action went.
+- **Patients get a different shell entirely.** `PortalLayout` has no sidebar, no command palette, no
+  agent drawer, no copilot — just their next visit, results, prescriptions, and bills. An admin
+  console with most items hidden still reads like an admin console.
+
+Switch roles from the account menu without signing out, which makes the differences easy to demo.
+
 ## Key Features
 
 - **Unified shell** — responsive sidebar + header, compact mode, skip-to-content link, and a
@@ -76,6 +108,8 @@ the Copilot, or AI Insights.
   unpaid invoices, draft supplier reorders.
 - **Role workspaces** — tailored views for receptionists, attending doctors, and pharmacy/lab leads.
 - **Six themes** — five dark variants plus a full light mode, driven entirely by CSS design tokens.
+- **Patient portal** — a separate, minimal shell: next visit with join/reschedule, lab results with
+  plain-language flags, prescriptions, bills with pay/receipt, and a message-your-care-team action.
 
 ## Design System
 
@@ -98,6 +132,8 @@ Shared primitives live in `src/components/ui`:
 | `StatCard`, `MiniStat`, `Sparkline` | Animated metric tiles |
 | `AIActionCard` | One drafted action — approve, edit, dismiss, or read the reasoning |
 | `AIActionQueue`, `AIWorkSummary` | Dashboard and page-level views of the approval queue |
+| `RoleGuard` | Blocks routes outside a role, with an explanation rather than a blank page |
+| `PortalLayout` | The patient-facing shell — no admin chrome |
 
 ## Accessibility
 
@@ -163,7 +199,8 @@ A stakeholder-friendly walkthrough of every module lives in
 ## Roadmap
 
 1. Connect the context layer to real APIs and persist mutations.
-2. Add authentication and role-based access control for billing and AI modules.
+2. Replace the mock session with real authentication — the `SessionContext` boundary and
+   `canAccess` rules are already in place, so server-side enforcement slots in behind them.
 3. Extend drafted actions to intake — AI-prefilled registration and visit notes for human review.
 4. Add Vitest/RTL smoke tests and Playwright journeys for routing and modal flows.
 

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
   CalendarPlus, FlaskConical, Pill, Stethoscope, Activity, Send, GraduationCap,
-  Check, X, Pencil, Info, Undo2, ShieldCheck, Clock,
+  Check, X, Pencil, Info, Undo2, ShieldCheck, Clock, Lock,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { GlassButton } from '../ui/GlassButton';
 import { GlassInput } from '../ui/GlassInput';
 import { useAIActions } from '../../context/AIActionsContext';
+import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
 import { cn } from '../../utils/cn';
 import type { AIAction, AIActionKind } from '../../types/aiActions';
@@ -26,7 +27,8 @@ const KIND_META: Record<AIActionKind, { icon: LucideIcon; tint: string; ring: st
  * — not as advice the user has to go and act on somewhere else.
  */
 export const AIActionCard: React.FC<{ action: AIAction; index?: number }> = ({ action, index = 0 }) => {
-  const { statusOf, approve, dismiss, reset, amend } = useAIActions();
+  const { statusOf, approve, dismiss, reset, amend, canAction } = useAIActions();
+  const { role } = useSession();
   const { toast } = useToast();
   const [showWhy, setShowWhy] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -34,6 +36,9 @@ export const AIActionCard: React.FC<{ action: AIAction; index?: number }> = ({ a
 
   const status = statusOf(action.id);
   const { icon: Icon, tint, ring, verb } = KIND_META[action.kind];
+  // A role only approves the kinds of work it owns; everything else is visible
+  // but read-only, so nobody is left wondering where a draft went.
+  const owned = canAction(action);
 
   const handleApprove = () => {
     approve(action.id);
@@ -100,6 +105,27 @@ export const AIActionCard: React.FC<{ action: AIAction; index?: number }> = ({ a
     );
   }
 
+  if (!owned) {
+    return (
+      <div
+        className="reveal rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-3.5 flex items-start gap-3"
+        style={{ animationDelay: `${index * 50}ms` }}
+      >
+        <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 opacity-60', ring)}>
+          <Icon className={cn('w-4 h-4', tint)} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-app-muted">{action.label}</p>
+          <p className="text-xs text-app-subtle mt-0.5 leading-relaxed">{action.detail}</p>
+        </div>
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-[var(--surface-3)] text-app-subtle flex-shrink-0">
+          <Lock className="w-2.5 h-2.5" />
+          Not your queue
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div
       className="reveal rounded-xl border border-[var(--border)] bg-[var(--surface-1)] overflow-hidden"
@@ -115,7 +141,7 @@ export const AIActionCard: React.FC<{ action: AIAction; index?: number }> = ({ a
             <p className="text-sm font-semibold text-app">{action.label}</p>
             {action.requiresClinician && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/15 text-amber-300">
-                <ShieldCheck className="w-2.5 h-2.5" /> Clinician sign-off
+                <ShieldCheck className="w-2.5 h-2.5" /> {role.name} sign-off
               </span>
             )}
             <span className="inline-flex items-center gap-1 text-[10px] text-app-subtle">

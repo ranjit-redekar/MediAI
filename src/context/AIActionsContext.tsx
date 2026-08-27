@@ -1,22 +1,28 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { buildAIActions } from '../data/aiActions';
+import { useSession } from './SessionContext';
 import type { AIAction, AIActionStatus } from '../types/aiActions';
 
 interface AIActionsContextValue {
-  actions: AIAction[];
+  /** Every drafted action in the hospital, regardless of role. */
+  allActions: AIAction[];
   statusOf: (id: string) => AIActionStatus;
+  /** Pending actions this role is responsible for. */
   pending: AIAction[];
   approved: AIAction[];
+  /** Pending actions belonging to other roles — shown as context, never actionable. */
+  pendingElsewhere: AIAction[];
   /** Pending actions safe to approve in bulk (no clinician sign-off needed). */
   batchApprovable: AIAction[];
-  /** Manual minutes avoided by everything approved so far. */
+  /** Manual minutes avoided by everything this role has approved. */
   minutesSaved: number;
+  /** False when the signed-in role may not action this kind of work. */
+  canAction: (action: AIAction) => boolean;
   approve: (id: string) => void;
   approveMany: (ids: string[]) => void;
   dismiss: (id: string) => void;
   reset: (id: string) => void;
   resetAll: () => void;
-  /** Replaces the pre-filled specifics when a human edits a draft. */
   amend: (id: string, detail: string) => void;
 }
 
@@ -25,11 +31,9 @@ const AIActionsContext = createContext<AIActionsContextValue | undefined>(undefi
 export const AIActionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [actions, setActions] = useState<AIAction[]>(buildAIActions);
   const [statuses, setStatuses] = useState<Record<string, AIActionStatus>>({});
+  const { role } = useSession();
 
-  const statusOf = useCallback(
-    (id: string) => statuses[id] ?? 'pending',
-    [statuses]
-  );
+  const statusOf = useCallback((id: string) => statuses[id] ?? 'pending', [statuses]);
 
   const setStatus = useCallback((id: string, status: AIActionStatus) => {
     setStatuses(prev => ({ ...prev, [id]: status }));
@@ -37,6 +41,7 @@ export const AIActionsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const approve = useCallback((id: string) => setStatus(id, 'approved'), [setStatus]);
   const dismiss = useCallback((id: string) => setStatus(id, 'dismissed'), [setStatus]);
+
   const reset = useCallback((id: string) => {
     setStatuses(prev => {
       const next = { ...prev };
@@ -60,15 +65,22 @@ export const AIActionsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const value = useMemo<AIActionsContextValue>(() => {
-    const pending = actions.filter(a => (statuses[a.id] ?? 'pending') === 'pending');
-    const approved = actions.filter(a => statuses[a.id] === 'approved');
+    const kinds = new Set(role.actionKinds);
+    const mine = (a: AIAction) => kinds.has(a.kind);
+
+    const allPending = actions.filter(a => (statuses[a.id] ?? 'pending') === 'pending');
+    const pending = allPending.filter(mine);
+    const approved = actions.filter(a => statuses[a.id] === 'approved' && mine(a));
+
     return {
-      actions,
+      allActions: actions,
       statusOf,
       pending,
       approved,
+      pendingElsewhere: allPending.filter(a => !mine(a)),
       batchApprovable: pending.filter(a => !a.requiresClinician),
       minutesSaved: approved.reduce((sum, a) => sum + a.minutesSaved, 0),
+      canAction: mine,
       approve,
       approveMany,
       dismiss,
@@ -76,7 +88,7 @@ export const AIActionsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       resetAll,
       amend,
     };
-  }, [actions, statuses, statusOf, approve, approveMany, dismiss, reset, resetAll, amend]);
+  }, [actions, statuses, statusOf, role, approve, approveMany, dismiss, reset, resetAll, amend]);
 
   return <AIActionsContext.Provider value={value}>{children}</AIActionsContext.Provider>;
 };
