@@ -12,6 +12,7 @@ import { GlassSelect } from '../components/ui/GlassSelect';
 import { PageHeader } from '../components/ui/PageHeader';
 import { SearchInput } from '../components/ui/SearchInput';
 import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
+import { EmptyState } from '../components/ui/EmptyState';
 import { CalendarView } from '../components/calendar/CalendarView';
 import { cn } from '../utils/cn';
 import { useAppointments } from '../context/AppointmentsContext';
@@ -223,10 +224,13 @@ export const Appointments: React.FC = () => {
 
           {/* Results */}
           {filteredAppointments.length === 0 ? (
-            <GlassCard className="text-center py-16">
-              <CalendarDays className="w-14 h-14 text-app-subtle mx-auto mb-4 opacity-40" />
-              <p className="text-app-muted text-lg">No appointments found</p>
-              <p className="text-app-subtle text-sm mt-1">Try adjusting your filters</p>
+            <GlassCard hover={false} padding="none">
+              <EmptyState
+                icon={CalendarDays}
+                title="No appointments found"
+                description="Nothing matches the current filters. Widen the date range or clear the filters to see the full schedule."
+                action={{ label: "Book appointment", onClick: () => navigate("/appointments/new"), icon: Plus }}
+              />
             </GlassCard>
           ) : listLayout === 'table' ? (
             <GlassCard padding="none" className="overflow-hidden">

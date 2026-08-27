@@ -46,12 +46,15 @@ const getCardGradient = (visitType?: string, diagnosis?: string) => {
 };
 
 export const MedicalTimeline: React.FC<MedicalTimelineProps> = ({ records }) => {
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set([records[0]?.id]));
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(
+    () => new Set(records[0]?.id ? [records[0].id] : [])
+  );
 
   const toggle = (id: string) => {
     setExpandedIds(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };

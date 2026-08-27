@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { AIAgentDrawer } from './agents/AIAgentDrawer';
@@ -9,6 +9,7 @@ import { AICopilotChat } from './copilot/AICopilotChat';
 import { GuidedTour } from '../tour/GuidedTour';
 import { useTheme } from '../../context/ThemeContext';
 import { useTour } from '../../context/TourContext';
+import { useTasks } from '../../context/TasksContext';
 
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -19,6 +20,9 @@ export const Layout: React.FC = () => {
   const [copilotOpen, setCopilotOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   const { start: startTour, hasCompleted } = useTour();
+  const { openCount } = useTasks();
+  const mainRef = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -39,8 +43,16 @@ export const Layout: React.FC = () => {
     }
   }, [hasCompleted, startTour]);
 
+  // Each route change starts at the top of the content area, not wherever the
+  // previous page happened to be scrolled to.
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+  }, [pathname]);
+
   return (
     <div className="flex min-h-screen">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -48,7 +60,7 @@ export const Layout: React.FC = () => {
         onToggleCompact={() => setIsSidebarCompact(prev => !prev)}
         onOpenAgents={() => setAgentDrawerOpen(true)}
       />
-      
+
       <div className="flex-1 flex flex-col min-w-0">
         <Header
           onMenuClick={() => setSidebarOpen(true)}
@@ -58,9 +70,15 @@ export const Layout: React.FC = () => {
           isDark={isDark}
           onToggleTheme={toggleTheme}
           onLogout={() => window.location.assign('/login')}
+          taskCount={openCount}
         />
-        
-        <main className="flex-1 p-6 overflow-y-auto">
+
+        <main
+          ref={mainRef}
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 p-4 sm:p-6 overflow-y-auto focus:outline-none"
+        >
           <div className="animate-fade-in">
             <Outlet />
           </div>

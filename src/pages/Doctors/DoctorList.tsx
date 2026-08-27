@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, Calendar, Plus, Edit, Trash2, Eye, TrendingUp, DollarSign, Globe } from 'lucide-react';
+import { Star, Calendar, Plus, Edit, Trash2, Eye, TrendingUp, DollarSign, Globe, UserRound } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { SearchInput } from '../../components/ui/SearchInput';
 import { DeleteConfirmModal } from '../../components/ui/DeleteConfirmModal';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { useDoctors } from '../../context/DoctorsContext';
 import { db } from '../../data';
 import type { Doctor } from '../../types';
@@ -44,6 +45,8 @@ export const DoctorList: React.FC = () => {
     const matchesStatus = statusFilter === 'All' || d.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const resetFilters = () => { setSearchTerm(''); setStatusFilter('All'); };
 
   const handleDelete = () => {
     if (selectedDoctor) {
@@ -228,8 +231,13 @@ export const DoctorList: React.FC = () => {
       </div>
 
       {filteredDoctors.length === 0 && (
-        <GlassCard className="text-center py-12">
-          <p className="text-white/50">No doctors found matching your search</p>
+        <GlassCard hover={false} padding="none">
+          <EmptyState
+            icon={UserRound}
+            title="No doctors match your search"
+            description="Try another name or specialty, or clear the filters to browse the full directory."
+            action={{ label: "Clear filters", onClick: resetFilters }}
+          />
         </GlassCard>
       )}
 

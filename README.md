@@ -1,67 +1,140 @@
-# MediAI – AI-Powered Hospital Admin Template
+# MediAI — AI-Powered Hospital Admin (UI Preview)
 
-MediAI is a React + TypeScript single-page application that simulates an AI-assisted hospital command center. It ships with richly designed dashboards, searchable list/detail experiences for patients and doctors, scheduling tools, billing tables, pharmacy and laboratory trackers, and an insights hub that visualizes machine-learning alerts. All data is mocked locally so teams can focus on UX first and wire in real APIs later.
+MediAI is a React + TypeScript command center for hospital operations: dashboards, patient and
+doctor workspaces, scheduling, billing, pharmacy, laboratory, and an AI intelligence layer that
+surfaces risk before it becomes an incident.
+
+---
+
+## ⚠️ About this repository
+
+**This is a UI-only preview build.** Every screen runs on local mock data from `src/data` — there is
+no backend, no database, and no authentication behind it yet. Actions such as creating an invoice,
+downloading a report, or resolving an AI task update local state and show a confirmation, but they
+do not persist. Refreshing the browser resets everything.
+
+The backend integration is a separate phase that begins once this UI is signed off.
+
+### 📩 Requesting the complete application
+
+**This repository contains the UI layer only. For the complete application — full source, backend
+services, API integration, deployment setup, and licensing — please contact me directly.**
+
+> **Contact:** Ranjit Redekar · [ranjitredekar8@gmail.com](mailto:ranjitredekar8@gmail.com)
+
+Please get in touch before using this in a commercial or production setting.
+
+---
 
 ## Key Features
-- **Unified layout & navigation** – Responsive sidebar + header shell with quick search, notifications, and AI status.
-- **Operational dashboards** – KPI cards, revenue charts, demographics pie, recent activities, and an AI widget powered by Recharts.
-- **Patient & doctor management** – List + detail flows, medical timelines, vitals, lab tabs, doctor availability, rating, and achievements.
-- **Appointments workspace** – Calendar/list toggle, grouped agendas, filters, and CRUD modals for scheduling.
-- **Billing, pharmacy & laboratory modules** – Inventory cards, invoice tables, lab result grids with severity badges.
-- **Role-specific workspaces** – Receptionist, attending doctor, and pharma/test coordinators each get dedicated KPIs, workflows, queues, and shortcuts.
-- **AI Intelligence Center** – Severity filters, radar/area charts, expandable recommendations, and “Run AI Scan” call-to-action.
-- **Glassmorphic design system** – Reusable `Glass*` components (cards, buttons, inputs, badges, modals) built on Tailwind CSS.
 
-## Feature Tour
-- **Dashboard & AI Widget**: Track total patients/doctors, appointment load, revenue, demographic mix, and AI alerts in one hero view.
-- **Patients**: Searchable roster with risk badges plus a cinematic patient detail page (AI insight, vitals strip, timeline, labs, appointments).
-- **Doctors**: Availability-driven cards and deep profiles with performance charts, schedules, and patient panels.
-- **Appointments**: Month grid + list agenda, rich filtering, and modals for booking/editing/removing visits.
-- **Billing**: Revenue, pending, invoice counts, and status-colored table for finance teams.
-- **Pharmacy**: Stock KPIs and per-medicine cards showing units, price, expiry, and supply risk.
-- **Laboratory**: Queue metrics, searchable orders, and result summaries with severity chips.
-- **Reports**: Quick KPIs plus downloadable report catalog for audits and leadership decks.
-- **AI Insights**: Severity filters, accuracy/risk charts, and expandable recommendations to prioritize care.
-- **AI Agent Library**: A lineup of operational AI agents with live status plus dedicated “viewbooks” detailing missions, workflows, and success metrics.
-- **Settings**: Tabbed profile, notification, security, and appearance controls using the glass UI kit.
-- **Role Workspaces**: Directory + detail screens for Receptionist, Attending Doctor, and Pharma/Test coordinators that bundle metrics, AI copilot notes, workflows, alerts, and links to the right modules.
+- **Unified shell** — responsive sidebar + header, compact mode, skip-to-content link, and a
+  keyboard-first command palette (`⌘K` / `Ctrl+K`).
+- **Command palette** — fuzzy search across patients, doctors, modules, AI agents, and quick
+  actions, with full arrow-key navigation and `↵` to open.
+- **Operational dashboards** — animated KPI cards with sparklines, revenue and demographics charts,
+  a live activity feed, and AI critical alerts.
+- **Patients & doctors** — searchable, sortable rosters with AI risk meters, plus deep profile pages
+  covering vitals, medical timelines, labs, and appointments.
+- **Appointments** — calendar and agenda views, rich filtering, and full booking/edit flows.
+- **Billing** — sortable invoice ledger, an overdue-first alert banner, and a detailed invoice modal
+  with line items and totals.
+- **Pharmacy** — stock-level meters, expiry-window warnings, supply-risk banner, and reorder actions.
+- **Laboratory** — order queue with expandable results and critical-value flagging.
+- **Task inbox** — AI-raised alerts you can review or resolve, with undo.
+- **AI Intelligence Center** — severity filters, confidence scoring, expandable recommendations, and
+  a library of operational AI agents with dedicated viewbooks.
+- **Role workspaces** — tailored views for receptionists, attending doctors, and pharmacy/lab leads.
+- **Six themes** — five dark variants plus a full light mode, driven entirely by CSS design tokens.
+
+## Design System
+
+All colors, surfaces, borders, shadows, and radii are CSS custom properties defined in
+`src/index.css`. Components read semantic tokens (`text-app`, `text-app-muted`, `bg-[var(--surface-2)]`)
+rather than hard-coded colors, so a new theme is a block of variable overrides and requires no
+component changes.
+
+Shared primitives live in `src/components/ui`:
+
+| Component | Purpose |
+| --- | --- |
+| `GlassCard`, `GlassButton`, `GlassBadge` | Core surfaces and controls |
+| `GlassInput`, `GlassSelect`, `SearchInput` | Form and search fields |
+| `GlassModal` | Accessible dialog — focus trap, `Esc` to close, scroll lock, focus restore |
+| `EmptyState` | Standard empty/filtered-out state with a way out |
+| `FilterTabs` | Segmented status filters used across list pages |
+| `DataTable` (`SortableHeader`, `useSort`) | Sortable table headers with `aria-sort` |
+| `Skeleton`, `RouteFallback` | Loading placeholders for code-split routes |
+| `StatCard`, `MiniStat`, `Sparkline` | Animated metric tiles |
+
+## Accessibility
+
+- Skip-to-content link and a focusable `<main>` landmark
+- Focus trap, `Esc`, scroll lock, and focus restoration in modals
+- `aria-sort` on sortable columns, `role="listbox"`/`option` in the command palette
+- Labelled icon-only buttons throughout
+- Visible focus rings via a shared `.focus-ring` utility
+- Full `prefers-reduced-motion` support — all animation is disabled when requested
 
 ## Tech Stack
-- React 19 + React Router 7
+
+- React 19 + React Router 7 (lazy-loaded routes)
 - TypeScript (strict, bundler resolution)
-- Vite 8 beta build tooling
-- Tailwind CSS 3.4 with custom gradients/animations
-- Recharts for charts and Lucide for icons
-- ESLint flat config, PostCSS/Autoprefixer, clsx + tailwind-merge helper
+- Vite 8 build tooling
+- Tailwind CSS 3.4 layered over CSS custom properties
+- Recharts for charts, Lucide for icons
+- ESLint flat config, PostCSS/Autoprefixer, `clsx` + `tailwind-merge`
 
 ## Getting Started
+
 ### Prerequisites
+
 - Node.js **18.18+** (required by Vite 8)
-- One package manager (npm, pnpm, or bun). A `package-lock.json` and `bun.lock` are present—pick one tool and stick with it.
+- One package manager — a `package-lock.json` and `bun.lock` are both present, so pick one and
+  stay with it.
 
 ### Installation & Scripts
+
 ```sh
 npm install          # install dependencies (or pnpm install / bun install)
 npm run dev          # start the Vite dev server with HMR
 npm run build        # type-check + production build
-npm run preview      # preview the built app on a local server
-npm run lint         # run ESLint (TS + React Hooks + React Refresh rules)
+npm run preview      # preview the built app locally
+npm run lint         # run ESLint
 ```
-> Tip: all data is mocked inside `src/data`, so refreshing the browser resets CRUD operations.
 
-## Mock Data & Extensibility
-- `src/data/index.ts` aggregates all mock tables (`patients`, `doctors`, `appointments`, `bills`, `medicines`, `labTests`, AI stats, charts, demographics, recent activities) into `db`.
-- Feature pages import `db` once and hydrate local `useState` hooks. Add/Edit/Delete flows simply mutate that local state.
-- To back this UI with a real service layer, replace direct `db` imports with API hooks or React Query, then persist mutations over HTTP/WebSocket calls.
-- Tailwind customization lives in `tailwind.config.js` and `src/index.css` (Inter font, gradient background, custom scrollbars, animation helpers) so you can re-skin quickly.
+### Performance
+
+Routes are code-split with `React.lazy`, so the initial bundle carries only the shell. Recharts
+loads on demand, which keeps it off the login screen entirely.
+
+| | Initial JS (gzip) |
+| --- | --- |
+| Single bundle | ~291 kB |
+| Code-split | ~96 kB |
+
+## Mock Data & Wiring Up a Backend
+
+- `src/data/index.ts` aggregates every mock table (`patients`, `doctors`, `appointments`, `bills`,
+  `medicines`, `labTests`, AI insights, agents, chart series) into a single `db` object.
+- Feature pages read `db` once and hold mutations in React context (`PatientsContext`,
+  `DoctorsContext`, `AppointmentsContext`, `StaffContext`, `TasksContext`).
+- To connect a real service layer, replace the `db` imports inside those context providers with API
+  calls or React Query hooks. Page components consume the contexts, not the mock data directly, so
+  they should need few or no changes.
 
 ## Documentation
-A stakeholder-friendly deep dive into every module, journey, and roadmap idea lives in [`docs/MediAI_Technical_Overview.md`](docs/MediAI_Technical_Overview.md). Engineers can still inspect the repo structure directly, but the doc keeps the focus on features and outcomes.
 
-## Suggested Next Steps
-1. Connect the mock data layer to your API (REST, GraphQL, or React Query loaders) and persist CRUD mutations.
-2. Implement auth/role-based access to protect billing and AI modules.
-3. Wire the header’s theme toggle to CSS variables for light/dark support.
-4. Add Vitest/RTL smoke tests and Playwright journeys for routing + modal flows.
+A stakeholder-friendly walkthrough of every module lives in
+[`docs/MediAI_Technical_Overview.md`](docs/MediAI_Technical_Overview.md).
 
-Happy building!
+## Roadmap
+
+1. Connect the context layer to real APIs and persist mutations.
+2. Add authentication and role-based access control for billing and AI modules.
+3. Introduce bed/ward occupancy and emergency triage boards.
+4. Add Vitest/RTL smoke tests and Playwright journeys for routing and modal flows.
+
+---
+
+© Ranjit Redekar. UI preview — **contact me for the complete application.**

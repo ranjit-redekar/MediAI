@@ -40,30 +40,16 @@ export const PatientDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const careGuideAgent = db.aiAgents.find(a => a.id === 'careguide-agent');
 
-  if (!patient) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center">
-          <User className="w-10 h-10 text-white/20" />
-        </div>
-        <p className="text-white/50 text-lg">Patient not found</p>
-        <GlassButton variant="primary" onClick={() => navigate('/patients')}>
-          Back to Patients
-        </GlassButton>
-      </div>
-    );
-  }
-
-  const medicalRecords = patient.medicalHistory ?? [];
   const [patientData, setPatientData] = useState(patient);
   const [isEditingContact, setIsEditingContact] = useState(false);
   const [contactDraft, setContactDraft] = useState({
-    phone: patient.phone,
-    email: patient.email,
-    status: patient.status
+    phone: patient?.phone ?? '',
+    email: patient?.email ?? '',
+    status: patient?.status ?? 'Active'
   });
 
   useEffect(() => {
+    if (!patient) return;
     setPatientData(patient);
     setContactDraft({
       phone: patient.phone,
@@ -73,9 +59,30 @@ export const PatientDetail: React.FC = () => {
   }, [patient]);
 
   const handleContactSave = () => {
-    setPatientData(prev => ({ ...prev, ...contactDraft }));
+    setPatientData(prev => (prev ? { ...prev, ...contactDraft } : prev));
     setIsEditingContact(false);
   };
+
+  if (!patient || !patientData) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <GlassCard hover={false} padding="lg" className="max-w-md w-full text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center">
+            <User className="w-7 h-7 text-app-subtle" />
+          </div>
+          <h2 className="text-lg font-semibold text-app">Patient not found</h2>
+          <p className="text-sm text-app-muted mt-1.5">
+            No record matches ID <span className="font-mono text-app">{id}</span>. It may have been removed.
+          </p>
+          <GlassButton variant="primary" className="mt-5" onClick={() => navigate('/patients')}>
+            <ArrowLeft className="w-4 h-4" /> Back to Patients
+          </GlassButton>
+        </GlassCard>
+      </div>
+    );
+  }
+
+  const medicalRecords = patient.medicalHistory ?? [];
 
   const latestRecord = medicalRecords[0];
   const allLabResults = medicalRecords.flatMap(r =>

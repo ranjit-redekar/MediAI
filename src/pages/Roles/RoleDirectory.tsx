@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, UsersRound, ChevronRight } from 'lucide-react';
+import { Sparkles, UsersRound, ChevronRight, Shield } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassBadge } from '../../components/ui/GlassBadge';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { SearchInput } from '../../components/ui/SearchInput';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { db } from '../../data';
 
 export const RoleDirectory: React.FC = () => {
@@ -119,8 +120,13 @@ export const RoleDirectory: React.FC = () => {
         ))}
 
         {filteredRoles.length === 0 && (
-          <GlassCard className="bg-red-500/10 border-red-500/20 text-red-100">
-            No roles match “{query}”. Try searching for receptionist, doctor, or pharmacy leads.
+          <GlassCard hover={false} padding="none" className="md:col-span-2 xl:col-span-3">
+            <EmptyState
+              icon={Shield}
+              title="No roles match your search"
+              description="Try “receptionist”, “doctor”, or “pharmacy” — or clear the search to see every workspace."
+              action={{ label: "Clear search", onClick: () => setQuery("") }}
+            />
           </GlassCard>
         )}
       </div>

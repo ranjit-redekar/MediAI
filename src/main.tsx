@@ -9,6 +9,8 @@ import { StaffProvider } from './context/StaffContext.tsx';
 import { PatientsProvider } from './context/PatientsContext.tsx';
 import { DoctorsProvider } from './context/DoctorsContext.tsx';
 import { AppointmentsProvider } from './context/AppointmentsContext.tsx';
+import { ToastProvider } from './context/ToastContext.tsx';
+import { TasksProvider } from './context/TasksContext.tsx';
 
 // Apply the saved theme before first paint to avoid a flash.
 const savedTheme = (typeof window !== 'undefined' && localStorage.getItem('mediai-theme')) || 'dark';
@@ -19,19 +21,23 @@ document.body.classList.toggle('is-light', savedTheme === 'light');
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <PatientsProvider>
-        <DoctorsProvider>
-          <AppointmentsProvider>
-            <JourneyProvider>
-              <StaffProvider>
-                <TourProvider>
-                  <App />
-                </TourProvider>
-              </StaffProvider>
-            </JourneyProvider>
-          </AppointmentsProvider>
-        </DoctorsProvider>
-      </PatientsProvider>
+      <ToastProvider>
+        <TasksProvider>
+          <PatientsProvider>
+            <DoctorsProvider>
+              <AppointmentsProvider>
+                <JourneyProvider>
+                  <StaffProvider>
+                    <TourProvider>
+                      <App />
+                    </TourProvider>
+                  </StaffProvider>
+                </JourneyProvider>
+              </AppointmentsProvider>
+            </DoctorsProvider>
+          </PatientsProvider>
+        </TasksProvider>
+      </ToastProvider>
     </ThemeProvider>
   </StrictMode>
 );

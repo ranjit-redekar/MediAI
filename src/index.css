@@ -443,3 +443,49 @@ body.is-light .glass-modal-backdrop {
   .hover-lift:hover { transform: none; }
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* ── Toast progress bar ──────────────────────────────────────────────────── */
+@keyframes toastBar {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+.reveal-pop > .h-0\.5 > div { transform-origin: left center; }
+
+/* ── Skeleton loading placeholder ────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-3) 37%,
+    var(--surface-2) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeletonSweep 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes skeletonSweep {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* ── Skip-to-content link (keyboard users land here first) ───────────────── */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 200;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  background: var(--surface-solid);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transform: translateY(-150%);
+  transition: transform 0.18s ease;
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: none;
+}

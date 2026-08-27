@@ -1,65 +1,74 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
-import { Dashboard } from './pages/Dashboard';
-import { PatientList } from './pages/Patients/PatientList';
-import { PatientDetail } from './pages/Patients/PatientDetail';
-import { PatientFormPage } from './pages/Patients/PatientFormPage';
-import { MedicalRecordFormPage } from './pages/Patients/MedicalRecordFormPage';
-import { DoctorList } from './pages/Doctors/DoctorList';
-import { DoctorDetail } from './pages/Doctors/DoctorDetail';
-import { DoctorFormPage } from './pages/Doctors/DoctorFormPage';
-import { Appointments } from './pages/Appointments';
-import { AppointmentFormPage } from './pages/AppointmentFormPage';
-import { PatientJourney } from './pages/PatientJourney';
-import { StaffManagement } from './pages/StaffManagement';
-import { StaffFormPage } from './pages/StaffFormPage';
-import { Billing } from './pages/Billing';
-import { Pharmacy } from './pages/Pharmacy';
-import { Laboratory } from './pages/Laboratory';
-import { Reports } from './pages/Reports';
-import { AIInsights } from './pages/AIInsights';
-import { AIAgentDetail } from './pages/AIAgentDetail';
-import { Settings } from './pages/Settings';
-import { Login } from './pages/Login';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { RoleDirectory } from './pages/Roles/RoleDirectory';
-import { RoleDetail } from './pages/Roles/RoleDetail';
+import { RouteFallback } from './components/ui/RouteFallback';
+
+// Only the app shell loads eagerly; every page is code-split so the first paint
+// stays small and the login screen never downloads the charting library.
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const PatientList = lazy(() => import('./pages/Patients/PatientList').then(m => ({ default: m.PatientList })));
+const PatientDetail = lazy(() => import('./pages/Patients/PatientDetail').then(m => ({ default: m.PatientDetail })));
+const PatientFormPage = lazy(() => import('./pages/Patients/PatientFormPage').then(m => ({ default: m.PatientFormPage })));
+const MedicalRecordFormPage = lazy(() => import('./pages/Patients/MedicalRecordFormPage').then(m => ({ default: m.MedicalRecordFormPage })));
+const DoctorList = lazy(() => import('./pages/Doctors/DoctorList').then(m => ({ default: m.DoctorList })));
+const DoctorDetail = lazy(() => import('./pages/Doctors/DoctorDetail').then(m => ({ default: m.DoctorDetail })));
+const DoctorFormPage = lazy(() => import('./pages/Doctors/DoctorFormPage').then(m => ({ default: m.DoctorFormPage })));
+const Appointments = lazy(() => import('./pages/Appointments').then(m => ({ default: m.Appointments })));
+const AppointmentFormPage = lazy(() => import('./pages/AppointmentFormPage').then(m => ({ default: m.AppointmentFormPage })));
+const PatientJourney = lazy(() => import('./pages/PatientJourney').then(m => ({ default: m.PatientJourney })));
+const StaffManagement = lazy(() => import('./pages/StaffManagement').then(m => ({ default: m.StaffManagement })));
+const StaffFormPage = lazy(() => import('./pages/StaffFormPage').then(m => ({ default: m.StaffFormPage })));
+const Billing = lazy(() => import('./pages/Billing').then(m => ({ default: m.Billing })));
+const Pharmacy = lazy(() => import('./pages/Pharmacy').then(m => ({ default: m.Pharmacy })));
+const Laboratory = lazy(() => import('./pages/Laboratory').then(m => ({ default: m.Laboratory })));
+const Reports = lazy(() => import('./pages/Reports').then(m => ({ default: m.Reports })));
+const AIInsights = lazy(() => import('./pages/AIInsights').then(m => ({ default: m.AIInsights })));
+const AIAgentDetail = lazy(() => import('./pages/AIAgentDetail').then(m => ({ default: m.AIAgentDetail })));
+const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
+const RoleDirectory = lazy(() => import('./pages/Roles/RoleDirectory').then(m => ({ default: m.RoleDirectory })));
+const RoleDetail = lazy(() => import('./pages/Roles/RoleDetail').then(m => ({ default: m.RoleDetail })));
+const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="patients" element={<PatientList />} />
-          <Route path="patients/new" element={<PatientFormPage />} />
-          <Route path="patients/:id" element={<PatientDetail />} />
-          <Route path="patients/:id/edit" element={<PatientFormPage />} />
-          <Route path="patients/:id/records/new" element={<MedicalRecordFormPage />} />
-          <Route path="doctors" element={<DoctorList />} />
-          <Route path="doctors/new" element={<DoctorFormPage />} />
-          <Route path="doctors/:id" element={<DoctorDetail />} />
-          <Route path="doctors/:id/edit" element={<DoctorFormPage />} />
-          <Route path="appointments" element={<Appointments />} />
-          <Route path="appointments/new" element={<AppointmentFormPage />} />
-          <Route path="appointments/:id/edit" element={<AppointmentFormPage />} />
-          <Route path="journey" element={<PatientJourney />} />
-          <Route path="staff" element={<StaffManagement />} />
-          <Route path="staff/new" element={<StaffFormPage />} />
-          <Route path="staff/:id/edit" element={<StaffFormPage />} />
-          <Route path="billing" element={<Billing />} />
-          <Route path="pharmacy" element={<Pharmacy />} />
-          <Route path="laboratory" element={<Laboratory />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="ai-insights" element={<AIInsights />} />
-          <Route path="agents/:agentId" element={<AIAgentDetail />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="roles" element={<RoleDirectory />} />
-          <Route path="roles/:roleId" element={<RoleDetail />} />
-        </Route>
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="patients" element={<PatientList />} />
+            <Route path="patients/new" element={<PatientFormPage />} />
+            <Route path="patients/:id" element={<PatientDetail />} />
+            <Route path="patients/:id/edit" element={<PatientFormPage />} />
+            <Route path="patients/:id/records/new" element={<MedicalRecordFormPage />} />
+            <Route path="doctors" element={<DoctorList />} />
+            <Route path="doctors/new" element={<DoctorFormPage />} />
+            <Route path="doctors/:id" element={<DoctorDetail />} />
+            <Route path="doctors/:id/edit" element={<DoctorFormPage />} />
+            <Route path="appointments" element={<Appointments />} />
+            <Route path="appointments/new" element={<AppointmentFormPage />} />
+            <Route path="appointments/:id/edit" element={<AppointmentFormPage />} />
+            <Route path="journey" element={<PatientJourney />} />
+            <Route path="staff" element={<StaffManagement />} />
+            <Route path="staff/new" element={<StaffFormPage />} />
+            <Route path="staff/:id/edit" element={<StaffFormPage />} />
+            <Route path="billing" element={<Billing />} />
+            <Route path="pharmacy" element={<Pharmacy />} />
+            <Route path="laboratory" element={<Laboratory />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="ai-insights" element={<AIInsights />} />
+            <Route path="agents/:agentId" element={<AIAgentDetail />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="roles" element={<RoleDirectory />} />
+            <Route path="roles/:roleId" element={<RoleDetail />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

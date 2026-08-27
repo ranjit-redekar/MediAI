@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users, Plus, Edit, Trash2, Stethoscope, HeartPulse, Activity, Pill,
   FlaskConical, Briefcase, Sparkles, Shield, Cpu, Phone, Mail,
-  UserCheck, UserMinus, Building2
+  UserCheck, UserMinus, Building2, UserCog
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
@@ -12,6 +12,7 @@ import { GlassSelect } from '../components/ui/GlassSelect';
 import { PageHeader } from '../components/ui/PageHeader';
 import { SearchInput } from '../components/ui/SearchInput';
 import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
+import { EmptyState } from '../components/ui/EmptyState';
 import { useStaff } from '../context/StaffContext';
 import { cn } from '../utils/cn';
 import { STAFF_CATEGORIES, STAFF_STATUSES } from '../types/staff';
@@ -37,6 +38,8 @@ export const StaffManagement: React.FC = () => {
   const [status, setStatusFilter] = React.useState<'all' | StaffStatus>('all');
 
   const [deleting, setDeleting] = React.useState<StaffMember | null>(null);
+
+  const resetFilters = () => { setSearch(''); setCategory('all'); setStatusFilter('all'); };
 
   const filtered = staff.filter(s => {
     const q = search.trim().toLowerCase();
@@ -191,7 +194,12 @@ export const StaffManagement: React.FC = () => {
             </tbody>
           </table>
           {filtered.length === 0 && (
-            <div className="py-12 text-center text-white/40 text-sm">No staff match your filters.</div>
+            <EmptyState
+              icon={UserCog}
+              title="No staff match your filters"
+              description="Try a different name or department, or clear the filters to see everyone."
+              action={{ label: "Clear filters", onClick: resetFilters }}
+            />
           )}
         </div>
       </GlassCard>
