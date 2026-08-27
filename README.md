@@ -26,32 +26,41 @@ Please get in touch before using this in a commercial or production setting.
 
 ---
 
-## The AI-first idea
+## The concept
 
-Most "AI-powered" admin tools add a layer: the AI writes advice, and a human still does the work —
-so the AI has *added* a reading step rather than removed a task.
+Hospital software has spent a decade getting better at *showing* people work. A ward round
+generates a dozen notifications, a risk score, a dashboard tile, and a report — and at the end of
+it a human still has to open a booking screen and type the appointment in themselves. The software
+found the problem. The person still does the job. Every "AI-powered" layer added this way makes
+the day *longer*: it adds a thing to read before the work starts.
 
-MediAI inverts that. **The AI drafts the work; the human approves it.** When an agent detects a
-risk, it does not print "cardiology consultation within 48 hours" and leave you to go book it. It
-picks the right specialist, finds a slot on their actual rota, fills in the details, and hands you
-one button:
+**MediAI is built on the opposite bet — the AI should arrive with the work already done, and the
+human's job should be to say yes.**
+
+When an agent spots a deteriorating cardiac patient, it does not surface an alert reading
+"cardiology consult recommended within 48 hours". It picks the specialist, checks their actual
+rota, holds a slot, fills in the details, and puts one button in front of you:
 
 > **Book specialist consult** — Dr. Maria Garcia · Cardiology · Thu 4 Sep, 10:30
 > *Why this?* · **Edit** · **Dismiss** · **Approve**
 
-Three principles hold this together:
+Everything else in the product falls out of that one decision:
 
 1. **Every AI output is executable.** Recommendations are pre-filled actions, not bullet points.
-   The approval queue tracks the manual minutes each one saves.
-2. **Clinical decisions always need a human.** Medication and monitoring changes are flagged
-   `Clinician sign-off` and are deliberately excluded from bulk approval. Administrative work —
-   booking, referrals, labs, outreach, enrolment — can be cleared in one click.
-3. **Reasoning is always available, never forced.** Every draft carries a "Why this?" explaining
-   the specialty match, the slot choice, and the signal it came from.
-
-There is also exactly **one queue**. An alert you can't act on isn't worth a notification, so the
-task inbox and the action queue are the same surface — reachable from the dashboard, the header,
-the Copilot, or AI Insights.
+   The approval queue counts the manual minutes each one removes, because that — not how much the
+   system can tell you — is the measure of whether it works.
+2. **One queue, not an inbox *and* a to-do list.** An alert you cannot act on is not worth a
+   notification, so the notification *is* the action. The task inbox and the action queue are the
+   same surface, reachable from the dashboard, the header, the Copilot, or AI Insights.
+3. **Clinical judgment stays human.** Medication and monitoring changes are flagged
+   `Clinician sign-off` and deliberately excluded from bulk approval. Administrative work —
+   booking, referrals, labs, outreach, enrolment — clears in one click. Where that line sits is a
+   product decision, not a settings toggle.
+4. **The role subtracts work.** A pharmacist signs in to four medication drafts and a four-item
+   sidebar, not twenty-one drafts and thirteen nav entries belonging to other people. Signing in
+   as a role removes what isn't yours rather than greying it out.
+5. **Reasoning is available, never mandatory.** Every draft can explain the specialty match, the
+   slot choice, and the signal it came from. You read it when you doubt it — not every time.
 
 ## Information design
 
@@ -88,9 +97,7 @@ fields stay editable — the username you submit decides which workspace you lan
 is a shortcut rather than the authority. These are demo values checked in the browser; there is no
 authentication behind them.
 
-A pharmacist signs in to four medication drafts and a four-item sidebar, not twenty-one items and
-thirteen nav entries belonging to other people. That is the whole point: **the role removes work
-rather than adding a permissions screen.**
+The role does not add a permissions screen — it removes work. See **The concept**, point 4.
 
 Three details worth calling out:
 
