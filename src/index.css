@@ -489,3 +489,29 @@ body.is-light .glass-modal-backdrop {
   transform: translateY(0);
   outline: none;
 }
+
+/* ── Login ambience ──────────────────────────────────────────────────────── */
+@keyframes authDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%      { transform: translate3d(3%, -4%, 0) scale(1.06); }
+  66%      { transform: translate3d(-3%, 3%, 0) scale(0.96); }
+}
+.auth-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+  will-change: transform;
+  animation: authDrift 22s ease-in-out infinite;
+}
+
+/* Caps-lock / hint chip that slides in without shifting layout */
+@keyframes hintIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hint-in { animation: hintIn 0.2s ease-out forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-orb { animation: none; }
+}

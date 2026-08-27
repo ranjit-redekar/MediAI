@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Brain, AlertTriangle, CheckCircle, Activity, Shield,
-  Sparkles, Zap, Eye, ChevronDown, ChevronUp, Users,
+  Zap, Eye, ChevronDown, ChevronUp,
   Target, BarChart2, RefreshCw
 } from 'lucide-react';
 import {
@@ -14,6 +14,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { GlassBadge } from '../components/ui/GlassBadge';
 import { GlassButton } from '../components/ui/GlassButton';
 import { CountUp } from '../components/ui/StatCard';
+import { PageHeader } from '../components/ui/PageHeader';
 import { AIAgentShowcase } from '../components/ai/AIAgentShowcase';
 import { AIActionCard } from '../components/ai/AIActionCard';
 import { AIWorkSummary } from '../components/ai/AIWorkSummary';
@@ -110,56 +111,16 @@ export const AIInsights: React.FC = () => {
   return (
     <div className="space-y-8">
 
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl p-8 glass-card border border-violet-500/25">
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-violet-500/15 via-fuchsia-500/[0.08] to-indigo-500/[0.12]" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-fuchsia-500/10 rounded-full blur-3xl" />
-
-        {/* Animated particles */}
-        <div className="absolute top-6 right-24 w-2 h-2 bg-violet-400 rounded-full animate-bounce" />
-        <div className="absolute top-16 right-48 w-1.5 h-1.5 bg-fuchsia-400 rounded-full animate-bounce delay-300" />
-        <div className="absolute bottom-8 right-32 w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-700" />
-
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/30">
-                <Brain className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl sm:text-[28px] font-bold text-app tracking-tight">AI Intelligence Center</h1>
-                  <Sparkles className="w-6 h-6 text-violet-400 animate-pulse" />
-                </div>
-                <p className="text-violet-300/80">Real-time AI-powered clinical analytics & predictions</p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-sm text-emerald-400 font-medium">AI Engine Active</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/20 border border-violet-500/30">
-                <Target className="w-3 h-3 text-violet-400" />
-                <span className="text-sm text-violet-400">{db.aiInsights.length} Active Predictions</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-500/30">
-                <Users className="w-3 h-3 text-indigo-400" />
-                <span className="text-sm text-indigo-400">{db.patients.length} Patients Monitored</span>
-              </div>
-            </div>
-          </div>
-          <GlassButton
-            variant="primary"
-            onClick={triggerScan}
-            className={isScanning ? 'opacity-70 cursor-not-allowed' : ''}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isScanning ? 'animate-spin' : ''}`} />
-            {isScanning ? 'Scanning...' : 'Run AI Scan'}
+      <PageHeader
+        title="AI Insights"
+        subtitle={`${db.aiInsights.length} predictions across ${db.patients.length} monitored patients`}
+        actions={
+          <GlassButton variant="primary" onClick={triggerScan} disabled={isScanning}>
+            <RefreshCw className={cn('w-4 h-4', isScanning && 'animate-spin')} />
+            {isScanning ? 'Scanning…' : 'Run AI scan'}
           </GlassButton>
-        </div>
-      </div>
+        }
+      />
 
       {/* Alert Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -192,6 +153,149 @@ export const AIInsights: React.FC = () => {
             </button>
           );
         })}
+      </div>
+
+      {/* Alert Insights List */}
+      <AIWorkSummary />
+
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold text-app">
+            {activeFilter === 'all' ? 'All AI Insights' : `${activeFilter} Alerts`}
+            <span className="ml-2 text-sm text-app-subtle">({filteredInsights.length})</span>
+          </h3>
+          {activeFilter !== 'all' && (
+            <button
+              onClick={() => setActiveFilter('all')}
+              className="text-sm text-app-muted hover:text-app transition-colors"
+            >
+              Clear filter
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          {filteredInsights.map((insight, i) => {
+            const patient = db.patients.find(p => p.id === insight.patientId);
+            const config = getSeverityConfig(insight.severity);
+            const isExpanded = expandedInsight === insight.id;
+            const agentMeta = insight.agentId ? db.aiAgents.find(a => a.id === insight.agentId) : null;
+            const insightActions = allActions.filter(a => a.insightId === insight.id);
+            const openActions = insightActions.filter(a => statusOf(a.id) === 'pending').length;
+
+            return (
+              <div
+                key={insight.id}
+                style={{ animationDelay: `${i * 60}ms` }}
+                className={cn(
+                  'reveal rounded-2xl border transition-all duration-300 overflow-hidden',
+                  config.bg, config.border,
+                  insight.severity === 'Critical' ? `shadow-lg ${config.glowClass}` : ''
+                )}
+              >
+                {/* Card Header */}
+                <button
+                  className="w-full p-5 flex items-start gap-4 text-left"
+                  onClick={() => setExpandedInsight(isExpanded ? null : insight.id)}
+                >
+                  <div className={`p-2.5 rounded-xl bg-black/20 ${config.color} flex-shrink-0`}>
+                    {config.icon}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="font-semibold text-app">{insight.type}</span>
+                      <GlassBadge
+                        variant={insight.severity === 'Critical' ? 'danger' : insight.severity === 'High' ? 'warning' : insight.severity === 'Medium' ? 'info' : 'success'}
+                        size="sm"
+                      >
+                        {insight.severity}
+                      </GlassBadge>
+                    </div>
+                    <p className="text-sm text-app-muted truncate">{patient?.name ?? 'Unknown patient'}</p>
+                  </div>
+
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    {openActions > 0 ? (
+                      <span className="hidden sm:inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-500/15 text-violet-300">
+                        {openActions} to approve
+                      </span>
+                    ) : (
+                      <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-300">
+                        <CheckCircle className="w-3 h-3" /> Done
+                      </span>
+                    )}
+                    {isExpanded
+                      ? <ChevronUp className="w-5 h-5 text-app-subtle" />
+                      : <ChevronDown className="w-5 h-5 text-app-subtle" />
+                    }
+                  </div>
+                </button>
+
+                {/* Expanded Content */}
+                {isExpanded && (
+                  <div className="px-5 pb-5 border-t border-white/10">
+                    <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Description */}
+                      <div>
+                        <p className="text-sm font-medium text-app-muted mb-2 flex items-center gap-1.5">
+                          <Brain className="w-3.5 h-3.5" /> AI Analysis
+                        </p>
+                        <p className="text-app text-sm leading-relaxed">{insight.description}</p>
+
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-xs text-app-subtle">
+                          <span className={cn('font-semibold', config.color)}>{insight.confidence}% confidence</span>
+                          <span>·</span>
+                          <span>{agentMeta?.name ?? 'AI Hub'}</span>
+                          <span>·</span>
+                          <span>{formatRelativeTime(insight.createdAt)}</span>
+                        </div>
+
+                        {patient && (
+                          <div className="mt-4 flex items-center gap-3 p-3 rounded-xl bg-white/5">
+                            <img src={patient.avatar} alt={patient.name} className="w-10 h-10 rounded-full" />
+                            <div>
+                              <p className="font-medium text-white text-sm">{patient.name}</p>
+                              <p className="text-xs text-white/50">{patient.age} yrs • {patient.status}</p>
+                            </div>
+                            {patient.aiRiskScore && (
+                              <div className="ml-auto text-right">
+                                <div className={`text-lg font-bold ${
+                                  patient.aiRiskScore >= 70 ? 'text-red-400' :
+                                  patient.aiRiskScore >= 40 ? 'text-amber-400' : 'text-emerald-400'
+                                }`}>{patient.aiRiskScore}</div>
+                                <div className="text-xs text-white/40">risk score</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Drafted actions — approve to apply, no re-typing */}
+                      <div>
+                        <p className="text-sm font-medium text-app-muted mb-3 flex items-center gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                          AI has drafted {insightActions.length} action{insightActions.length === 1 ? '' : 's'}
+                        </p>
+                        <div className="space-y-2">
+                          {insightActions.map((action, idx) => (
+                            <AIActionCard key={action.id} action={action} index={idx} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[var(--border)]">
+                      <GlassButton variant="ghost" size="sm" onClick={() => navigate(`/patients/${insight.patientId}`)}>
+                        <Eye className="w-4 h-4" /> Open patient record
+                      </GlassButton>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Charts Row */}
@@ -255,167 +359,6 @@ export const AIInsights: React.FC = () => {
             </ResponsiveContainer>
           </div>
         </GlassCard>
-      </div>
-
-      {/* Alert Insights List */}
-      <AIWorkSummary />
-
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-app">
-            {activeFilter === 'all' ? 'All AI Insights' : `${activeFilter} Alerts`}
-            <span className="ml-2 text-sm text-app-subtle">({filteredInsights.length})</span>
-          </h3>
-          {activeFilter !== 'all' && (
-            <button
-              onClick={() => setActiveFilter('all')}
-              className="text-sm text-app-muted hover:text-app transition-colors"
-            >
-              Clear filter
-            </button>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          {filteredInsights.map((insight, i) => {
-            const patient = db.patients.find(p => p.id === insight.patientId);
-            const config = getSeverityConfig(insight.severity);
-            const isExpanded = expandedInsight === insight.id;
-            const agentMeta = insight.agentId ? db.aiAgents.find(a => a.id === insight.agentId) : null;
-            const insightActions = allActions.filter(a => a.insightId === insight.id);
-            const openActions = insightActions.filter(a => statusOf(a.id) === 'pending').length;
-
-            return (
-              <div
-                key={insight.id}
-                style={{ animationDelay: `${i * 60}ms` }}
-                className={cn(
-                  'reveal rounded-2xl border transition-all duration-300 overflow-hidden',
-                  config.bg, config.border,
-                  insight.severity === 'Critical' ? `shadow-lg ${config.glowClass}` : ''
-                )}
-              >
-                {/* Card Header */}
-                <button
-                  className="w-full p-5 flex items-start gap-4 text-left"
-                  onClick={() => setExpandedInsight(isExpanded ? null : insight.id)}
-                >
-                  <div className={`p-2.5 rounded-xl bg-black/20 ${config.color} flex-shrink-0`}>
-                    {config.icon}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="font-semibold text-white">{insight.type}</span>
-                      <GlassBadge
-                        variant={insight.severity === 'Critical' ? 'danger' : insight.severity === 'High' ? 'warning' : insight.severity === 'Medium' ? 'info' : 'success'}
-                        size="sm"
-                      >
-                        {insight.severity}
-                      </GlassBadge>
-                      {insight.severity === 'Critical' && (
-                        <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/30 text-red-300 border border-red-500/30 animate-pulse">
-                          Urgent Action Needed
-                        </span>
-                      )}
-                      {openActions > 0 ? (
-                        <span className="px-2 py-0.5 rounded-full text-xs bg-violet-500/20 text-violet-300 border border-violet-500/30">
-                          {openActions} draft{openActions === 1 ? '' : 's'} ready
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
-                          All handled
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-white/60">
-                      <span>{patient?.name ?? 'Unknown Patient'}</span>
-                      <span>•</span>
-                      <span>AI Confidence: <span className={`font-medium ${config.color}`}>{insight.confidence}%</span></span>
-                      <span>•</span>
-                      <GlassBadge variant="primary" size="sm">
-                        {agentMeta?.name ?? 'AI Hub'}
-                      </GlassBadge>
-                      <span>•</span>
-                      <span>{formatRelativeTime(insight.createdAt)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    {/* Confidence Bar */}
-                    <div className="hidden md:block w-24">
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            insight.confidence >= 80 ? 'bg-violet-500' : 'bg-amber-500'
-                          }`}
-                          style={{ width: `${insight.confidence}%` }}
-                        />
-                      </div>
-                    </div>
-                    {isExpanded
-                      ? <ChevronUp className="w-5 h-5 text-white/40" />
-                      : <ChevronDown className="w-5 h-5 text-white/40" />
-                    }
-                  </div>
-                </button>
-
-                {/* Expanded Content */}
-                {isExpanded && (
-                  <div className="px-5 pb-5 border-t border-white/10">
-                    <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Description */}
-                      <div>
-                        <p className="text-sm font-medium text-white/50 mb-2 flex items-center gap-1">
-                          <Brain className="w-3.5 h-3.5" /> AI Analysis
-                        </p>
-                        <p className="text-white/80 text-sm leading-relaxed">{insight.description}</p>
-
-                        {patient && (
-                          <div className="mt-4 flex items-center gap-3 p-3 rounded-xl bg-white/5">
-                            <img src={patient.avatar} alt={patient.name} className="w-10 h-10 rounded-full" />
-                            <div>
-                              <p className="font-medium text-white text-sm">{patient.name}</p>
-                              <p className="text-xs text-white/50">{patient.age} yrs • {patient.status}</p>
-                            </div>
-                            {patient.aiRiskScore && (
-                              <div className="ml-auto text-right">
-                                <div className={`text-lg font-bold ${
-                                  patient.aiRiskScore >= 70 ? 'text-red-400' :
-                                  patient.aiRiskScore >= 40 ? 'text-amber-400' : 'text-emerald-400'
-                                }`}>{patient.aiRiskScore}</div>
-                                <div className="text-xs text-white/40">risk score</div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Drafted actions — approve to apply, no re-typing */}
-                      <div>
-                        <p className="text-sm font-medium text-app-muted mb-3 flex items-center gap-1.5">
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                          AI has drafted {insightActions.length} action{insightActions.length === 1 ? '' : 's'}
-                        </p>
-                        <div className="space-y-2">
-                          {insightActions.map((action, idx) => (
-                            <AIActionCard key={action.id} action={action} index={idx} />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[var(--border)]">
-                      <GlassButton variant="ghost" size="sm" onClick={() => navigate(`/patients/${insight.patientId}`)}>
-                        <Eye className="w-4 h-4" /> Open patient record
-                      </GlassButton>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
       </div>
 
       {/* Agent Playbooks */}

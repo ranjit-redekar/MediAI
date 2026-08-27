@@ -32,17 +32,17 @@ export const AIActionQueue: React.FC<{ limit?: number }> = ({ limit = 4 }) => {
   };
 
   return (
-    <GlassCard hover={false} className="relative overflow-hidden reveal" style={{ animationDelay: '120ms' }}>
+    <GlassCard hover={false} padding="sm" className="relative overflow-hidden reveal h-full flex flex-col" style={{ animationDelay: '120ms' }}>
       <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.07] to-transparent pointer-events-none" />
 
-      <div className="relative">
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+      <div className="relative flex flex-col flex-1 min-h-0">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="p-2 rounded-xl bg-violet-500/15 flex-shrink-0">
-              <Sparkles className="w-5 h-5 text-violet-400" />
+            <div className="p-1.5 rounded-lg bg-violet-500/15 flex-shrink-0">
+              <Sparkles className="w-4 h-4 text-violet-400" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-base font-semibold text-app">Ready for your approval</h3>
+              <h3 className="text-sm font-semibold text-app">Ready for your approval</h3>
               <p className="text-xs text-app-subtle">
                 {pending.length > 0
                   ? `${pending.length} action${pending.length === 1 ? '' : 's'} drafted · ${minutesSaved} min saved so far`
@@ -61,6 +61,7 @@ export const AIActionQueue: React.FC<{ limit?: number }> = ({ limit = 4 }) => {
 
         {visible.length === 0 ? (
           <EmptyState
+            compact
             icon={Inbox}
             title="Nothing waiting on you"
             description="The AI has drafted and cleared everything it found. New work appears here automatically."

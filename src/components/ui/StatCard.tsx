@@ -29,33 +29,32 @@ export const StatCard: React.FC<StatCardProps> = ({
   const animated = useCountUp(value);
   return (
     <div
-      className="reveal hover-lift glass-card border rounded-2xl p-5 relative overflow-hidden"
+      className="reveal hover-lift glass-card border rounded-2xl p-4 relative overflow-hidden"
       style={{ animationDelay: `${index * 80}ms` }}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-app-muted text-sm">{label}</p>
-          <h3 className="text-2xl font-bold text-app mt-1.5 tabular-nums tracking-tight">
+          <p className="text-app-subtle text-xs truncate">{label}</p>
+          <h3 className="text-[22px] leading-tight font-bold text-app mt-1 tabular-nums tracking-tight">
             {formatCount(animated, { decimals, prefix, suffix })}
           </h3>
           {change && (
-            <div className="flex items-center gap-1 mt-2">
+            <div className="flex items-center gap-1 mt-1">
               {trend === 'down'
-                ? <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-                : <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />}
-              <span className={cn('text-xs font-semibold', trend === 'down' ? 'text-red-400' : 'text-emerald-400')}>{change}</span>
-              <span className="text-app-subtle text-xs">vs last month</span>
+                ? <TrendingDown className="w-3 h-3 text-red-400 flex-shrink-0" />
+                : <TrendingUp className="w-3 h-3 text-emerald-400 flex-shrink-0" />}
+              <span className={cn('text-[11px] font-semibold', trend === 'down' ? 'text-red-400' : 'text-emerald-400')}>{change}</span>
             </div>
           )}
         </div>
-        <div className={cn('w-11 h-11 rounded-xl bg-gradient-to-br flex items-center justify-center flex-shrink-0 shadow-lg', gradient)}>
-          <Icon className="w-5 h-5 text-white" />
+        <div className={cn('w-9 h-9 rounded-lg bg-gradient-to-br flex items-center justify-center flex-shrink-0', gradient)}>
+          <Icon className="w-4 h-4 text-white" />
         </div>
       </div>
 
       {sparkline && sparkline.length > 1 && (
-        <div className="mt-3 -mx-1 -mb-1">
-          <Sparkline data={sparkline} color={accent} />
+        <div className="mt-2 -mx-1 -mb-1">
+          <Sparkline data={sparkline} color={accent} height={26} />
         </div>
       )}
     </div>
@@ -75,15 +74,15 @@ export const MiniStat: React.FC<{
   index?: number;
 }> = ({ icon: Icon, label, value, tint = 'text-indigo-400', ring = 'bg-indigo-500/15', prefix, suffix, decimals, index = 0 }) => (
   <div
-    className="reveal hover-lift glass-card border rounded-2xl p-5 flex items-center gap-4"
+    className="reveal hover-lift glass-card border rounded-2xl p-4 flex items-center gap-3"
     style={{ animationDelay: `${index * 70}ms` }}
   >
-    <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0', ring)}>
-      <Icon className={cn('w-6 h-6', tint)} />
+    <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', ring)}>
+      <Icon className={cn('w-5 h-5', tint)} />
     </div>
     <div className="min-w-0">
-      <p className="text-app-muted text-sm">{label}</p>
-      <CountUp value={value} prefix={prefix} suffix={suffix} decimals={decimals} className="text-2xl font-bold text-app tabular-nums" />
+      <p className="text-app-subtle text-xs truncate">{label}</p>
+      <CountUp value={value} prefix={prefix} suffix={suffix} decimals={decimals} className="text-xl font-bold text-app tabular-nums" />
     </div>
   </div>
 );

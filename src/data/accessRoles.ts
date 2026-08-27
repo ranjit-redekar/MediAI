@@ -21,6 +21,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     routes: ['/'],
     actionKinds: ['appointment', 'referral', 'lab', 'medication', 'monitoring', 'outreach', 'education'],
     accent: { text: 'text-indigo-300', bg: 'bg-indigo-500/15', ring: 'ring-indigo-500/40' },
+    credentials: { username: 'admin@mediai.com', password: 'Admin@123' },
     demoUser: { name: 'Dr. Admin', email: 'admin@mediai.com', avatar: 'https://i.pravatar.cc/150?u=admin' },
   },
   {
@@ -34,6 +35,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     // The only role that may sign off medication drafts.
     actionKinds: ['appointment', 'referral', 'lab', 'medication', 'monitoring', 'outreach', 'education'],
     accent: { text: 'text-sky-300', bg: 'bg-sky-500/15', ring: 'ring-sky-500/40' },
+    credentials: { username: 'doctor@mediai.com', password: 'Doctor@123' },
     demoUser: { name: 'Dr. Maria Garcia', email: 'm.garcia@hospital.com', avatar: 'https://i.pravatar.cc/150?u=garcia' },
   },
   {
@@ -47,6 +49,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     // Deliberately excludes 'medication' — drafts route to the attending instead.
     actionKinds: ['appointment', 'referral', 'lab', 'monitoring', 'outreach', 'education'],
     accent: { text: 'text-cyan-300', bg: 'bg-cyan-500/15', ring: 'ring-cyan-500/40' },
+    credentials: { username: 'assistant@mediai.com', password: 'Assist@123' },
     demoUser: { name: 'Dr. Arjun Mehta', email: 'a.mehta@hospital.com', avatar: 'https://i.pravatar.cc/150?u=mehta' },
   },
   {
@@ -59,6 +62,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     routes: ['/', '/patients', '/appointments', '/journey', '/laboratory', '/settings'],
     actionKinds: ['monitoring', 'outreach', 'education', 'appointment'],
     accent: { text: 'text-rose-300', bg: 'bg-rose-500/15', ring: 'ring-rose-500/40' },
+    credentials: { username: 'nurse@mediai.com', password: 'Nurse@123' },
     demoUser: { name: 'Priya Nair', email: 'p.nair@hospital.com', avatar: 'https://i.pravatar.cc/150?u=nair' },
   },
   {
@@ -71,6 +75,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     routes: ['/', '/pharmacy', '/patients', '/settings'],
     actionKinds: ['medication'],
     accent: { text: 'text-violet-300', bg: 'bg-violet-500/15', ring: 'ring-violet-500/40' },
+    credentials: { username: 'pharmacist@mediai.com', password: 'Pharma@123' },
     demoUser: { name: 'Sanjay Rao', email: 's.rao@hospital.com', avatar: 'https://i.pravatar.cc/150?u=rao' },
   },
   {
@@ -83,6 +88,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     routes: ['/', '/laboratory', '/patients', '/settings'],
     actionKinds: ['lab'],
     accent: { text: 'text-teal-300', bg: 'bg-teal-500/15', ring: 'ring-teal-500/40' },
+    credentials: { username: 'lab@mediai.com', password: 'Lab@123' },
     demoUser: { name: 'Kavita Iyer', email: 'k.iyer@hospital.com', avatar: 'https://i.pravatar.cc/150?u=iyer' },
   },
   {
@@ -95,6 +101,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     routes: ['/', '/appointments', '/patients', '/billing', '/settings'],
     actionKinds: ['appointment', 'referral', 'outreach'],
     accent: { text: 'text-amber-300', bg: 'bg-amber-500/15', ring: 'ring-amber-500/40' },
+    credentials: { username: 'reception@mediai.com', password: 'Front@123' },
     demoUser: { name: 'Neha Kulkarni', email: 'n.kulkarni@hospital.com', avatar: 'https://i.pravatar.cc/150?u=kulkarni' },
   },
   {
@@ -107,6 +114,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     routes: ['/portal'],
     actionKinds: [],
     accent: { text: 'text-emerald-300', bg: 'bg-emerald-500/15', ring: 'ring-emerald-500/40' },
+    credentials: { username: 'patient@mediai.com', password: 'Patient@123' },
     demoUser: { name: 'Sarah Johnson', email: 'sarah.j@email.com', avatar: 'https://i.pravatar.cc/150?u=P001' },
   },
 ];

@@ -1,8 +1,5 @@
 import React from 'react';
-import {
-  Users, UserRound, Calendar, CreditCard, Activity, Brain,
-  Sparkles, Zap, Shield, ArrowUpRight
-} from 'lucide-react';
+import { Users, UserRound, Calendar, CreditCard, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -13,9 +10,8 @@ import { GlassBadge } from '../components/ui/GlassBadge';
 import { GlassButton } from '../components/ui/GlassButton';
 import { PageHeader } from '../components/ui/PageHeader';
 import { StatCard } from '../components/ui/StatCard';
-import { AIDashboardWidget } from '../components/ai/AIDashboardWidget';
-import { AIAgentShowcase } from '../components/ai/AIAgentShowcase';
 import { AIActionQueue } from '../components/ai/AIActionQueue';
+import { ActivityFeed } from '../components/dashboard/ActivityFeed';
 import { db } from '../data';
 import { useSession } from '../context/SessionContext';
 import { cn } from '../utils/cn';
@@ -68,11 +64,10 @@ export const Dashboard: React.FC = () => {
   // use for monthly revenue, and a lab tech has none for the doctor roster.
   const visibleStats = statCards.filter(card => canSeeNav(card.navId));
   const showFinance = canSeeNav('billing');
-  const showAgents = role.actionKinds.length > 2;
   const firstName = role.demoUser.name.replace(/^Dr\.\s+/, '').split(' ')[0];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title={`Good to see you, ${firstName}`}
         subtitle={role.persona}
@@ -82,46 +77,45 @@ export const Dashboard: React.FC = () => {
           </span>
         }
         actions={
-          <>
-            <GlassBadge variant="primary" size="md">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />
-              AI Engine Live
-            </GlassBadge>
-            <GlassButton variant="primary" onClick={() => navigate('/ai-insights')}>
-              <Sparkles className="w-4 h-4" />
-              Run AI Scan
-            </GlassButton>
-          </>
+          <GlassButton variant="primary" onClick={() => navigate('/ai-insights')}>
+            <Sparkles className="w-4 h-4" />
+            Run AI scan
+          </GlassButton>
         }
       />
 
-      {/* KPI cards — scoped to what this role owns */}
+      {/* KPI strip — scoped to what this role owns */}
       {visibleStats.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {visibleStats.map((s, i) => (
             <StatCard key={s.label} {...s} index={i} />
           ))}
         </div>
       )}
 
-      {/* AI Intelligence Hub */}
-      <div className="reveal" style={{ animationDelay: '120ms' }}>
-        <AIDashboardWidget />
+      {/* Working area: what needs you, beside what just happened */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 min-w-0">
+          <AIActionQueue limit={3} />
+        </div>
+        <div className="min-w-0">
+          <ActivityFeed onViewAll={() => navigate('/patients')} />
+        </div>
       </div>
 
       {/* Charts */}
-      <div className={cn('grid grid-cols-1 gap-5', showFinance && 'lg:grid-cols-3')}>
+      <div className={cn('grid grid-cols-1 gap-4', showFinance && 'lg:grid-cols-3')}>
         {/* Revenue */}
         {showFinance && (
         <GlassCard className="lg:col-span-2 reveal" style={{ animationDelay: '160ms' }}>
-          <div className="flex items-start justify-between mb-6">
+          <div className="flex items-start justify-between mb-4">
             <div>
-              <h3 className="text-lg font-semibold text-app">Revenue Overview</h3>
-              <p className="text-app-subtle text-sm">Monthly revenue & appointment volume</p>
+              <h3 className="text-base font-semibold text-app">Revenue Overview</h3>
+              <p className="text-app-subtle text-xs">Revenue &amp; appointment volume</p>
             </div>
-            <GlassBadge variant="info">Last 6 Months</GlassBadge>
+            <GlassBadge variant="info" size="sm">6 months</GlassBadge>
           </div>
-          <div className="h-72">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={db.revenueChartData} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
                 <defs>
@@ -148,15 +142,15 @@ export const Dashboard: React.FC = () => {
 
         {/* Demographics donut */}
         <GlassCard className="reveal" style={{ animationDelay: '200ms' }}>
-          <h3 className="text-lg font-semibold text-app mb-1">Patient Demographics</h3>
-          <p className="text-app-subtle text-sm mb-2">By age group</p>
-          <div className="h-52 relative">
+          <h3 className="text-base font-semibold text-app">Patient Demographics</h3>
+          <p className="text-app-subtle text-xs mb-2">By age group</p>
+          <div className="h-44 relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={db.patientDemographics}
                   cx="50%" cy="50%"
-                  innerRadius={62} outerRadius={84}
+                  innerRadius={52} outerRadius={72}
                   paddingAngle={3} dataKey="value"
                   animationDuration={900}
                   stroke="none"
@@ -169,7 +163,7 @@ export const Dashboard: React.FC = () => {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-bold text-app tabular-nums">{totalPatients.toLocaleString()}</span>
+              <span className="text-xl font-bold text-app tabular-nums">{totalPatients.toLocaleString()}</span>
               <span className="text-xs text-app-subtle">Total</span>
             </div>
           </div>
@@ -185,69 +179,6 @@ export const Dashboard: React.FC = () => {
         </GlassCard>
       </div>
 
-      {/* AI Agents */}
-      {showAgents && (
-        <div className="reveal" style={{ animationDelay: '120ms' }}>
-          <AIAgentShowcase />
-        </div>
-      )}
-
-      {/* Alerts + Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* AI approval queue — clear the day's work without leaving the dashboard */}
-        <AIActionQueue />
-
-        {/* Recent activity */}
-        <GlassCard className="reveal" style={{ animationDelay: '160ms' }}>
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-indigo-500/15">
-                <Activity className="w-5 h-5 text-indigo-400" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-app">Recent Activity</h3>
-                <p className="text-xs text-app-subtle">Live hospital feed</p>
-              </div>
-            </div>
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs text-emerald-400 font-medium">Live</span>
-            </span>
-          </div>
-          <div className="space-y-1">
-            {db.recentActivities.map((activity, i) => (
-              <div
-                key={activity.id}
-                className="reveal flex items-start gap-3 p-2.5 rounded-xl hover:bg-[var(--surface-2)] transition-colors"
-                style={{ animationDelay: `${180 + i * 60}ms` }}
-              >
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  activity.type === 'ai' ? 'bg-violet-500/15' :
-                  activity.type === 'appointment' ? 'bg-indigo-500/15' :
-                  activity.type === 'lab' ? 'bg-cyan-500/15' : 'bg-emerald-500/15'}`}>
-                  {activity.type === 'ai' && <Brain className="w-4 h-4 text-violet-400" />}
-                  {activity.type === 'appointment' && <Calendar className="w-4 h-4 text-indigo-400" />}
-                  {activity.type === 'lab' && <Zap className="w-4 h-4 text-cyan-400" />}
-                  {activity.type === 'patient' && <Shield className="w-4 h-4 text-emerald-400" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-app leading-snug">{activity.description}</p>
-                  <p className="text-sm text-app-muted">{activity.patient}</p>
-                  <p className="text-xs text-app-subtle mt-0.5">{activity.time}</p>
-                </div>
-                {activity.type === 'ai' && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 font-medium flex items-center gap-1 flex-shrink-0">
-                    <Sparkles className="w-2.5 h-2.5" /> AI
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-          <button onClick={() => navigate('/patients')} className="w-full mt-3 flex items-center justify-center gap-1.5 text-sm text-app-muted hover:text-app transition-colors py-2">
-            View all activity <ArrowUpRight className="w-3.5 h-3.5" />
-          </button>
-        </GlassCard>
-      </div>
     </div>
   );
 };

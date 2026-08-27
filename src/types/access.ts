@@ -39,5 +39,11 @@ export interface AccessRole {
   actionKinds: AIActionKind[];
   /** Tailwind classes for the role chip. */
   accent: { text: string; bg: string; ring: string };
+  /**
+   * Sign-in credentials for this role. Demo values only — there is no auth
+   * behind them; the login screen matches against these strings so each role
+   * has its own way in.
+   */
+  credentials: { username: string; password: string };
   demoUser: { name: string; email: string; avatar: string };
 }

@@ -53,21 +53,40 @@ There is also exactly **one queue**. An alert you can't act on isn't worth a not
 task inbox and the action queue are the same surface — reachable from the dashboard, the header,
 the Copilot, or AI Insights.
 
+## Information design
+
+Screens are built to answer one question first, then get out of the way. Three rules:
+
+1. **Action before ambience.** The dashboard opens with what needs approving, not with charts.
+   Analytics sit below the actionable list on AI Insights for the same reason.
+2. **One decision per screen.** Login asks who you are — everything else on that page is a
+   consequence of that choice, shown live rather than described.
+3. **Collapsed rows carry three signals, not nine.** An AI insight row shows urgency, patient, and
+   whether work is outstanding. Confidence, source agent, and timing appear when you open it.
+
+Nothing was deleted to achieve this — detail moved to where it is actually read, and content that
+appeared on two screens now appears on one.
+
 ## Roles
 
 Eight roles, chosen at login. The role is not a label — it changes the sidebar, the dashboard, the
 command palette, the routes you may open, and **which drafted actions reach your queue**.
 
-| Role | Sees | Approves | Queue |
-| --- | --- | --- | --- |
-| Administrator | Everything | Everything | 18 |
-| Doctor | Clinical modules | Everything, including medication | 18 |
-| Assistant Doctor | Clinical modules | Everything **except** medication | 14 |
-| Nurse | Wards, patients, labs | Monitoring, outreach, education, visits | 9 |
-| Pharmacist | Pharmacy, patients | Medication orders only | 4 |
-| Lab Technician | Laboratory, patients | Lab orders only | 2 |
-| Receptionist | Front desk, billing | Bookings, referrals, outreach | 4 |
-| Patient | Their own care only | — | — |
+| Role | Username | Password | Approves | Queue |
+| --- | --- | --- | --- | --- |
+| Administrator | `admin@mediai.com` | `Admin@123` | Everything | 18 |
+| Doctor | `doctor@mediai.com` | `Doctor@123` | Everything, including medication | 18 |
+| Assistant Doctor | `assistant@mediai.com` | `Assist@123` | Everything **except** medication | 14 |
+| Nurse | `nurse@mediai.com` | `Nurse@123` | Monitoring, outreach, education, visits | 9 |
+| Pharmacist | `pharmacist@mediai.com` | `Pharma@123` | Medication orders only | 4 |
+| Lab Technician | `lab@mediai.com` | `Lab@123` | Lab orders only | 2 |
+| Receptionist | `reception@mediai.com` | `Front@123` | Bookings, referrals, outreach | 4 |
+| Patient | `patient@mediai.com` | `Patient@123` | — (own portal) | — |
+
+Each role has its own sign-in. Selecting a role on the login screen fills its credentials, and the
+fields stay editable — the username you submit decides which workspace you land in, so the picker
+is a shortcut rather than the authority. These are demo values checked in the browser; there is no
+authentication behind them.
 
 A pharmacist signs in to four medication drafts and a four-item sidebar, not twenty-one items and
 thirteen nav entries belonging to other people. That is the whole point: **the role removes work
@@ -108,6 +127,9 @@ Switch roles from the account menu without signing out, which makes the differen
   unpaid invoices, draft supplier reorders.
 - **Role workspaces** — tailored views for receptionists, attending doctors, and pharmacy/lab leads.
 - **Six themes** — five dark variants plus a full light mode, driven entirely by CSS design tokens.
+- **Login that previews the app** — every role has its own username and password. Picking one fills
+  the credentials and renders a live miniature of that person's workspace — their real sidebar and
+  their real approval queue, built from the same data the app runs on. Arrow keys walk the roles.
 - **Patient portal** — a separate, minimal shell: next visit with join/reschedule, lab results with
   plain-language flags, prescriptions, bills with pay/receipt, and a message-your-care-team action.
 

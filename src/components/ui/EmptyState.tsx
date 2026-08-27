@@ -12,6 +12,8 @@ interface EmptyStateProps {
   action?: { label: string; onClick: () => void; icon?: LucideIcon };
   /** Secondary, lower-emphasis action. */
   secondaryAction?: { label: string; onClick: () => void };
+  /** Tighter padding for use inside a card rather than as a whole page. */
+  compact?: boolean;
   className?: string;
 }
 
@@ -25,23 +27,27 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   description,
   action,
   secondaryAction,
+  compact = false,
   className,
 }) => (
-  <div className={cn('flex flex-col items-center justify-center text-center px-6 py-16', className)}>
-    <div className="relative mb-5">
+  <div className={cn('flex flex-col items-center justify-center text-center px-6', compact ? 'py-8' : 'py-16', className)}>
+    <div className={cn('relative', compact ? 'mb-3' : 'mb-5')}>
       <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-2xl" aria-hidden="true" />
-      <div className="relative w-16 h-16 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center">
-        <Icon className="w-7 h-7 text-app-subtle" />
+      <div className={cn(
+        'relative rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center',
+        compact ? 'w-12 h-12' : 'w-16 h-16'
+      )}>
+        <Icon className={cn('text-app-subtle', compact ? 'w-5 h-5' : 'w-7 h-7')} />
       </div>
     </div>
 
-    <h3 className="text-base font-semibold text-app">{title}</h3>
+    <h3 className={cn('font-semibold text-app', compact ? 'text-sm' : 'text-base')}>{title}</h3>
     {description && (
-      <p className="text-sm text-app-muted mt-1.5 max-w-sm leading-relaxed">{description}</p>
+      <p className={cn('text-app-muted mt-1.5 max-w-sm leading-relaxed', compact ? 'text-xs' : 'text-sm')}>{description}</p>
     )}
 
     {(action || secondaryAction) && (
-      <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
+      <div className={cn('flex flex-wrap items-center justify-center gap-2', compact ? 'mt-3.5' : 'mt-5')}>
         {action && (
           <GlassButton variant="primary" size="sm" onClick={action.onClick}>
             {action.icon && <action.icon className="w-4 h-4" />}
