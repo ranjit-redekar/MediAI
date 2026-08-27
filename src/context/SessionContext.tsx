@@ -3,6 +3,10 @@ import { ACCESS_ROLES, getRole, canAccess } from '../data/accessRoles';
 import type { AccessRole, RoleId } from '../types/access';
 
 const STORAGE_KEY = 'mediai-session';
+/** Namespace for every key this app writes, so sign-out can sweep them. */
+const APP_KEY_PREFIX = 'mediai-';
+/** A device preference, not a user detail — deliberately survives sign-out. */
+const THEME_KEY = 'mediai-theme';
 /** Pre-session builds stored a bare role id here; it is not a sign-in record. */
 const LEGACY_ROLE_KEY = 'mediai-role';
 
@@ -79,9 +83,30 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
   }, []);
 
+  /**
+   * Clears everything the previous person did, not just the session record.
+   *
+   * The data providers (patients, appointments, AI actions, staff, journey)
+   * hold their mutations in React state above the router and never unmount, so
+   * dropping the storage key alone would leave the next person looking at the
+   * last person's approved actions and edited records. A full document load is
+   * the one thing that resets all of it — and it keeps working when another
+   * provider is added later, which a hand-written list of resets would not.
+   */
   const signOut = useCallback(() => {
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    try {
+      // Every key this app owns, except the device-level theme preference.
+      Object.keys(localStorage)
+        .filter(key => key.startsWith(APP_KEY_PREFIX) && key !== THEME_KEY)
+        .forEach(key => localStorage.removeItem(key));
+    } catch { /* storage blocked — the reload below still clears memory */ }
+
     setSession(null);
+
+    if (typeof window !== 'undefined') {
+      // BASE_URL carries the GitHub Pages sub-path and always ends in a slash.
+      window.location.assign(`${import.meta.env.BASE_URL}login`);
+    }
   }, []);
 
   // Signed-out consumers still render (the login screen previews a workspace),

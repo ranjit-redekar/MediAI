@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { AIAgentDrawer } from './agents/AIAgentDrawer';
@@ -26,7 +26,6 @@ export const Layout: React.FC = () => {
   const { signOut } = useSession();
   const mainRef = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -73,7 +72,7 @@ export const Layout: React.FC = () => {
           onOpenCopilot={() => setCopilotOpen(true)}
           isDark={isDark}
           onToggleTheme={toggleTheme}
-          onLogout={() => { signOut(); navigate('/login'); }}
+          onLogout={signOut}
           taskCount={pending.length}
         />
 
