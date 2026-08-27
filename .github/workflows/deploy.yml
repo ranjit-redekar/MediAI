@@ -26,15 +26,20 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
+      # `npm ci` installs strictly from the lockfile, and npm only records the
+      # optional native binaries for the platform the lockfile was generated on.
+      # This lockfile was written on macOS, so `npm ci` on Linux would leave
+      # Vite's rolldown binding (@rolldown/binding-linux-x64-gnu) uninstalled
+      # and the build would fail. `npm install` resolves the right binary for
+      # whichever platform the runner is on.
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
-      - name: Lint
-        run: npm run lint
-        continue-on-error: true
+      - name: Type check
+        run: npx tsc -b
 
       - name: Build
         run: npm run build
