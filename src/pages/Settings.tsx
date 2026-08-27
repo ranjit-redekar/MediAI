@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, Bell, Shield, Palette, Save, Check, Sun, Moon, LogOut } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassInput } from '../components/ui/GlassInput';
@@ -7,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { cn } from '../utils/cn';
 
 export const Settings: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const { theme, themes, setTheme } = useTheme();
 
@@ -43,7 +45,7 @@ export const Settings: React.FC = () => {
           <GlassButton
             variant="ghost"
             className="flex items-center gap-2 px-4 text-red-200 border border-red-500/30"
-            onClick={() => window.location.assign('/login')}
+            onClick={() => navigate('/login')}
           >
             <LogOut className="w-4 h-4" />
             Logout

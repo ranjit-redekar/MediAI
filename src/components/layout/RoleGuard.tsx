@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Lock, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { GlassButton } from '../ui/GlassButton';
@@ -14,6 +14,7 @@ import { cn } from '../../utils/cn';
 export const RoleGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { role, can } = useSession();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
 
   if (role.shell === 'patient') {
     return <Navigate to="/portal" replace />;
@@ -35,7 +36,7 @@ export const RoleGuard: React.FC<{ children: React.ReactNode }> = ({ children })
         <p className="text-xs text-app-subtle mt-3">
           Need access? Switch role from the account menu, or ask an administrator.
         </p>
-        <GlassButton variant="primary" className="mt-5" onClick={() => window.location.assign(role.home)}>
+        <GlassButton variant="primary" className="mt-5" onClick={() => navigate(role.home)}>
           <ArrowLeft className="w-4 h-4" /> Back to my workspace
         </GlassButton>
       </GlassCard>

@@ -206,6 +206,47 @@ loads on demand, which keeps it off the login screen entirely.
 | Single bundle | ~291 kB |
 | Code-split | ~96 kB |
 
+## Deploying to GitHub Pages
+
+The repo ships with a Pages workflow at `.github/workflows/deploy.yml`. Every push to `main`
+builds and publishes automatically.
+
+**One-time setup** — in the repository, go to **Settings → Pages** and set **Source** to
+**GitHub Actions**. Nothing deploys until this is done; it cannot be set from a commit.
+
+The site then lives at **https://ranjit-redekar.github.io/MediAI/**.
+
+### How the sub-path is handled
+
+Pages serves project sites from `/<repo>/`, which breaks three things by default. All three are
+already handled:
+
+| Problem | Fix |
+| --- | --- |
+| Assets 404 under the sub-path | `base: '/MediAI/'` in `vite.config.ts` |
+| Router doesn't know about the prefix | `<BrowserRouter basename={import.meta.env.BASE_URL}>` |
+| Deep links 404 on refresh (no server rewrite) | Build emits `404.html` as a copy of `index.html`, so Pages serves the SPA shell and the router takes over |
+
+A `.nojekyll` file is emitted too, otherwise Pages strips Vite's `_`-prefixed asset files.
+
+### Deploying somewhere else
+
+The base path is overridable, so a custom domain or user site (`<user>.github.io`) works without
+editing the config:
+
+```sh
+BASE_PATH=/ npm run build
+```
+
+### Checking the build locally
+
+`npm run preview` serves at the same sub-path the deployed site uses, so deep links and asset
+paths behave exactly as they will in production:
+
+```sh
+npm run build && npm run preview   # → http://localhost:4173/MediAI/
+```
+
 ## Mock Data & Wiring Up a Backend
 
 - `src/data/index.ts` aggregates every mock table (`patients`, `doctors`, `appointments`, `bills`,
@@ -220,14 +261,6 @@ loads on demand, which keeps it off the login screen entirely.
 
 A stakeholder-friendly walkthrough of every module lives in
 [`docs/MediAI_Technical_Overview.md`](docs/MediAI_Technical_Overview.md).
-
-## Roadmap
-
-1. Connect the context layer to real APIs and persist mutations.
-2. Replace the mock session with real authentication — the `SessionContext` boundary and
-   `canAccess` rules are already in place, so server-side enforcement slots in behind them.
-3. Extend drafted actions to intake — AI-prefilled registration and visit notes for human review.
-4. Add Vitest/RTL smoke tests and Playwright journeys for routing and modal flows.
 
 ---
 
