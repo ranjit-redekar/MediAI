@@ -2,8 +2,7 @@ import React from 'react';
 import { Users, UserRound, Calendar, CreditCard, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassBadge } from '../components/ui/GlassBadge';
@@ -16,8 +15,6 @@ import { TodaySchedule } from '../components/dashboard/TodaySchedule';
 import { db } from '../data';
 import { useSession } from '../context/SessionContext';
 import { cn } from '../utils/cn';
-
-const COLORS = ['#6366f1', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
 
 /** Shape of a dashboard KPI tile, before role filtering. */
 interface StatCardSpec {
@@ -59,7 +56,6 @@ const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { role, canSeeNav } = useSession();
-  const totalPatients = db.patientDemographics.reduce((s, d) => s + d.value, 0);
 
   // A dashboard should only show numbers the viewer can act on. A nurse has no
   // use for monthly revenue, and a lab tech has none for the doctor roster.
@@ -120,11 +116,10 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Charts */}
-      <div className={cn('grid grid-cols-1 gap-4', showFinance && 'lg:grid-cols-3')}>
-        {/* Revenue */}
-        {showFinance && (
-        <GlassCard className="lg:col-span-2 reveal" style={{ animationDelay: '160ms' }}>
+      {/* Revenue — finance-facing roles only */}
+      {showFinance && (
+      <div>
+        <GlassCard hover={false} className="reveal" style={{ animationDelay: '160ms' }}>
           <div className="flex items-start justify-between mb-4">
             <div>
               <h3 className="text-base font-semibold text-app">Revenue Overview</h3>
@@ -155,47 +150,9 @@ export const Dashboard: React.FC = () => {
             </ResponsiveContainer>
           </div>
         </GlassCard>
-        )}
 
-        {/* Demographics donut */}
-        <GlassCard className="reveal" style={{ animationDelay: '200ms' }}>
-          <h3 className="text-base font-semibold text-app">Patient Demographics</h3>
-          <p className="text-app-subtle text-xs mb-2">By age group</p>
-          <div className="h-44 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={db.patientDemographics}
-                  cx="50%" cy="50%"
-                  innerRadius={52} outerRadius={72}
-                  paddingAngle={3} dataKey="value"
-                  animationDuration={900}
-                  stroke="none"
-                >
-                  {db.patientDemographics.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-xl font-bold text-app tabular-nums">{totalPatients.toLocaleString()}</span>
-              <span className="text-xs text-app-subtle">Total</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            {db.patientDemographics.map((item, i) => (
-              <div key={item.name} className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                <span className="text-xs text-app-muted">{item.name}</span>
-                <span className="text-xs text-app-subtle ml-auto">{item.value}</span>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
       </div>
-
+      )}
     </div>
   );
 };

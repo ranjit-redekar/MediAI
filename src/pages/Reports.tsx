@@ -10,6 +10,8 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { SortableHeader, TableHeader, useSort } from '../components/ui/DataTable';
 import { MiniStat } from '../components/ui/StatCard';
 import { useToast } from '../context/ToastContext';
+import { db } from '../data';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface Report {
   id: number;
@@ -30,11 +32,14 @@ const reports: Report[] = [
   { id: 6, title: 'AI Insights Report',     type: 'AI Analytics', date: '2024-02-27', size: '2.7 MB', bytes: 2_700_000 },
 ];
 
+const DEMOGRAPHIC_COLORS = ['#6366f1', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
+
 export const Reports: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const { toast } = useToast();
   const { sortKey, direction, onSort, sortRows } = useSort<Report>('date', 'desc');
+  const totalPatients = db.patientDemographics.reduce((sum, d) => sum + d.value, 0);
 
   const typeTabs = useMemo(() => {
     const counts = reports.reduce<Record<string, number>>((acc, r) => {
@@ -99,6 +104,63 @@ export const Reports: React.FC = () => {
         <MiniStat icon={Users} label="Patient Reports" value={12} tint="text-accent-light" ring="bg-accent/15" index={2} />
         <MiniStat icon={TrendingUp} label="Financial Reports" value={6} tint="text-amber-400" ring="bg-amber-500/15" index={3} />
       </div>
+
+      <GlassCard hover={false} className="reveal">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+          <div className="relative h-44 w-44 flex-shrink-0 mx-auto lg:mx-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={db.patientDemographics}
+                  cx="50%" cy="50%"
+                  innerRadius={52} outerRadius={72}
+                  paddingAngle={3} dataKey="value"
+                  animationDuration={900}
+                  stroke="none"
+                >
+                  {db.patientDemographics.map((_, i) => (
+                    <Cell key={i} fill={DEMOGRAPHIC_COLORS[i % DEMOGRAPHIC_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--surface-solid)',
+                    border: '1px solid var(--border-strong)',
+                    borderRadius: 12,
+                    fontSize: 12,
+                    color: 'var(--text)',
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-xl font-bold text-app tabular-nums">{totalPatients.toLocaleString()}</span>
+              <span className="text-[11px] text-app-subtle">patients</span>
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-app">Patient Demographics</h3>
+            <p className="text-app-subtle text-xs mb-3">Registered patients by age group</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+              {db.patientDemographics.map((item, i) => {
+                const share = Math.round((item.value / totalPatients) * 100);
+                return (
+                  <div key={item.name} className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: DEMOGRAPHIC_COLORS[i % DEMOGRAPHIC_COLORS.length] }}
+                    />
+                    <span className="text-xs text-app-muted flex-1 min-w-0 truncate">{item.name}</span>
+                    <span className="text-xs text-app tabular-nums font-medium">{item.value}</span>
+                    <span className="text-xs text-app-subtle tabular-nums w-9 text-right">{share}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </GlassCard>
 
       <GlassCard padding="sm" hover={false}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
