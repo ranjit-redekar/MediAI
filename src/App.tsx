@@ -28,6 +28,7 @@ const AIInsights = lazy(() => import('./pages/AIInsights').then(m => ({ default:
 const AIAgentDetail = lazy(() => import('./pages/AIAgentDetail').then(m => ({ default: m.AIAgentDetail })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Register = lazy(() => import('./pages/Register').then(m => ({ default: m.Register })));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const RoleDirectory = lazy(() => import('./pages/Roles/RoleDirectory').then(m => ({ default: m.RoleDirectory })));
 const RoleDetail = lazy(() => import('./pages/Roles/RoleDetail').then(m => ({ default: m.RoleDetail })));
@@ -40,6 +41,7 @@ function App() {
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* Patients get their own shell — never the admin chrome. */}
           <Route path="/portal" element={<RequireAuth><PortalLayout /></RequireAuth>}>

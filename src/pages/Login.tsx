@@ -296,6 +296,17 @@ export const Login: React.FC = () => {
               <Copy className="w-3 h-3" /> Copy demo credentials
             </button>
           </div>
+
+          <p className="mt-4 text-xs text-app-muted">
+            New hospital?{' '}
+            <button
+              type="button"
+              onClick={() => navigate('/register')}
+              className="font-semibold text-app hover:underline focus-ring rounded"
+            >
+              Create a workspace
+            </button>
+          </p>
         </div>
 
         {/* Live preview of the workspace behind that sign-in */}

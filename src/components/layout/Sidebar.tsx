@@ -16,6 +16,7 @@ import { cn } from '../../utils/cn';
 import { db } from '../../data';
 import { useSession } from '../../context/SessionContext';
 import { navSections } from '../../data/navigation';
+import { readWorkspace } from '../../data/workspace';
 import type { LucideIcon } from 'lucide-react';
 import type { AIAgent } from '../../types';
 import { todayKey } from '../../utils/date';
@@ -50,6 +51,8 @@ const agentStatusText: Record<AIAgent['status'], string> = {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, onToggleCompact, onOpenAgents }) => {
   const { role, canSeeNav } = useSession();
+  // Read once per mount — a workspace only changes by signing up, which reloads.
+  const workspace = React.useMemo(() => readWorkspace(), []);
   const today = todayKey();
   const todaysAppointments = db.appointments.filter(a => a.date === today && a.status === 'Scheduled').length;
   const pendingBills = db.bills.filter(b => b.status !== 'Paid').length;
@@ -113,7 +116,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
                     MediAI
                     <Sparkles className="w-3.5 h-3.5 text-violet-400" />
                   </h1>
-                  <p className={cn('text-xs font-medium', role.accent.text)}>{role.name} workspace</p>
+                  <p className={cn('text-xs font-medium truncate max-w-[10rem]', role.accent.text)}>
+                    {workspace ? `${workspace.name} · ${role.name}` : `${role.name} workspace`}
+                  </p>
                 </div>
               )}
             </div>
