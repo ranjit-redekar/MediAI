@@ -244,7 +244,7 @@ export const Settings: React.FC = () => {
 };
 
 const WorkspaceSettings: React.FC = () => {
-  const { workspace, saveWorkspace } = useSession();
+  const { workspace, updateWorkspace, addInvite, revokeInvite } = useSession();
   const { staff } = useStaff();
   const { toast } = useToast();
 
@@ -257,34 +257,40 @@ const WorkspaceSettings: React.FC = () => {
   const daysLeft = trialDaysLeft(workspace.trialEndsAt);
   const seatsUsed = staff.length + workspace.invites.length;
 
-  const saveDetails = (e: React.FormEvent) => {
+  const saveDetails = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveWorkspace({ ...workspace, name: name.trim(), facilityType });
-    toast('Workspace updated', { variant: 'success' });
+    const error = await updateWorkspace({ name: name.trim(), facilityType });
+    toast(error ? 'Couldn’t save workspace' : 'Workspace updated', { description: error ?? undefined, variant: error ? 'error' : 'success' });
   };
 
-  const switchPlan = (planId: string) => {
-    saveWorkspace({ ...workspace, planId });
+  const switchPlan = async (planId: string) => {
+    const error = await updateWorkspace({ planId });
+    if (error) {
+      toast('Plan not changed', { description: error, variant: 'warning' });
+      return;
+    }
     toast(`Switched to ${getPlan(planId).name}`, {
       description: daysLeft === null ? 'The change applies from your next invoice.' : 'Your trial continues on the new plan.',
       variant: 'success',
     });
   };
 
-  const sendInvite = (e: React.FormEvent) => {
+  const sendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     const email = inviteEmail.trim().toLowerCase();
-    if (workspace.invites.some(inv => inv.email.toLowerCase() === email)) {
-      toast('Already invited', { description: `${email} has a pending invite.`, variant: 'warning' });
+    const error = await addInvite({ email, roleId: inviteRole });
+    if (error) {
+      toast('Invite not sent', { description: error, variant: 'warning' });
       return;
     }
-    saveWorkspace({ ...workspace, invites: [...workspace.invites, { email, roleId: inviteRole }] });
     setInviteEmail('');
     toast('Invite sent', { description: email, variant: 'success' });
   };
 
-  const revokeInvite = (email: string) =>
-    saveWorkspace({ ...workspace, invites: workspace.invites.filter(inv => inv.email !== email) });
+  const onRevoke = async (email: string) => {
+    const error = await revokeInvite(email);
+    if (error) toast('Couldn’t revoke invite', { description: error, variant: 'error' });
+  };
 
   return (
     <div className="space-y-6">
@@ -414,7 +420,7 @@ const WorkspaceSettings: React.FC = () => {
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">Pending</span>
                 <button
                   type="button"
-                  onClick={() => revokeInvite(inv.email)}
+                  onClick={() => onRevoke(inv.email)}
                   aria-label={`Revoke invite for ${inv.email}`}
                   className="p-1 rounded-md text-app-subtle hover:text-app focus-ring"
                 >

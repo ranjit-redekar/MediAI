@@ -31,12 +31,12 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
-  const { role, roles, signInAs } = useSession();
+  const { role, roles, signInAs, signIn, isDemo } = useSession();
   const { toast } = useToast();
 
   const [selected, setSelected] = useState<RoleId>(role.id);
-  const [username, setUsername] = useState(role.credentials.username);
-  const [password, setPassword] = useState(role.credentials.password);
+  const [username, setUsername] = useState(isDemo ? role.credentials.username : '');
+  const [password, setPassword] = useState(isDemo ? role.credentials.password : '');
   const [revealed, setRevealed] = useState(false);
   const [capsOn, setCapsOn] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,9 +77,24 @@ export const Login: React.FC = () => {
       ?.focus();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
+
+    if (!isDemo) {
+      setError(null);
+      setLoading(true);
+      const result = await signIn(username, password);
+      setLoading(false);
+      if ('error' in result) {
+        setError(result.error);
+        return;
+      }
+      const from = (location.state as { from?: string } | null)?.from;
+      const target = from && result.role.shell === 'admin' && canAccess(result.role, from) ? from : result.role.home;
+      navigate(target, { replace: true });
+      return;
+    }
 
     // Credentials are the identity — the picker is only a shortcut, so the
     // username submitted decides which workspace you land in.
@@ -142,7 +157,10 @@ export const Login: React.FC = () => {
         {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </GlassButton>
 
-      <div className="relative w-full max-w-5xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-8 lg:gap-12 items-center">
+      <div className={cn(
+        'relative w-full grid grid-cols-1 gap-8 lg:gap-12 items-center',
+        isDemo ? 'max-w-5xl lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]' : 'max-w-md'
+      )}>
         {/* Sign in */}
         <div className="reveal">
           <div className="flex items-center gap-3 mb-6">
@@ -153,10 +171,11 @@ export const Login: React.FC = () => {
               <h1 className="text-xl font-bold text-app flex items-center gap-1.5">
                 MediAI <Sparkles className="w-3.5 h-3.5 text-violet-400" />
               </h1>
-              <p className="text-app-muted text-sm">Every role gets a different app</p>
+              <p className="text-app-muted text-sm">{isDemo ? 'Every role gets a different app' : 'Sign in to your hospital workspace'}</p>
             </div>
           </div>
 
+          {isDemo && (<>
           {/* Role grid */}
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <p className="text-[10px] uppercase tracking-wider font-semibold text-app-subtle">
@@ -216,12 +235,14 @@ export const Login: React.FC = () => {
               <p className="text-[11px] text-app-muted leading-snug line-clamp-2">{active.persona}</p>
             </div>
           </div>
+          </>)}
 
           {/* Credentials */}
           <form onSubmit={handleSubmit} className="mt-5 space-y-3.5">
             <GlassInput
-              label="Username"
-              type="text"
+              label={isDemo ? 'Username' : 'Email'}
+              type={isDemo ? 'text' : 'email'}
+              required
               autoComplete="username"
               value={username}
               onChange={e => { setUsername(e.target.value); setError(null); }}
@@ -276,7 +297,7 @@ export const Login: React.FC = () => {
             <GlassButton type="submit" variant="primary" size="lg" className="w-full" disabled={loading}>
               {loading
                 ? <><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Signing in…</>
-                : <>Sign in as {active.name} <ArrowRight className="w-4 h-4" /></>}
+                : <>{isDemo ? `Sign in as ${active.name}` : 'Sign in'} <ArrowRight className="w-4 h-4" /></>}
             </GlassButton>
           </form>
 
@@ -288,6 +309,7 @@ export const Login: React.FC = () => {
             >
               Forgot password?
             </button>
+            {isDemo && (
             <button
               type="button"
               onClick={copyCredentials}
@@ -295,6 +317,7 @@ export const Login: React.FC = () => {
             >
               <Copy className="w-3 h-3" /> Copy demo credentials
             </button>
+            )}
           </div>
 
           <p className="mt-4 text-xs text-app-muted">
@@ -310,12 +333,14 @@ export const Login: React.FC = () => {
         </div>
 
         {/* Live preview of the workspace behind that sign-in */}
+        {isDemo && (
         <div className="hidden lg:block">
           <RoleWorkspacePreview role={active} />
           <p className="text-center text-xs text-app-subtle mt-6 leading-relaxed max-w-sm mx-auto">
             <span className={cn('font-semibold', active.accent.text)}>{active.name}</span> — {active.persona}
           </p>
         </div>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Brain, Sparkles, Moon, Sun, Building2, Mail, Lock, User, ArrowRight, ArrowLeft,
-  Check, AlertCircle, Globe, Plus, X,
+  Check, AlertCircle, Globe, Plus, X, MailCheck,
 } from 'lucide-react';
 import { GlassButton } from '../components/ui/GlassButton';
 import { GlassInput } from '../components/ui/GlassInput';
@@ -10,7 +10,7 @@ import { GlassSelect } from '../components/ui/GlassSelect';
 import { useTheme } from '../context/ThemeContext';
 import { useSession } from '../context/SessionContext';
 import {
-  FACILITY_TYPES, INVITABLE_ROLES, PLANS, TEAM_SIZES, slugify, trialEndDate,
+  FACILITY_TYPES, INVITABLE_ROLES, PLANS, TEAM_SIZES, slugify,
 } from '../data/workspace';
 import type { Invite } from '../data/workspace';
 import { cn } from '../utils/cn';
@@ -20,11 +20,13 @@ const STEPS = ['Workspace', 'Your account', 'Plan', 'Team'] as const;
 export const Register: React.FC = () => {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
-  const { signInAs, saveWorkspace } = useSession();
+  const { signUp } = useSession();
 
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Set when the backend wants the email confirmed before first sign-in. */
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   const [org, setOrg] = useState('');
   const [facility, setFacility] = useState(FACILITY_TYPES[0].value);
@@ -43,7 +45,7 @@ export const Register: React.FC = () => {
 
   // Each step is its own form, so the browser's own validation gates every
   // "Continue" and nothing hand-written duplicates `required` or `type=email`.
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (step === 1 && password !== confirm) {
@@ -58,26 +60,30 @@ export const Register: React.FC = () => {
     }
 
     setCreating(true);
-    window.setTimeout(() => {
-      saveWorkspace({
-        name: org.trim(),
-        slug,
-        facilityType: facility,
-        teamSize: size,
-        planId,
-        trialEndsAt: trialEndDate(),
-        // Blank rows are the "skip" path, not invites.
-        invites: invites
-          .map(inv => ({ ...inv, email: inv.email.trim() }))
-          .filter(inv => inv.email),
-        adminName: name.trim(),
-        adminEmail: email.trim(),
-        createdAt: new Date().toISOString(),
-      });
+    const result = await signUp({
+      workspaceName: org.trim(),
+      slug,
+      facilityType: facility,
+      teamSize: size,
+      planId,
+      fullName: name.trim(),
+      email: email.trim(),
+      password,
+      // Blank rows are the "skip" path, not invites.
+      invites: invites
+        .map(inv => ({ ...inv, email: inv.email.trim().toLowerCase() }))
+        .filter(inv => inv.email),
+    });
+    setCreating(false);
+
+    if (result.error) {
+      setError(result.error);
+    } else if (result.needsConfirmation) {
+      setSentTo(email.trim());
+    } else {
       // Whoever signs the hospital up owns it — they land as the administrator.
-      signInAs('admin', email.trim());
       navigate('/', { replace: true });
-    }, 700);
+    }
   };
 
   return (
@@ -132,6 +138,15 @@ export const Register: React.FC = () => {
           ))}
         </ol>
 
+        {sentTo ? (
+          <div className="reveal text-center py-6">
+            <MailCheck className="w-10 h-10 mx-auto text-primary mb-4" />
+            <h2 className="text-lg font-semibold text-app mb-2">Confirm your email</h2>
+            <p className="text-sm text-app-muted leading-relaxed">
+              We sent a link to <strong className="text-app">{sentTo}</strong>. Open it to finish creating {org.trim()}, then sign in.
+            </p>
+          </div>
+        ) : (
         <form key={step} onSubmit={handleSubmit} className="space-y-4">
           {step === 0 && (
             <>
@@ -320,6 +335,7 @@ export const Register: React.FC = () => {
             </GlassButton>
           </div>
         </form>
+        )}
 
         <p className="mt-5 text-center text-xs text-app-muted">
           Already have a workspace?{' '}

@@ -254,6 +254,29 @@ paths behave exactly as they will in production:
 npm run build && npm run preview   # → http://localhost:4173/MediAI/
 ```
 
+## Demo vs production
+
+The same build runs in two modes, chosen by environment variables:
+
+| | Demo (default) | Production |
+| --- | --- | --- |
+| Trigger | `VITE_SUPABASE_*` unset | `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` set |
+| Sign-in | Role picker, demo credentials | Supabase Auth (email + password) |
+| Hospital, plan, invites | This browser's `localStorage` | Postgres, isolated per hospital by row-level security |
+| Clinical data | Mock | Still mock — migrated module by module |
+
+Run production mode locally (needs Docker):
+
+```sh
+npx supabase start                        # local Postgres + Auth, applies supabase/migrations
+cp .env.example .env.local                # paste PUBLISHABLE_KEY from `npx supabase status`
+npm run dev
+node supabase/tests/tenancy.check.mjs     # proves tenant isolation and billing-only columns
+```
+
+Secrets (Supabase secret key, Stripe, Claude) never go in the frontend or this repo — they live in
+Supabase project secrets and are read by Edge Functions only.
+
 ## Mock Data & Wiring Up a Backend
 
 - `src/data/index.ts` aggregates every mock table (`patients`, `doctors`, `appointments`, `bills`,

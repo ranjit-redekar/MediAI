@@ -13,7 +13,7 @@ import { cn } from '../../utils/cn';
  * like an admin console.
  */
 export const PortalLayout: React.FC = () => {
-  const { role, roles, signInAs, signOut } = useSession();
+  const { role, roles, signInAs, signOut, isDemo } = useSession();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -69,6 +69,7 @@ export const PortalLayout: React.FC = () => {
                     <p className="text-sm font-semibold text-app truncate">{role.demoUser.name}</p>
                     <p className="text-xs text-app-subtle truncate">{role.demoUser.email}</p>
                   </div>
+                  {isDemo && (<>
                   <p className="px-3 pb-1.5 text-[10px] uppercase tracking-wider font-semibold text-app-subtle">
                     Switch demo role
                   </p>
@@ -83,6 +84,7 @@ export const PortalLayout: React.FC = () => {
                       </button>
                     ))}
                   </div>
+                  </>)}
                   <div className="h-px bg-[var(--border)] my-1.5" />
                   <button
                     role="menuitem"
