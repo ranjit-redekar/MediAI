@@ -1,23 +1,38 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Bell, Shield, Palette, Save, Check, Sun, Moon, LogOut } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import {
+  User, Bell, Shield, Palette, Save, Check, Sun, Moon, LogOut, Building2, Globe, Mail, Send, X, CreditCard,
+} from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassInput } from '../components/ui/GlassInput';
+import { GlassSelect } from '../components/ui/GlassSelect';
 import { GlassButton } from '../components/ui/GlassButton';
 import { useTheme } from '../context/ThemeContext';
+import { useSession } from '../context/SessionContext';
+import { useStaff } from '../context/StaffContext';
+import { useToast } from '../context/ToastContext';
+import { FACILITY_TYPES, INVITABLE_ROLES, PLANS, getPlan, trialDaysLeft } from '../data/workspace';
+import type { Invite } from '../data/workspace';
 import { cn } from '../utils/cn';
 
 export const Settings: React.FC = () => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [params, setParams] = useSearchParams();
   const { theme, themes, setTheme } = useTheme();
+  const { role, signOut } = useSession();
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    // Plan, billing and invites belong to whoever runs the hospital.
+    ...(role.id === 'admin' ? [{ id: 'workspace', label: 'Workspace & billing', icon: Building2 }] : []),
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Palette },
   ];
+
+  // The tab lives in the URL so the header's plan badge can deep-link here.
+  const requested = params.get('tab');
+  const activeTab = tabs.some(t => t.id === requested) ? requested! : 'profile';
+  const setActiveTab = (id: string) => setParams({ tab: id }, { replace: true });
 
   return (
     <div className="space-y-6">
@@ -28,13 +43,13 @@ export const Settings: React.FC = () => {
       <GlassCard className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <img
-            src="https://i.pravatar.cc/150?u=admin"
+            src={role.demoUser.avatar}
             alt="Profile"
-            className="w-14 h-14 rounded-2xl border-2 border-white/10"
+            className="w-14 h-14 rounded-2xl border-2 border-[var(--border)]"
           />
           <div>
-            <p className="text-lg font-semibold text-white">Dr. Admin</p>
-            <p className="text-sm text-white/60">Administrator · admin@mediai.com</p>
+            <p className="text-lg font-semibold text-app">{role.demoUser.name}</p>
+            <p className="text-sm text-app-muted">{role.name} · {role.demoUser.email}</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -45,7 +60,7 @@ export const Settings: React.FC = () => {
           <GlassButton
             variant="ghost"
             className="flex items-center gap-2 px-4 text-red-200 border border-red-500/30"
-            onClick={() => navigate('/login')}
+            onClick={signOut}
           >
             <LogOut className="w-4 h-4" />
             Logout
@@ -55,7 +70,7 @@ export const Settings: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: 'Account Role', value: 'Administrator', icon: User },
+          { label: 'Account Role', value: role.name, icon: User },
           { label: 'Notifications', value: 'Enabled', icon: Bell },
           { label: 'Security Score', value: 'Strong', icon: Shield }
         ].map((item, i) => (
@@ -100,7 +115,7 @@ export const Settings: React.FC = () => {
               <div className="space-y-6">
                 <div className="flex items-center gap-6">
                   <img
-                    src="https://i.pravatar.cc/150?u=admin"
+                    src={role.demoUser.avatar}
                     alt="Profile"
                     className="w-24 h-24 rounded-2xl border-4 border-white/10"
                   />
@@ -111,8 +126,8 @@ export const Settings: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <GlassInput label="Full Name" defaultValue="Dr. Admin" />
-                  <GlassInput label="Email" defaultValue="admin@mediai.com" />
+                  <GlassInput label="Full Name" defaultValue={role.demoUser.name} />
+                  <GlassInput label="Email" defaultValue={role.demoUser.email} />
                   <GlassInput label="Phone" defaultValue="+1 (555) 000-0000" />
                   <GlassInput label="Department" defaultValue="Administration" />
                 </div>
@@ -126,6 +141,8 @@ export const Settings: React.FC = () => {
               </div>
             </GlassCard>
           )}
+
+          {activeTab === 'workspace' && <WorkspaceSettings />}
 
           {activeTab === 'notifications' && (
             <GlassCard>
@@ -222,6 +239,192 @@ export const Settings: React.FC = () => {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+const WorkspaceSettings: React.FC = () => {
+  const { workspace, saveWorkspace } = useSession();
+  const { staff } = useStaff();
+  const { toast } = useToast();
+
+  const [name, setName] = useState(workspace.name);
+  const [facilityType, setFacilityType] = useState(workspace.facilityType);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<Invite['roleId']>('doctor');
+
+  const plan = getPlan(workspace.planId);
+  const daysLeft = trialDaysLeft(workspace.trialEndsAt);
+  const seatsUsed = staff.length + workspace.invites.length;
+
+  const saveDetails = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveWorkspace({ ...workspace, name: name.trim(), facilityType });
+    toast('Workspace updated', { variant: 'success' });
+  };
+
+  const switchPlan = (planId: string) => {
+    saveWorkspace({ ...workspace, planId });
+    toast(`Switched to ${getPlan(planId).name}`, {
+      description: daysLeft === null ? 'The change applies from your next invoice.' : 'Your trial continues on the new plan.',
+      variant: 'success',
+    });
+  };
+
+  const sendInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = inviteEmail.trim().toLowerCase();
+    if (workspace.invites.some(inv => inv.email.toLowerCase() === email)) {
+      toast('Already invited', { description: `${email} has a pending invite.`, variant: 'warning' });
+      return;
+    }
+    saveWorkspace({ ...workspace, invites: [...workspace.invites, { email, roleId: inviteRole }] });
+    setInviteEmail('');
+    toast('Invite sent', { description: email, variant: 'success' });
+  };
+
+  const revokeInvite = (email: string) =>
+    saveWorkspace({ ...workspace, invites: workspace.invites.filter(inv => inv.email !== email) });
+
+  return (
+    <div className="space-y-6">
+      <GlassCard>
+        <h2 className="text-xl font-semibold text-app mb-1">Workspace</h2>
+        <p className="text-sm text-app-subtle mb-6 flex items-center gap-1.5">
+          <Globe className="w-3.5 h-3.5" /> {workspace.slug}.mediai.app
+        </p>
+        <form onSubmit={saveDetails} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <GlassInput label="Hospital name" value={name} onChange={e => setName(e.target.value)} required />
+            <GlassSelect label="Facility type" options={FACILITY_TYPES} value={facilityType} onChange={e => setFacilityType(e.target.value)} />
+          </div>
+          <div className="flex justify-end">
+            <GlassButton type="submit" variant="primary">
+              <Save className="w-4 h-4 mr-2" /> Save changes
+            </GlassButton>
+          </div>
+        </form>
+      </GlassCard>
+
+      <GlassCard>
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-app mb-1">Plan & billing</h2>
+            <p className="text-sm text-app-subtle">
+              {daysLeft === null
+                ? `${plan.name} · ${plan.price}${plan.per}`
+                : `${plan.name} trial · ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`}
+            </p>
+          </div>
+          {daysLeft !== null && (
+            <GlassButton
+              variant="outline"
+              onClick={() => toast('Billing isn’t connected yet', { description: 'Payments arrive with the backend integration.', variant: 'info' })}
+            >
+              <CreditCard className="w-4 h-4" /> Add payment method
+            </GlassButton>
+          )}
+        </div>
+
+        {/* Seats */}
+        <div className="mb-6">
+          <div className="flex justify-between text-sm mb-1.5">
+            <span className="text-app-muted">Staff seats</span>
+            <span className="font-medium text-app">
+              {seatsUsed}{plan.seats ? ` / ${plan.seats}` : ' · unlimited'}
+            </span>
+          </div>
+          {plan.seats && (
+            <div className="h-2 rounded-full bg-[var(--surface-3)] overflow-hidden">
+              <div
+                className={cn('h-full rounded-full', seatsUsed > plan.seats ? 'bg-[color:var(--danger)]' : 'bg-primary')}
+                style={{ width: `${Math.min(100, (seatsUsed / plan.seats) * 100)}%` }}
+              />
+            </div>
+          )}
+          {plan.seats && seatsUsed > plan.seats && (
+            <p className="mt-1.5 text-xs text-[color:var(--danger)]">
+              You're over this plan's seat limit — move up a plan to add more staff.
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {PLANS.map(p => {
+            const current = p.id === plan.id;
+            return (
+              <div
+                key={p.id}
+                className={cn(
+                  'p-4 rounded-xl border flex flex-col',
+                  current ? 'border-transparent ring-2 ring-primary bg-primary/10' : 'bg-[var(--surface-2)] border-[var(--border)]'
+                )}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-semibold text-app">{p.name}</span>
+                  <span className="text-sm font-semibold text-app">
+                    {p.price}<span className="text-app-subtle font-normal">{p.per}</span>
+                  </span>
+                </div>
+                <p className="mt-1 mb-4 text-xs text-app-muted leading-relaxed flex-1">{p.blurb}</p>
+                {current ? (
+                  <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+                    <Check className="w-4 h-4" /> Current plan
+                  </span>
+                ) : (
+                  <GlassButton size="sm" variant="outline" onClick={() => switchPlan(p.id)}>
+                    {p.seats === null ? 'Contact sales' : `Switch to ${p.name}`}
+                  </GlassButton>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <h2 className="text-xl font-semibold text-app mb-1">Invite your team</h2>
+        <p className="text-sm text-app-subtle mb-6">Each person signs in to the workspace for their role.</p>
+
+        <form onSubmit={sendInvite} className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <GlassInput
+            label="Email"
+            type="email"
+            value={inviteEmail}
+            onChange={e => setInviteEmail(e.target.value)}
+            placeholder={`colleague@${workspace.slug}.com`}
+            icon={<Mail className="w-4 h-4" />}
+            required
+          />
+          <div className="sm:w-48 flex-shrink-0">
+            <GlassSelect label="Role" options={INVITABLE_ROLES} value={inviteRole} onChange={e => setInviteRole(e.target.value as Invite['roleId'])} />
+          </div>
+          <GlassButton type="submit" variant="outline" className="h-11 flex-shrink-0">
+            <Send className="w-4 h-4" /> Send invite
+          </GlassButton>
+        </form>
+
+        {workspace.invites.length > 0 && (
+          <ul className="mt-5 divide-y divide-[var(--border)] border-t border-[var(--border)]">
+            {workspace.invites.map(inv => (
+              <li key={inv.email} className="flex items-center gap-3 py-3">
+                <Mail className="w-4 h-4 text-app-subtle flex-shrink-0" />
+                <span className="text-sm text-app truncate flex-1">{inv.email}</span>
+                <span className="text-xs text-app-muted">{INVITABLE_ROLES.find(r => r.value === inv.roleId)?.label}</span>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">Pending</span>
+                <button
+                  type="button"
+                  onClick={() => revokeInvite(inv.email)}
+                  aria-label={`Revoke invite for ${inv.email}`}
+                  className="p-1 rounded-md text-app-subtle hover:text-app focus-ring"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </GlassCard>
     </div>
   );
 };

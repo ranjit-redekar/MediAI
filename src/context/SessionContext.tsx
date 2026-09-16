@@ -1,5 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { ACCESS_ROLES, getRole, canAccess } from '../data/accessRoles';
+import { DEMO_WORKSPACE, readWorkspace, writeWorkspace } from '../data/workspace';
+import type { Workspace } from '../data/workspace';
 import type { AccessRole, RoleId } from '../types/access';
 
 const STORAGE_KEY = 'mediai-session';
@@ -29,6 +31,10 @@ interface SessionContextValue {
   /** Signs in and persists the session. Username defaults to the role's own. */
   signInAs: (id: RoleId, username?: string) => void;
   signOut: () => void;
+  /** The hospital this browser is signed in to — the demo one until someone registers. */
+  workspace: Workspace;
+  /** Replaces the workspace record and persists it. */
+  saveWorkspace: (workspace: Workspace) => void;
   /** True when the signed-in role may open this path. */
   can: (pathname: string) => boolean;
   /** True when this role may see a given sidebar entry. */
@@ -69,6 +75,12 @@ function readStoredSession(): StoredSession | null {
 
 export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<StoredSession | null>(readStoredSession);
+  const [workspace, setWorkspace] = useState<Workspace>(() => readWorkspace() ?? DEMO_WORKSPACE);
+
+  const saveWorkspace = useCallback((next: Workspace) => {
+    setWorkspace(next);
+    writeWorkspace(next);
+  }, []);
 
   const signInAs = useCallback((id: RoleId, username?: string) => {
     const role = ACCESS_ROLES.find(r => r.id === id);
@@ -111,7 +123,17 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Signed-out consumers still render (the login screen previews a workspace),
   // so `role` stays non-null and falls back to the admin shape.
-  const role = getRole(session?.roleId ?? 'admin');
+  const baseRole = getRole(session?.roleId ?? 'admin');
+
+  // Whoever registered the hospital is its administrator, so every screen that
+  // greets "the admin" greets them by name instead of the demo persona.
+  const role = useMemo<AccessRole>(() => {
+    const isOwner = baseRole.id === 'admin'
+      && session?.username.toLowerCase() === workspace.adminEmail.toLowerCase();
+    return isOwner
+      ? { ...baseRole, demoUser: { ...baseRole.demoUser, name: workspace.adminName, email: workspace.adminEmail } }
+      : baseRole;
+  }, [baseRole, session, workspace]);
 
   const value = useMemo<SessionContextValue>(() => ({
     role,
@@ -120,9 +142,11 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     isAuthenticated: session !== null,
     signInAs,
     signOut,
+    workspace,
+    saveWorkspace,
     can: (pathname: string) => canAccess(role, pathname),
     canSeeNav: (navId: string) => role.navIds.includes(navId),
-  }), [role, session, signInAs, signOut]);
+  }), [role, session, signInAs, signOut, workspace, saveWorkspace]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 };

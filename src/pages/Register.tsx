@@ -2,42 +2,25 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Brain, Sparkles, Moon, Sun, Building2, Mail, Lock, User, ArrowRight, ArrowLeft,
-  Check, AlertCircle, Globe,
+  Check, AlertCircle, Globe, Plus, X,
 } from 'lucide-react';
 import { GlassButton } from '../components/ui/GlassButton';
 import { GlassInput } from '../components/ui/GlassInput';
 import { GlassSelect } from '../components/ui/GlassSelect';
 import { useTheme } from '../context/ThemeContext';
 import { useSession } from '../context/SessionContext';
-import { saveWorkspace, slugify } from '../data/workspace';
+import {
+  FACILITY_TYPES, INVITABLE_ROLES, PLANS, TEAM_SIZES, slugify, trialEndDate,
+} from '../data/workspace';
+import type { Invite } from '../data/workspace';
 import { cn } from '../utils/cn';
 
-const STEPS = ['Workspace', 'Your account', 'Plan'] as const;
-
-const FACILITY_TYPES = [
-  { value: 'hospital', label: 'Hospital' },
-  { value: 'clinic', label: 'Multi-speciality clinic' },
-  { value: 'diagnostic', label: 'Diagnostic centre' },
-  { value: 'chain', label: 'Hospital group' },
-];
-
-const TEAM_SIZES = [
-  { value: '1-25', label: '1–25 staff' },
-  { value: '26-150', label: '26–150 staff' },
-  { value: '151-500', label: '151–500 staff' },
-  { value: '500+', label: '500+ staff' },
-];
-
-const PLANS = [
-  { id: 'starter', name: 'Starter', price: '$99', per: '/month', blurb: 'Up to 25 staff, 2 AI agents, core scheduling and records.' },
-  { id: 'growth', name: 'Growth', price: '$299', per: '/month', blurb: 'Up to 150 staff, every AI agent, billing, pharmacy and labs.' },
-  { id: 'enterprise', name: 'Enterprise', price: 'Custom', per: '', blurb: 'Unlimited staff, SSO, audit exports, dedicated onboarding.' },
-];
+const STEPS = ['Workspace', 'Your account', 'Plan', 'Team'] as const;
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
-  const { signInAs } = useSession();
+  const { signInAs, saveWorkspace } = useSession();
 
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(false);
@@ -50,7 +33,11 @@ export const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [planId, setPlanId] = useState(PLANS[1].id);
+  const [planId, setPlanId] = useState<string>(PLANS[1].id);
+  const [invites, setInvites] = useState<Invite[]>([{ email: '', roleId: 'doctor' }]);
+
+  const updateInvite = (index: number, fields: Partial<Invite>) =>
+    setInvites(prev => prev.map((inv, i) => (i === index ? { ...inv, ...fields } : inv)));
 
   const slug = slugify(org) || 'your-hospital';
 
@@ -78,6 +65,11 @@ export const Register: React.FC = () => {
         facilityType: facility,
         teamSize: size,
         planId,
+        trialEndsAt: trialEndDate(),
+        // Blank rows are the "skip" path, not invites.
+        invites: invites
+          .map(inv => ({ ...inv, email: inv.email.trim() }))
+          .filter(inv => inv.email),
         adminName: name.trim(),
         adminEmail: email.trim(),
         createdAt: new Date().toISOString(),
@@ -118,7 +110,7 @@ export const Register: React.FC = () => {
             <h1 className="text-xl font-bold text-app flex items-center gap-1.5">
               MediAI <Sparkles className="w-3.5 h-3.5 text-violet-400" />
             </h1>
-            <p className="text-app-muted text-sm">Set your hospital up in three steps</p>
+            <p className="text-app-muted text-sm">Set your hospital up in four steps</p>
           </div>
         </div>
 
@@ -255,6 +247,53 @@ export const Register: React.FC = () => {
             </div>
           )}
 
+          {step === 3 && (
+            <>
+              <p className="text-sm text-app-muted">
+                Invite the people who'll work in MediAI. Each gets the workspace for their role. You can skip this and invite them later from Settings.
+              </p>
+              {invites.map((inv, i) => (
+                <div key={i} className="flex items-end gap-2">
+                  <GlassInput
+                    label={i === 0 ? 'Email' : undefined}
+                    type="email"
+                    value={inv.email}
+                    onChange={e => updateInvite(i, { email: e.target.value })}
+                    placeholder={`colleague@${slug}.com`}
+                    icon={<Mail className="w-4 h-4" />}
+                    aria-label={`Invite ${i + 1} email`}
+                  />
+                  <div className="w-44 flex-shrink-0">
+                    <GlassSelect
+                      label={i === 0 ? 'Role' : undefined}
+                      options={INVITABLE_ROLES}
+                      value={inv.roleId}
+                      onChange={e => updateInvite(i, { roleId: e.target.value as Invite['roleId'] })}
+                      aria-label={`Invite ${i + 1} role`}
+                    />
+                  </div>
+                  {invites.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setInvites(prev => prev.filter((_, j) => j !== i))}
+                      aria-label={`Remove invite ${i + 1}`}
+                      className="h-11 w-9 flex-shrink-0 flex items-center justify-center rounded-lg text-app-subtle hover:text-app focus-ring"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setInvites(prev => [...prev, { email: '', roleId: 'nurse' }])}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-app-muted hover:text-app focus-ring rounded"
+              >
+                <Plus className="w-4 h-4" /> Add another
+              </button>
+            </>
+          )}
+
           {error && (
             <p role="alert" className="hint-in flex items-start gap-1.5 text-sm text-[color:var(--danger)]">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-px" /> {error}
@@ -276,7 +315,7 @@ export const Register: React.FC = () => {
               {creating
                 ? <><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Creating workspace…</>
                 : step === STEPS.length - 1
-                  ? <>Start free trial <ArrowRight className="w-4 h-4" /></>
+                  ? <>{invites.some(inv => inv.email.trim()) ? 'Send invites & start trial' : 'Start free trial'} <ArrowRight className="w-4 h-4" /></>
                   : <>Continue <ArrowRight className="w-4 h-4" /></>}
             </GlassButton>
           </div>

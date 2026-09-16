@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, Bell, Search, Moon, Sun, Sparkles, ChevronDown, HelpCircle, User, SlidersHorizontal, LogOut } from 'lucide-react';
+import { Menu, Bell, Search, Moon, Sun, Sparkles, ChevronDown, HelpCircle, User, SlidersHorizontal, LogOut, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlassButton } from '../ui/GlassButton';
 import { useTour } from '../../context/TourContext';
 import { useSession } from '../../context/SessionContext';
+import { getPlan, trialDaysLeft } from '../../data/workspace';
 import { cn } from '../../utils/cn';
 
 interface HeaderProps {
@@ -25,7 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const { start: startTour } = useTour();
-  const { role } = useSession();
+  const { role, workspace } = useSession();
+  const daysLeft = trialDaysLeft(workspace.trialEndsAt);
   const navigate = useNavigate();
 
   // Close the profile menu on outside click or Escape.
@@ -81,6 +83,24 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Search className="w-5 h-5" />
           </GlassButton>
+
+          {/* Tenant + plan — only the administrator manages it, so only they see it */}
+          {role.id === 'admin' && (
+            <button
+              onClick={() => navigate('/settings?tab=workspace')}
+              className="hidden xl:flex items-center gap-2 h-10 px-3 rounded-xl border border-[var(--border)] hover:border-[var(--border-strong)] transition-colors focus-ring min-w-0"
+              title="Workspace & billing"
+            >
+              <Building2 className="w-4 h-4 text-app-subtle flex-shrink-0" />
+              <span className="text-sm font-medium text-app truncate max-w-[14rem]">{workspace.name}</span>
+              <span className={cn(
+                'text-[11px] font-semibold px-2 py-0.5 rounded-full',
+                daysLeft !== null && daysLeft <= 3 ? 'bg-amber-500/15 text-amber-400' : 'bg-primary/15 text-primary'
+              )}>
+                {daysLeft === null ? getPlan(workspace.planId).name : `Trial · ${daysLeft}d left`}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Right Section */}
