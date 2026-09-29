@@ -74,4 +74,24 @@ const loner = client();
 await loner.auth.signUp({ email: `loner-${run}@example.com`, password: 'correct-horse-9' });
 assert.deepEqual((await loner.from('workspace_members').select('*')).data, []);
 
+// AI instructions: versioned by the database, append-only, admin-only, per hospital.
+const saveInstr = (c, fields) => c.from('ai_instructions').insert({ workspace_id: alphaId, ...fields })
+  .select('version, author_name, author_id').single();
+const v1 = await saveInstr(a, { body: 'Cardiology consults go to Dr. Garcia first.', note: 'first' });
+assert.ifError(v1.error);
+assert.equal(v1.data.version, 1);
+assert.equal(v1.data.author_name, 'Admin Alpha Hospital', 'author comes from membership, not the client');
+const forged = await saveInstr(a, { body: 'Second.', version: 99, author_name: 'Someone Else', author_id: null });
+assert.ifError(forged.error);
+assert.equal(forged.data.version, 2, 'client-supplied version is ignored');
+assert.equal(forged.data.author_name, 'Admin Alpha Hospital', 'client-supplied author is ignored');
+assert.ok(forged.data.author_id, 'author id comes from the session');
+assert.ok((await saveInstr(a, { body: 'x'.repeat(4001) })).error, 'body length is capped');
+assert.ok((await a.from('ai_instructions').update({ body: 'rewritten' }).eq('workspace_id', alphaId)).error, 'history cannot be edited');
+assert.ok((await a.from('ai_instructions').delete().eq('workspace_id', alphaId)).error, 'history cannot be deleted');
+assert.equal((await a.from('ai_instructions').select('id').eq('workspace_id', alphaId)).data.length, 2);
+assert.deepEqual((await b.from('ai_instructions').select('*').eq('workspace_id', alphaId)).data, [], 'other hospitals cannot read them');
+assert.ok((await saveInstr(b, { body: 'Hijack' })).error, 'other hospitals cannot write them');
+assert.ok((await client().from('ai_instructions').select('id')).error, 'anon has no access');
+
 console.log('tenancy checks passed');

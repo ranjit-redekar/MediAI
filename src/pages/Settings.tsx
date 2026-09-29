@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   User, Bell, Shield, Palette, Save, Check, Sun, Moon, LogOut, Building2, Globe, Mail, Send, X, CreditCard,
+  Sparkles, Lock, RotateCcw,
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassInput } from '../components/ui/GlassInput';
@@ -13,6 +14,8 @@ import { useStaff } from '../context/StaffContext';
 import { useToast } from '../context/ToastContext';
 import { FACILITY_TYPES, INVITABLE_ROLES, PLANS, getPlan, trialDaysLeft } from '../data/workspace';
 import type { Invite } from '../data/workspace';
+import { useAIInstructions } from '../hooks/useAIInstructions';
+import { BASE_RULES, MAX_INSTRUCTIONS_LENGTH, systemPromptBlocks } from '../../supabase/functions/_shared/system-prompt';
 import { cn } from '../utils/cn';
 
 export const Settings: React.FC = () => {
@@ -23,7 +26,10 @@ export const Settings: React.FC = () => {
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     // Plan, billing and invites belong to whoever runs the hospital.
-    ...(role.id === 'admin' ? [{ id: 'workspace', label: 'Workspace & billing', icon: Building2 }] : []),
+    ...(role.id === 'admin' ? [
+      { id: 'workspace', label: 'Workspace & billing', icon: Building2 },
+      { id: 'ai', label: 'AI instructions', icon: Sparkles },
+    ] : []),
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -143,6 +149,7 @@ export const Settings: React.FC = () => {
           )}
 
           {activeTab === 'workspace' && <WorkspaceSettings />}
+          {activeTab === 'ai' && <AIInstructionsSettings />}
 
           {activeTab === 'notifications' && (
             <GlassCard>
@@ -426,6 +433,159 @@ const WorkspaceSettings: React.FC = () => {
                 >
                   <X className="w-4 h-4" />
                 </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </GlassCard>
+    </div>
+  );
+};
+
+const AIInstructionsSettings: React.FC = () => {
+  const { versions, loadError, save } = useAIInstructions();
+  const { toast } = useToast();
+  const current = versions?.[0];
+
+  // Null means "untouched" — the editor shows the active version until someone types.
+  const [draft, setDraft] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const text = draft ?? current?.body ?? '';
+  const dirty = draft !== null && draft.trim() !== (current?.body ?? '').trim();
+
+  const saveVersion = async (body: string, versionNote: string) => {
+    setSaving(true);
+    const error = await save(body.trim(), versionNote.trim());
+    setSaving(false);
+    if (error) {
+      toast('Instructions not saved', { description: error, variant: 'error' });
+      return false;
+    }
+    toast('Instructions saved', { description: 'The AI agents use this version from their next task.', variant: 'success' });
+    return true;
+  };
+
+  const onSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (await saveVersion(text, note)) {
+      setDraft(null);
+      setNote('');
+    }
+  };
+
+  if (loadError) {
+    return <GlassCard><p className="text-sm text-[color:var(--danger)]">Couldn’t load AI instructions: {loadError}</p></GlassCard>;
+  }
+  if (!versions) {
+    return <GlassCard><p className="text-sm text-app-muted">Loading AI instructions…</p></GlassCard>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <GlassCard>
+        <h2 className="text-xl font-semibold text-app mb-1">Your hospital’s instructions</h2>
+        <p className="text-sm text-app-subtle mb-6">
+          Tell the AI agents how your hospital works: preferred specialists, local protocols, the languages patients use, how handoff notes should look.
+          These shape explanations and drafted actions. They never change a risk score.
+        </p>
+
+        <form onSubmit={onSave} className="space-y-4">
+          <div>
+            <textarea
+              value={text}
+              onChange={e => setDraft(e.target.value)}
+              maxLength={MAX_INSTRUCTIONS_LENGTH}
+              rows={9}
+              aria-label="Hospital instructions for the AI agents"
+              placeholder={'For example:\nSend cardiology consults to Dr. Garcia first.\nWrite patient messages in Marathi when that is the patient’s language.\nKeep handoff notes to four lines: situation, background, assessment, recommendation.'}
+              className="w-full rounded-xl glass-input border px-4 py-3 text-sm text-app leading-relaxed outline-none transition-all duration-200 focus-ring focus:border-[var(--border-strong)] resize-y"
+            />
+            <p className="mt-1.5 text-xs text-app-subtle text-right">{text.length} / {MAX_INSTRUCTIONS_LENGTH}</p>
+          </div>
+
+          {dirty && (
+            <GlassInput
+              label="What changed (optional)"
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              maxLength={200}
+              placeholder="e.g. Added Marathi for outreach messages"
+            />
+          )}
+
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {dirty && (
+              <GlassButton type="button" variant="ghost" onClick={() => { setDraft(null); setNote(''); }}>
+                Discard changes
+              </GlassButton>
+            )}
+            <GlassButton type="submit" variant="primary" disabled={!dirty || saving}>
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving…' : `Save as version ${(current?.version ?? 0) + 1}`}
+            </GlassButton>
+          </div>
+        </form>
+
+        <details className="mt-6 group">
+          <summary className="cursor-pointer text-sm font-medium text-app-muted hover:text-app focus-ring rounded">
+            Preview exactly what the AI receives
+          </summary>
+          <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-xl bg-[var(--surface-2)] border border-[var(--border)] p-4 text-xs text-app-muted leading-relaxed">
+            {systemPromptBlocks(text).join('\n\n')}
+          </pre>
+        </details>
+      </GlassCard>
+
+      <GlassCard>
+        <h2 className="text-xl font-semibold text-app mb-1 flex items-center gap-2">
+          <Lock className="w-4 h-4 text-app-subtle" /> Built-in rules
+        </h2>
+        <p className="text-sm text-app-subtle mb-4">
+          MediAI applies these for every hospital. Your instructions can add to them but can’t change them.
+        </p>
+        <ol className="space-y-2.5 list-decimal pl-5 text-sm text-app-muted leading-relaxed">
+          {BASE_RULES.map(rule => <li key={rule}>{rule}</li>)}
+        </ol>
+      </GlassCard>
+
+      <GlassCard>
+        <h2 className="text-xl font-semibold text-app mb-1">Version history</h2>
+        <p className="text-sm text-app-subtle mb-4">Every save is kept. Restoring an old version saves it again as the newest.</p>
+        {versions.length === 0 ? (
+          <p className="text-sm text-app-muted">No instructions saved yet. The AI agents use the built-in rules only.</p>
+        ) : (
+          <ul className="divide-y divide-[var(--border)] border-t border-[var(--border)]">
+            {versions.map((v, i) => (
+              <li key={v.version} className="py-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-sm font-semibold text-app">v{v.version}</span>
+                  {i === 0 && (
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">Active</span>
+                  )}
+                  <span className="text-xs text-app-muted">
+                    {v.authorName || 'Unknown'} · {new Date(v.createdAt).toLocaleString()}
+                  </span>
+                  {i > 0 && (
+                    <GlassButton
+                      size="sm"
+                      variant="ghost"
+                      className="ml-auto"
+                      disabled={saving}
+                      onClick={() => saveVersion(v.body, `Restored version ${v.version}`).then(ok => ok && setDraft(null))}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> Restore
+                    </GlassButton>
+                  )}
+                </div>
+                {v.note && <p className="mt-1 text-sm text-app-muted">{v.note}</p>}
+                <details className="mt-1">
+                  <summary className="cursor-pointer text-xs text-app-subtle hover:text-app focus-ring rounded">Show text</summary>
+                  <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-[var(--surface-2)] p-3 text-xs text-app-muted">
+                    {v.body || '(empty — built-in rules only)'}
+                  </pre>
+                </details>
               </li>
             ))}
           </ul>

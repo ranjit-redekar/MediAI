@@ -63,6 +63,8 @@ interface SessionContextValue {
   signOut: () => void;
   /** The hospital this browser is signed in to — the demo one until someone registers. */
   workspace: Workspace;
+  /** Database id of the workspace in production; null in the demo. */
+  workspaceId: string | null;
   /** Production sign-in. Demo sign-in stays on `signInAs`. */
   signIn: (email: string, password: string) => Promise<{ error: string } | { role: AccessRole }>;
   /** Creates the hospital, its admin and the first invites. */
@@ -387,6 +389,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     signInAs,
     signOut: () => { void signOut(); },
     workspace,
+    workspaceId: member?.workspaceId ?? null,
     signIn,
     signUp,
     updateWorkspace,
@@ -394,7 +397,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     revokeInvite,
     can: (pathname: string) => canAccess(role, pathname),
     canSeeNav: (navId: string) => role.navIds.includes(navId),
-  }), [isLoading, role, activeSession, signInAs, signOut, workspace, signIn, signUp, updateWorkspace, addInvite, revokeInvite]);
+  }), [isLoading, role, activeSession, signInAs, signOut, workspace, member, signIn, signUp, updateWorkspace, addInvite, revokeInvite]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 };
