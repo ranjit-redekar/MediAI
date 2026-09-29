@@ -52,6 +52,8 @@ export interface MedicalRecord {
 export interface Doctor {
   id: string;
   name: string;
+  /** Drives the avatar; unset shows initials. */
+  gender?: Patient['gender'];
   specialty: string;
   qualification: string;
   experience: number;

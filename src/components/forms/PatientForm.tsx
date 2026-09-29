@@ -3,6 +3,7 @@ import { GlassInput } from '../ui/GlassInput';
 import { GlassSelect } from '../ui/GlassSelect';
 import { GlassButton } from '../ui/GlassButton';
 import type { Patient } from '../../types';
+import { GENDER_OPTIONS } from '../../utils/avatar';
 
 interface PatientFormProps {
   patient?: Patient;
@@ -21,11 +22,6 @@ const bloodGroups = [
   { value: 'O-', label: 'O-' },
 ];
 
-const genders = [
-  { value: 'Male', label: 'Male' },
-  { value: 'Female', label: 'Female' },
-  { value: 'Other', label: 'Other' },
-];
 
 const statuses = [
   { value: 'Active', label: 'Active' },
@@ -85,7 +81,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           label="Gender"
           value={formData.gender}
           onChange={(e) => handleChange('gender', e.target.value)}
-          options={genders}
+          options={GENDER_OPTIONS}
         />
         <GlassSelect
           label="Blood Group"

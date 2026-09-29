@@ -1,9 +1,11 @@
+import { avatarFor } from '../utils/avatar';
 import type { Doctor } from '../types';
 
 export const doctors: Doctor[] = [
   {
     id: 'D001',
     name: 'Dr. James Wilson',
+    gender: 'Male',
     specialty: 'Internal Medicine',
     qualification: 'MD, FACP',
     experience: 15,
@@ -17,7 +19,7 @@ export const doctors: Doctor[] = [
     totalAppointments: 3820,
     completionRate: 96,
     joinedDate: '2009-03-01',
-    avatar: 'https://i.pravatar.cc/150?u=wilson',
+    avatar: avatarFor('Dr. James Wilson', 'Male'),
     bio: 'Dr. James Wilson is a board-certified internist with 15 years of experience managing complex medical conditions. He specializes in preventive medicine, chronic disease management, and comprehensive adult care. Known for his patient-centered approach and exceptional diagnostic skills.',
     achievements: [
       'Board Certified – American Board of Internal Medicine',
@@ -38,6 +40,7 @@ export const doctors: Doctor[] = [
   {
     id: 'D002',
     name: 'Dr. Maria Garcia',
+    gender: 'Female',
     specialty: 'Endocrinology',
     qualification: 'MD, FACE',
     experience: 12,
@@ -51,7 +54,7 @@ export const doctors: Doctor[] = [
     totalAppointments: 2650,
     completionRate: 98,
     joinedDate: '2012-07-15',
-    avatar: 'https://i.pravatar.cc/150?u=garcia',
+    avatar: avatarFor('Dr. Maria Garcia', 'Female'),
     bio: 'Dr. Maria Garcia is a highly regarded endocrinologist specializing in diabetes, thyroid disorders, and metabolic diseases. She has pioneered several diabetes education programs at the hospital and is passionate about empowering patients through lifestyle-based interventions and precision medicine.',
     achievements: [
       'Fellow of the American College of Endocrinology (FACE)',
@@ -72,6 +75,7 @@ export const doctors: Doctor[] = [
   {
     id: 'D003',
     name: 'Dr. Robert Taylor',
+    gender: 'Male',
     specialty: 'Cardiology',
     qualification: 'MD, FACC',
     experience: 20,
@@ -85,7 +89,7 @@ export const doctors: Doctor[] = [
     totalAppointments: 5100,
     completionRate: 94,
     joinedDate: '2004-01-10',
-    avatar: 'https://i.pravatar.cc/150?u=taylor',
+    avatar: avatarFor('Dr. Robert Taylor', 'Male'),
     bio: 'Dr. Robert Taylor is a seasoned cardiologist with over 20 years of experience in diagnosing and treating heart disease. He specializes in interventional cardiology, arrhythmia management, and heart failure. He has performed over 2,000 cardiac catheterizations and is a leading expert in atrial fibrillation treatment.',
     achievements: [
       'Fellow of the American College of Cardiology (FACC)',
@@ -107,6 +111,7 @@ export const doctors: Doctor[] = [
   {
     id: 'D004',
     name: 'Dr. Lisa Anderson',
+    gender: 'Female',
     specialty: 'Orthopedics',
     qualification: 'MD, FAAOS',
     experience: 10,
@@ -120,7 +125,7 @@ export const doctors: Doctor[] = [
     totalAppointments: 2180,
     completionRate: 95,
     joinedDate: '2014-05-20',
-    avatar: 'https://i.pravatar.cc/150?u=anderson',
+    avatar: avatarFor('Dr. Lisa Anderson', 'Female'),
     bio: 'Dr. Lisa Anderson is an orthopedic surgeon specializing in sports medicine, spine conditions, and joint replacement. She combines minimally invasive techniques with personalized rehabilitation plans to get patients back to an active lifestyle as quickly as possible.',
     achievements: [
       'Fellow – American Academy of Orthopaedic Surgeons (FAAOS)',
@@ -141,6 +146,7 @@ export const doctors: Doctor[] = [
   {
     id: 'D005',
     name: 'Dr. Sarah Patel',
+    gender: 'Female',
     specialty: 'Obstetrics & Gynecology',
     qualification: 'MD, FACOG',
     experience: 14,
@@ -154,7 +160,7 @@ export const doctors: Doctor[] = [
     totalAppointments: 3450,
     completionRate: 97,
     joinedDate: '2010-09-01',
-    avatar: 'https://i.pravatar.cc/150?u=patel',
+    avatar: avatarFor('Dr. Sarah Patel', 'Female'),
     bio: 'Dr. Sarah Patel is a compassionate OB/GYN with 14 years of experience in prenatal care, high-risk pregnancies, and minimally invasive gynecological surgery. She is dedicated to providing holistic women\'s health care through every stage of life, from adolescence through menopause.',
     achievements: [
       'Fellow – American College of Obstetricians & Gynecologists (FACOG)',
@@ -175,6 +181,7 @@ export const doctors: Doctor[] = [
   {
     id: 'D006',
     name: 'Dr. Michael Chang',
+    gender: 'Male',
     specialty: 'Neurology',
     qualification: 'MD, FAAN',
     experience: 18,
@@ -188,7 +195,7 @@ export const doctors: Doctor[] = [
     totalAppointments: 2980,
     completionRate: 93,
     joinedDate: '2006-02-14',
-    avatar: 'https://i.pravatar.cc/150?u=chang',
+    avatar: avatarFor('Dr. Michael Chang', 'Male'),
     bio: 'Dr. Michael Chang is a board-certified neurologist with special expertise in epilepsy, multiple sclerosis, and neurodegenerative disorders. He has contributed significantly to the understanding of sleep disorders and their relationship with neurological conditions.',
     achievements: [
       'Fellow – American Academy of Neurology (FAAN)',
@@ -209,6 +216,7 @@ export const doctors: Doctor[] = [
   {
     id: 'D007',
     name: 'Dr. Emily Foster',
+    gender: 'Female',
     specialty: 'Pediatrics',
     qualification: 'MD, FAAP',
     experience: 8,
@@ -222,7 +230,7 @@ export const doctors: Doctor[] = [
     totalAppointments: 1960,
     completionRate: 98,
     joinedDate: '2016-08-01',
-    avatar: 'https://i.pravatar.cc/150?u=foster',
+    avatar: avatarFor('Dr. Emily Foster', 'Female'),
     bio: 'Dr. Emily Foster is a dedicated pediatrician who brings warmth and expertise to every patient interaction. She specializes in childhood development, vaccinations, and managing chronic pediatric conditions such as asthma and ADHD. Parents love her ability to make children feel comfortable and safe.',
     achievements: [
       'Fellow – American Academy of Pediatrics (FAAP)',
@@ -243,6 +251,7 @@ export const doctors: Doctor[] = [
   {
     id: 'D008',
     name: 'Dr. David Kim',
+    gender: 'Male',
     specialty: 'Dermatology',
     qualification: 'MD, FAAD',
     experience: 11,
@@ -256,7 +265,7 @@ export const doctors: Doctor[] = [
     totalAppointments: 2240,
     completionRate: 96,
     joinedDate: '2013-04-10',
-    avatar: 'https://i.pravatar.cc/150?u=kim',
+    avatar: avatarFor('Dr. David Kim', 'Male'),
     bio: 'Dr. David Kim is a skilled dermatologist with expertise in medical, surgical, and cosmetic dermatology. He is particularly known for his precision in skin cancer detection and treatment, as well as managing complex inflammatory skin conditions like psoriasis and eczema.',
     achievements: [
       'Fellow – American Academy of Dermatology (FAAD)',

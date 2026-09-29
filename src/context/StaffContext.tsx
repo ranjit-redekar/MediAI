@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 import type { StaffMember, StaffStatus } from '../types/staff';
 import { staffMembers as seed } from '../data/staff';
 import { todayKey } from '../utils/date';
+import { avatarFor } from '../utils/avatar';
 
 export type NewStaffInput = Omit<StaffMember, 'id' | 'avatar' | 'joinedDate'> & {
   joinedDate?: string;
@@ -29,14 +30,18 @@ export const StaffProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const member: StaffMember = {
       ...input,
       id,
-      avatar: `https://i.pravatar.cc/150?u=${id}`,
+      avatar: avatarFor(input.name, input.gender),
       joinedDate: input.joinedDate ?? todayKey()
     };
     setStaff(prev => [member, ...prev]);
   }, []);
 
   const updateStaff = useCallback((id: string, fields: Partial<StaffMember>) => {
-    setStaff(prev => prev.map(s => (s.id === id ? { ...s, ...fields } : s)));
+    setStaff(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      const next = { ...s, ...fields };
+      return { ...next, avatar: avatarFor(next.name, next.gender) };
+    }));
   }, []);
 
   const setStatus = useCallback((id: string, status: StaffStatus) => {

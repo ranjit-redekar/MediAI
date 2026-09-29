@@ -3,6 +3,7 @@ import { GlassInput } from '../ui/GlassInput';
 import { GlassSelect } from '../ui/GlassSelect';
 import { GlassButton } from '../ui/GlassButton';
 import type { Doctor } from '../../types';
+import { GENDER_OPTIONS } from '../../utils/avatar';
 
 interface DoctorFormProps {
   doctor?: Doctor;
@@ -79,6 +80,12 @@ export const DoctorForm: React.FC<DoctorFormProps> = ({
           value={formData.name}
           onChange={(e) => handleChange('name', e.target.value)}
           required
+        />
+        <GlassSelect
+          label="Gender"
+          value={formData.gender ?? ''}
+          onChange={(e) => handleChange('gender', e.target.value)}
+          options={[{ value: '', label: 'Not specified' }, ...GENDER_OPTIONS]}
         />
         <GlassSelect
           label="Specialty"

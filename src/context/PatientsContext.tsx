@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 import type { Patient } from '../types';
 import { patients as seed } from '../data/patients';
 import { todayKey } from '../utils/date';
+import { avatarFor } from '../utils/avatar';
 
 interface PatientsContextValue {
   patients: Patient[];
@@ -26,7 +27,7 @@ export const PatientsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       id,
       registrationDate: todayKey(),
       lastVisit: todayKey(),
-      avatar: data.avatar ?? `https://i.pravatar.cc/150?u=${id}`,
+      avatar: avatarFor(data.name ?? '', data.gender),
       medicalHistory: data.medicalHistory ?? []
     } as Patient;
     setPatients(prev => {
@@ -39,7 +40,11 @@ export const PatientsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const updatePatient = useCallback((id: string, data: Partial<Patient>) => {
-    setPatients(prev => prev.map(p => (p.id === id ? { ...p, ...data } : p)));
+    setPatients(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      const next = { ...p, ...data };
+      return { ...next, avatar: avatarFor(next.name, next.gender) };
+    }));
   }, []);
 
   const removePatient = useCallback((id: string) => {

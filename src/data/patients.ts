@@ -1,3 +1,4 @@
+import { avatarFor } from '../utils/avatar';
 import type { Patient } from '../types';
 
 export const patients: Patient[] = [
@@ -13,7 +14,7 @@ export const patients: Patient[] = [
     registrationDate: '2023-01-15',
     lastVisit: '2024-03-01',
     status: 'Active',
-    avatar: 'https://i.pravatar.cc/150?u=sarah',
+    avatar: avatarFor('Sarah Johnson', 'Female'),
     aiRiskScore: 12,
     aiRecommendations: ['Regular checkup in 3 months', 'Maintain current exercise routine', 'Continue antihistamine during allergy season'],
     medicalHistory: [
@@ -77,7 +78,7 @@ export const patients: Patient[] = [
     registrationDate: '2022-08-20',
     lastVisit: '2024-02-28',
     status: 'Active',
-    avatar: 'https://i.pravatar.cc/150?u=michael',
+    avatar: avatarFor('Michael Chen', 'Male'),
     aiRiskScore: 45,
     aiRecommendations: ['Monitor blood pressure weekly', 'Reduce sodium intake', 'Schedule cardiology consultation', 'Start DASH diet program'],
     medicalHistory: [
@@ -156,7 +157,7 @@ export const patients: Patient[] = [
     registrationDate: '2023-06-10',
     lastVisit: '2024-03-03',
     status: 'Active',
-    avatar: 'https://i.pravatar.cc/150?u=emily',
+    avatar: avatarFor('Emily Rodriguez', 'Female'),
     aiRiskScore: 8,
     aiRecommendations: ['Continue prenatal vitamins', 'Schedule glucose screening at 24-28 weeks', 'Monitor fetal movement daily'],
     medicalHistory: [
@@ -223,7 +224,7 @@ export const patients: Patient[] = [
     registrationDate: '2021-03-15',
     lastVisit: '2024-03-02',
     status: 'Critical',
-    avatar: 'https://i.pravatar.cc/150?u=robert',
+    avatar: avatarFor('Robert Williams', 'Male'),
     aiRiskScore: 78,
     aiRecommendations: ['Immediate cardiology follow-up', 'Consider stress test', 'Monitor for arrhythmia', 'Daily INR monitoring', 'Cardiac rehab referral'],
     medicalHistory: [
@@ -302,7 +303,7 @@ export const patients: Patient[] = [
     registrationDate: '2022-11-05',
     lastVisit: '2024-02-25',
     status: 'Active',
-    avatar: 'https://i.pravatar.cc/150?u=jennifer',
+    avatar: avatarFor('Jennifer Lee', 'Female'),
     aiRiskScore: 32,
     aiRecommendations: ['HbA1c recheck in 3 months', 'Diabetes education program enrollment', 'Annual foot and eye examination', 'Increase physical activity to 150 min/week'],
     medicalHistory: [
@@ -370,7 +371,7 @@ export const patients: Patient[] = [
     registrationDate: '2023-09-12',
     lastVisit: '2024-03-04',
     status: 'Active',
-    avatar: 'https://i.pravatar.cc/150?u=david',
+    avatar: avatarFor('David Martinez', 'Male'),
     aiRiskScore: 15,
     aiRecommendations: ['Physical therapy referral (8 sessions)', 'Core strengthening program', 'Anti-inflammatory medication trial', 'Ergonomic workplace assessment'],
     medicalHistory: [
@@ -431,7 +432,7 @@ export const patients: Patient[] = [
     registrationDate: '2023-04-20',
     lastVisit: '2024-02-20',
     status: 'Inactive',
-    avatar: 'https://i.pravatar.cc/150?u=amanda',
+    avatar: avatarFor('Amanda Thompson', 'Female'),
     aiRiskScore: 5,
     aiRecommendations: ['Annual wellness visit scheduled', 'Update HPV vaccine booster', 'Maintain healthy BMI'],
     medicalHistory: [
@@ -494,7 +495,7 @@ export const patients: Patient[] = [
     registrationDate: '2022-05-08',
     lastVisit: '2024-03-05',
     status: 'Active',
-    avatar: 'https://i.pravatar.cc/150?u=chris',
+    avatar: avatarFor('Christopher Brown', 'Male'),
     aiRiskScore: 52,
     aiRecommendations: ['Colonoscopy scheduling (overdue)', 'Statin therapy dose review', 'Dietary counseling', 'Cardiac risk reduction program'],
     medicalHistory: [

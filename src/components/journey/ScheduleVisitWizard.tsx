@@ -22,6 +22,7 @@ import { db } from '../../data';
 import { cn } from '../../utils/cn';
 import type { Patient } from '../../types';
 import { todayKey } from '../../utils/date';
+import { avatarFor } from '../../utils/avatar';
 
 interface ScheduleVisitWizardProps {
   open: boolean;
@@ -56,7 +57,7 @@ function registerPatient(input: typeof emptyNewPatient): Patient {
     registrationDate: todayKey(),
     lastVisit: todayKey(),
     status: 'Active',
-    avatar: `https://i.pravatar.cc/150?u=${id}`,
+    avatar: avatarFor(input.name.trim(), input.gender),
     medicalHistory: []
   };
   db.patients.push(patient);
@@ -338,7 +339,7 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <img
-                    src={mode === 'new' ? `https://i.pravatar.cc/150?u=new` : selectedPatient?.avatar}
+                    src={mode === 'new' ? avatarFor(newPatient.name.trim() || 'New patient', newPatient.gender) : selectedPatient?.avatar}
                     alt={summaryName}
                     className="w-12 h-12 rounded-full border border-white/10"
                   />

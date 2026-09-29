@@ -3,6 +3,7 @@ import { ACCESS_ROLES, getRole, canAccess } from '../data/accessRoles';
 import { DEMO_WORKSPACE, readWorkspace, trialEndDate, writeWorkspace } from '../data/workspace';
 import type { Invite, Workspace } from '../data/workspace';
 import { isDemo, supabase } from '../lib/supabase';
+import { initialsAvatar } from '../utils/avatar';
 import type { AccessRole, RoleId } from '../types/access';
 
 const STORAGE_KEY = 'mediai-session';
@@ -109,13 +110,6 @@ function readStoredSession(): StoredSession | null {
     // Corrupt JSON or storage blocked entirely — treat as signed out.
     return null;
   }
-}
-
-/** Initials on a coloured tile — no third-party avatar service sees a real user's email. */
-function initialsAvatar(name: string) {
-  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]!.toUpperCase()).join('') || '?';
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="#6366f1"/><text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="system-ui,sans-serif" font-size="38" font-weight="600" fill="#fff">${initials}</text></svg>`;
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
 interface WorkspaceRow {

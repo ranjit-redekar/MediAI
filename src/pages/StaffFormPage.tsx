@@ -4,6 +4,7 @@ import { Plus, Edit } from 'lucide-react';
 import { FormPageLayout, FormSection } from '../components/ui/FormPageLayout';
 import { GlassInput } from '../components/ui/GlassInput';
 import { GlassSelect } from '../components/ui/GlassSelect';
+import { GENDER_OPTIONS } from '../utils/avatar';
 import { GlassButton } from '../components/ui/GlassButton';
 import { useStaff } from '../context/StaffContext';
 import type { NewStaffInput } from '../context/StaffContext';
@@ -83,6 +84,12 @@ export const StaffFormPage: React.FC = () => {
         <FormSection title="Personal & Contact">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <GlassInput label="Full name *" placeholder="e.g. Dr. Jane Doe" value={form.name} onChange={e => set('name', e.target.value)} />
+            <GlassSelect
+              label="Gender"
+              options={[{ value: '', label: 'Not specified' }, ...GENDER_OPTIONS]}
+              value={form.gender ?? ''}
+              onChange={e => set('gender', (e.target.value || undefined) as NewStaffInput['gender'])}
+            />
             <GlassInput label="Phone *" placeholder="+1 (555) 000-0000" value={form.phone} onChange={e => set('phone', e.target.value)} />
             <GlassInput label="Email" placeholder="name@mediai.com" value={form.email} onChange={e => set('email', e.target.value)} />
             <GlassInput label="Location / Block" placeholder="e.g. Block A" value={form.location ?? ''} onChange={e => set('location', e.target.value)} />

@@ -1,3 +1,4 @@
+import { avatarFor } from '../utils/avatar';
 import { medicines } from './pharmacy';
 import type { MedicineSuggestion, Visit } from '../types/journey';
 
@@ -120,7 +121,7 @@ export const initialVisits: Visit[] = [
     id: 'V001',
     patientId: 'P001',
     patientName: 'Sarah Johnson',
-    patientAvatar: 'https://i.pravatar.cc/150?u=sarah',
+    patientAvatar: avatarFor('Sarah Johnson', 'Female'),
     age: 34,
     gender: 'Female',
     reason: 'Seasonal allergy flare-up',
@@ -134,9 +135,9 @@ export const initialVisits: Visit[] = [
   },
   {
     id: 'V002',
-    patientId: 'P003',
+    patientId: 'P004',
     patientName: 'Robert Williams',
-    patientAvatar: 'https://i.pravatar.cc/150?u=robert',
+    patientAvatar: avatarFor('Robert Williams', 'Male'),
     age: 58,
     gender: 'Male',
     reason: 'Chest tightness and high BP',
@@ -153,7 +154,7 @@ export const initialVisits: Visit[] = [
     id: 'V003',
     patientId: 'P002',
     patientName: 'Michael Chen',
-    patientAvatar: 'https://i.pravatar.cc/150?u=michael',
+    patientAvatar: avatarFor('Michael Chen', 'Male'),
     age: 45,
     gender: 'Male',
     reason: 'Diabetes follow-up',
@@ -180,7 +181,7 @@ export const initialVisits: Visit[] = [
     id: 'V004',
     patientId: 'P005',
     patientName: 'Jennifer Lee',
-    patientAvatar: 'https://i.pravatar.cc/150?u=jennifer',
+    patientAvatar: avatarFor('Jennifer Lee', 'Female'),
     age: 29,
     gender: 'Female',
     reason: 'Acid reflux',

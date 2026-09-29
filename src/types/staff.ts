@@ -36,6 +36,8 @@ export const EMPLOYMENT_TYPES: EmploymentType[] = ['Full-time', 'Part-time', 'Co
 export interface StaffMember {
   id: string;
   name: string;
+  /** Drives the avatar; unset shows initials. */
+  gender?: 'Male' | 'Female' | 'Other';
   role: string;
   category: StaffCategory;
   department: string;
