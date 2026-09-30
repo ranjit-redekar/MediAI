@@ -11,6 +11,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSession } from '../../context/SessionContext';
 import { db } from '../../data';
 import { cn } from '../../utils/cn';
+import { useAppointments } from '../../context/AppointmentsContext';
 
 /** The demo patient this portal is signed in as. */
 const PATIENT_ID = 'P001';
@@ -30,7 +31,8 @@ export const PortalHome: React.FC = () => {
 
   const patient = db.patients.find(p => p.id === PATIENT_ID);
 
-  const appointments = useMemo(() => db.appointments.filter(a => a.patientId === PATIENT_ID), []);
+  const { appointments: allAppointments } = useAppointments();
+  const appointments = useMemo(() => allAppointments.filter(a => a.patientId === PATIENT_ID), [allAppointments]);
   const upcoming = useMemo(
     () => appointments
       .filter(a => a.status === 'Scheduled')

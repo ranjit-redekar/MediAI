@@ -3,6 +3,9 @@ import { GlassInput } from '../ui/GlassInput';
 import { GlassSelect } from '../ui/GlassSelect';
 import { GlassButton } from '../ui/GlassButton';
 import { db } from '../../data';
+import { nextFreeSlot } from '../../data/slots';
+import { useAppointments } from '../../context/AppointmentsContext';
+import { fromDateKey } from '../../utils/date';
 import type { Appointment } from '../../types';
 
 interface AppointmentFormProps {
@@ -78,6 +81,12 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
     }
   };
 
+  // Pre-fill the booking: once a doctor is picked, their next free slot is one click.
+  const { appointments } = useAppointments();
+  const doctor = db.doctors.find(d => d.id === selectedDoctor);
+  const suggestion = !appointment && doctor ? nextFreeSlot(doctor, appointments) : null;
+  const suggestionTaken = suggestion && formData.date === suggestion.date && formData.time === suggestion.time;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
@@ -107,6 +116,19 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
           options={[{ value: '', label: 'Select Doctor' }, ...doctorOptions]}
           required
         />
+        {suggestion && !suggestionTaken && (
+          <div className="md:col-span-2 flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-xl border border-primary/30 bg-primary/[0.06]">
+            <p className="text-sm text-app flex-1 min-w-0">
+              Next free with {doctor?.name}:{' '}
+              <span className="font-semibold">
+                {fromDateKey(suggestion.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}, {suggestion.time}
+              </span>
+            </p>
+            <GlassButton type="button" size="sm" variant="default" onClick={() => setFormData(prev => ({ ...prev, ...suggestion }))}>
+              Use this slot
+            </GlassButton>
+          </div>
+        )}
         <GlassInput
           label="Date"
           type="date"
@@ -127,12 +149,15 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
           onChange={(e) => handleChange('type', e.target.value)}
           options={types}
         />
-        <GlassSelect
-          label="Status"
-          value={formData.status}
-          onChange={(e) => handleChange('status', e.target.value)}
-          options={statuses}
-        />
+        {/* A new booking is always Scheduled; status only matters when editing one. */}
+        {appointment && (
+          <GlassSelect
+            label="Status"
+            value={formData.status}
+            onChange={(e) => handleChange('status', e.target.value)}
+            options={statuses}
+          />
+        )}
       </div>
       <GlassInput
         label="Notes"

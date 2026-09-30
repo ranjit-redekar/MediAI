@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { FileText, Download, BarChart3, Users, TrendingUp, FileSpreadsheet, Sparkles } from 'lucide-react';
+import { FileText, Download, FileSpreadsheet, Sparkles } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
 import { GlassBadge } from '../components/ui/GlassBadge';
@@ -8,9 +8,10 @@ import { SearchInput } from '../components/ui/SearchInput';
 import { FilterTabs } from '../components/ui/FilterTabs';
 import { EmptyState } from '../components/ui/EmptyState';
 import { SortableHeader, TableHeader, useSort } from '../components/ui/DataTable';
-import { MiniStat } from '../components/ui/StatCard';
 import { useToast } from '../context/ToastContext';
 import { db } from '../data';
+import { shiftDemoDates } from '../utils/date';
+import { CLINICAL_DEMO_TODAY } from '../data/demoToday';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface Report {
@@ -23,7 +24,7 @@ interface Report {
   bytes: number;
 }
 
-const reports: Report[] = [
+const authoredReports: Report[] = [
   { id: 1, title: 'Monthly Patient Report', type: 'Patients',     date: '2024-03-01', size: '2.4 MB', bytes: 2_400_000 },
   { id: 2, title: 'Revenue Analysis Q1',    type: 'Financial',    date: '2024-03-01', size: '1.8 MB', bytes: 1_800_000 },
   { id: 3, title: 'Doctor Performance',     type: 'Staff',        date: '2024-02-28', size: '3.1 MB', bytes: 3_100_000 },
@@ -31,6 +32,7 @@ const reports: Report[] = [
   { id: 5, title: 'Pharmacy Inventory',     type: 'Pharmacy',     date: '2024-02-27', size: '0.9 MB', bytes:   900_000 },
   { id: 6, title: 'AI Insights Report',     type: 'AI Analytics', date: '2024-02-27', size: '2.7 MB', bytes: 2_700_000 },
 ];
+const reports = shiftDemoDates(authoredReports, CLINICAL_DEMO_TODAY, ['date']);
 
 const DEMOGRAPHIC_COLORS = ['#6366f1', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'];
 
@@ -99,10 +101,6 @@ export const Reports: React.FC = () => {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        <MiniStat icon={FileText} label="Total Reports" value={24} tint="text-primary-light" ring="bg-primary/15" index={0} />
-        <MiniStat icon={BarChart3} label="This Month" value={8} tint="text-emerald-400" ring="bg-emerald-500/15" index={1} />
-        <MiniStat icon={Users} label="Patient Reports" value={12} tint="text-accent-light" ring="bg-accent/15" index={2} />
-        <MiniStat icon={TrendingUp} label="Financial Reports" value={6} tint="text-amber-400" ring="bg-amber-500/15" index={3} />
       </div>
 
       <GlassCard hover={false} className="reveal">

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { Appointment } from '../types';
 import { appointments as seed } from '../data/appointments';
 
@@ -15,14 +15,16 @@ const AppointmentsContext = createContext<AppointmentsContextValue | undefined>(
 export const AppointmentsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [appointments, setAppointments] = useState<Appointment[]>(seed);
 
+  const lastId = useRef(Math.max(0, ...seed.map(a => Number(a.id.slice(1)) || 0)));
+
   const getAppointment = useCallback((id: string) => appointments.find(a => a.id === id), [appointments]);
 
   const addAppointment = useCallback((data: Partial<Appointment>) => {
-    const appointment = { ...data } as Appointment;
-    setAppointments(prev => {
-      appointment.id = `A${String(prev.length + 1).padStart(3, '0')}`;
-      return [...prev, appointment];
-    });
+    // The id is assigned before the state update so callers get it back (it used
+    // to be set inside the updater, which runs later), and it counts on from the
+    // highest id in use: `length + 1` collided with ids like A106 in a gapped list.
+    const appointment = { ...data, id: `A${String(++lastId.current).padStart(3, '0')}` } as Appointment;
+    setAppointments(prev => [...prev, appointment]);
     return appointment;
   }, []);
 

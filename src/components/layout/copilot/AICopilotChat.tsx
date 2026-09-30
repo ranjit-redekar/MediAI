@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { db } from '../../../data';
 import { stockStatus } from '../../../data/pharmacy';
+import { useAppointments } from '../../../context/AppointmentsContext';
+import type { Appointment } from '../../../types';
 import { cn } from '../../../utils/cn';
 import { useAIActions } from '../../../context/AIActionsContext';
 import { useToast } from '../../../context/ToastContext';
@@ -63,7 +65,7 @@ const suggestions = [
  * rather than a paragraph you then have to act on yourself.
  * Replace with a real tool-calling model when the backend lands.
  */
-function generateReply(raw: string, pendingCount: number, safeCount: number, safeMinutes: number): Reply {
+function generateReply(raw: string, pendingCount: number, safeCount: number, safeMinutes: number, appointments: Appointment[]): Reply {
   const q = raw.toLowerCase();
 
   if (/(approve|queue|pending|waiting|my work|to do|todo)/.test(q)) {
@@ -106,7 +108,7 @@ function generateReply(raw: string, pendingCount: number, safeCount: number, saf
 
   if (/(appointment|schedule|today|booking)/.test(q)) {
     const today = todayKey();
-    const todays = db.appointments.filter(a => a.date === today);
+    const todays = appointments.filter(a => a.date === today);
     const scheduled = todays.filter(a => a.status === 'Scheduled').length;
     return {
       text: `You have ${todays.length} appointment${todays.length === 1 ? '' : 's'} today — ${scheduled} still scheduled.`,
@@ -203,6 +205,7 @@ export const AICopilotChat: React.FC<AICopilotChatProps> = ({ isOpen, onClose })
   const navigate = useNavigate();
   const { toast } = useToast();
   const { pending, batchApprovable, approveMany, resetAll } = useAIActions();
+  const { appointments } = useAppointments();
 
   React.useEffect(() => {
     if (isOpen) {
@@ -231,7 +234,7 @@ export const AICopilotChat: React.FC<AICopilotChatProps> = ({ isOpen, onClose })
     setIsTyping(true);
 
     const safeMinutes = batchApprovable.reduce((sum, a) => sum + a.minutesSaved, 0);
-    const reply = generateReply(trimmed, pending.length, batchApprovable.length, safeMinutes);
+    const reply = generateReply(trimmed, pending.length, batchApprovable.length, safeMinutes, appointments);
 
     window.setTimeout(() => {
       setMessages(prev => [...prev, {

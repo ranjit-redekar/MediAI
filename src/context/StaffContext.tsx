@@ -13,7 +13,6 @@ interface StaffContextValue {
   addStaff: (input: NewStaffInput) => void;
   updateStaff: (id: string, fields: Partial<StaffMember>) => void;
   setStatus: (id: string, status: StaffStatus) => void;
-  removeStaff: (id: string) => void;
 }
 
 const StaffContext = createContext<StaffContextValue | undefined>(undefined);
@@ -48,13 +47,9 @@ export const StaffProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setStaff(prev => prev.map(s => (s.id === id ? { ...s, status } : s)));
   }, []);
 
-  const removeStaff = useCallback((id: string) => {
-    setStaff(prev => prev.filter(s => s.id !== id));
-  }, []);
-
   const value = useMemo<StaffContextValue>(
-    () => ({ staff, addStaff, updateStaff, setStatus, removeStaff }),
-    [staff, addStaff, updateStaff, setStatus, removeStaff]
+    () => ({ staff, addStaff, updateStaff, setStatus }),
+    [staff, addStaff, updateStaff, setStatus]
   );
 
   return <StaffContext.Provider value={value}>{children}</StaffContext.Provider>;

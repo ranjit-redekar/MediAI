@@ -39,4 +39,6 @@ export interface AIAction {
    * and are excluded from batch approval. Administrative steps do not.
    */
   requiresClinician: boolean;
+  /** For bookings and referrals: the slot to put on the calendar when approved. */
+  booking?: { doctorId: string; doctorName: string; specialty: string; date: string; time: string };
 }

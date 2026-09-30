@@ -1,4 +1,6 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import {
   CalendarPlus,
   ClipboardCheck,
@@ -17,11 +19,12 @@ import {
   Bot
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
 import { GlassInput } from '../components/ui/GlassInput';
 import { GlassSelect } from '../components/ui/GlassSelect';
 import { useJourney } from '../context/JourneyContext';
+import { useSession } from '../context/SessionContext';
+import type { RoleId } from '../types/access';
 import { ScheduleVisitWizard } from '../components/journey/ScheduleVisitWizard';
 import { PageHeader } from '../components/ui/PageHeader';
 import { allergyConflict, recommendMedicines } from '../data/journeyMock';
@@ -54,12 +57,13 @@ const medicineOptions = [
 
 export const PatientJourney: React.FC = () => {
   const { visits } = useJourney();
-  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  // `?visit=` opens a visit directly — the dashboard's Start button lands here.
+  const [searchParams] = useSearchParams();
+  const [selectedId, setSelectedId] = React.useState<string | null>(() => searchParams.get('visit'));
   const [scheduleOpen, setScheduleOpen] = React.useState(false);
 
   const selected = visits.find(v => v.id === selectedId) ?? null;
 
-  const countFor = (stage: JourneyStage) => visits.filter(v => v.stage === stage).length;
 
   return (
     <div className="space-y-6">
@@ -76,24 +80,6 @@ export const PatientJourney: React.FC = () => {
         }
       />
 
-      {/* Pipeline summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {JOURNEY_STAGES.map(stage => {
-          const meta = STAGE_META[stage];
-          return (
-            <GlassCard key={stage} padding="sm" hover={false} className="flex items-center gap-3">
-              <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center bg-white/5', meta.accent)}>
-                <meta.icon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white leading-none">{countFor(stage)}</p>
-                <p className="text-xs text-white/50 mt-1">{meta.label}</p>
-              </div>
-            </GlassCard>
-          );
-        })}
-      </div>
-
       {/* Helper line for non-technical staff */}
       <div className="flex items-center gap-2 text-xs text-white/50 px-1">
         <Sparkles className="w-3.5 h-3.5 text-violet-300 flex-shrink-0" />
@@ -106,7 +92,7 @@ export const PatientJourney: React.FC = () => {
           const meta = STAGE_META[stage];
           const items = visits.filter(v => v.stage === stage);
           return (
-            <div key={stage} className="flex flex-col">
+            <div key={stage} className={cn('flex flex-col', MOBILE_ORDER[stage])}>
               <div className={cn('flex items-center justify-between px-3 py-2 rounded-xl mb-3 bg-gradient-to-r to-transparent', meta.column)}>
                 <div className="flex items-center gap-2">
                   <span className={cn('w-2 h-2 rounded-full', meta.dot)} />
@@ -179,7 +165,9 @@ const VisitCard: React.FC<{ visit: Visit; onClick: () => void }> = ({ visit, onC
 
 const VisitDrawer: React.FC<{ visit: Visit | null; onClose: () => void }> = ({ visit, onClose }) => {
   const open = !!visit;
-  return (
+  // Portalled to <body>: inside the page's `space-y-*` wrapper the fixed panel
+  // picked up a 24px top margin and let the header show through above it.
+  return createPortal(
     <>
       <div
         className={cn(
@@ -197,12 +185,14 @@ const VisitDrawer: React.FC<{ visit: Visit | null; onClose: () => void }> = ({ v
       >
         {visit && <DrawerBody visit={visit} onClose={onClose} />}
       </aside>
-    </>
+    </>,
+    document.body,
   );
 };
 
 const DrawerBody: React.FC<{ visit: Visit; onClose: () => void }> = ({ visit, onClose }) => {
   const stageIndex = JOURNEY_STAGES.indexOf(visit.stage);
+  const { role } = useSession();
   return (
     <div>
       {/* Header */}
@@ -256,19 +246,48 @@ const DrawerBody: React.FC<{ visit: Visit; onClose: () => void }> = ({ visit, on
         )}
       </div>
 
-      {/* Stage-specific actions */}
+      {/* Stage-specific actions — only for the role that does this step */}
       <div className="p-5">
-        {visit.stage === 'Scheduled' && <ReceptionPanel visit={visit} />}
-        {visit.stage === 'Reception' && <AssignDoctorPanel visit={visit} />}
-        {visit.stage === 'Consultation' && <ConsultationPanel visit={visit} />}
-        {visit.stage === 'Pharmacy' && <PharmacyPanel visit={visit} />}
-        {visit.stage === 'Completed' && <CompletedPanel visit={visit} />}
+        {visit.stage !== 'Completed' && !STAGE_OWNERS[visit.stage].roles.includes(role.id) ? (
+          <p className="text-sm text-app-muted">
+            Waiting on <span className="font-semibold text-app">{STAGE_OWNERS[visit.stage].label}</span>. You'll see it move here when they're done.
+          </p>
+        ) : (
+          <>
+            {visit.stage === 'Scheduled' && <ReceptionPanel visit={visit} />}
+            {visit.stage === 'Reception' && <AssignDoctorPanel visit={visit} />}
+            {visit.stage === 'Consultation' && <ConsultationPanel visit={visit} />}
+            {visit.stage === 'Pharmacy' && <PharmacyPanel visit={visit} />}
+            {visit.stage === 'Completed' && <CompletedPanel visit={visit} />}
+          </>
+        )}
       </div>
     </div>
   );
 };
 
+/**
+ * Stacked on narrow screens, the stages people are acting on come first;
+ * "Scheduled" is often the longest list and would bury them. Wide screens keep
+ * the left-to-right flow.
+ */
+const MOBILE_ORDER: Record<JourneyStage, string> = {
+  Reception: 'order-1 xl:order-none',
+  Consultation: 'order-2 xl:order-none',
+  Pharmacy: 'order-3 xl:order-none',
+  Scheduled: 'order-4 xl:order-none',
+  Completed: 'order-5 xl:order-none',
+};
+
 // --- Stage panels ----------------------------------------------------------
+
+/** Who does each step. Everyone can see the board; only the owner gets the buttons. */
+const STAGE_OWNERS: Record<Exclude<JourneyStage, 'Completed'>, { roles: RoleId[]; label: string }> = {
+  Scheduled:    { roles: ['admin', 'receptionist', 'nurse'], label: 'reception to check them in' },
+  Reception:    { roles: ['admin', 'receptionist', 'nurse'], label: 'reception to assign a doctor' },
+  Consultation: { roles: ['doctor', 'assistant-doctor'],     label: 'the doctor to finish the consultation' },
+  Pharmacy:     { roles: ['pharmacist'],                     label: 'the pharmacist to dispense' },
+};
 
 const PanelHeading: React.FC<{ icon: LucideIcon; title: string; subtitle?: string }> = ({ icon: Icon, title, subtitle }) => (
   <div className="flex items-center gap-2 mb-4">

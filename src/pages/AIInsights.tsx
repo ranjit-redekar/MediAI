@@ -42,7 +42,7 @@ const aiAccuracyData = [
 
 export const AIInsights: React.FC = () => {
   const navigate = useNavigate();
-  const { allActions, statusOf } = useAIActions();
+  const { allActions, statusOf, canAction } = useAIActions();
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
@@ -63,7 +63,7 @@ export const AIInsights: React.FC = () => {
         bg: 'bg-red-500/20',
         border: 'border-red-500/30',
         barColor: '#ef4444',
-        glowClass: 'shadow-red-500/20'
+        stripe: 'border-l-red-500',
       };
       case 'High': return {
         icon: <Zap className="w-5 h-5" />,
@@ -71,7 +71,7 @@ export const AIInsights: React.FC = () => {
         bg: 'bg-amber-500/20',
         border: 'border-amber-500/30',
         barColor: '#f59e0b',
-        glowClass: 'shadow-amber-500/20'
+        stripe: 'border-l-amber-500',
       };
       case 'Medium': return {
         icon: <Activity className="w-5 h-5" />,
@@ -79,7 +79,7 @@ export const AIInsights: React.FC = () => {
         bg: 'bg-cyan-500/20',
         border: 'border-cyan-500/30',
         barColor: '#06b6d4',
-        glowClass: 'shadow-cyan-500/20'
+        stripe: 'border-l-cyan-500',
       };
       default: return {
         icon: <Shield className="w-5 h-5" />,
@@ -87,7 +87,7 @@ export const AIInsights: React.FC = () => {
         bg: 'bg-emerald-500/20',
         border: 'border-emerald-500/30',
         barColor: '#10b981',
-        glowClass: 'shadow-emerald-500/20'
+        stripe: 'border-l-emerald-500',
       };
     }
   };
@@ -169,16 +169,18 @@ export const AIInsights: React.FC = () => {
             const config = getSeverityConfig(insight.severity);
             const isExpanded = expandedInsight === insight.id;
             const insightActions = allActions.filter(a => a.insightId === insight.id);
-            const openActions = insightActions.filter(a => statusOf(a.id) === 'pending').length;
+            // Only what this role can actually approve — not drafts waiting on someone else.
+            const openActions = insightActions.filter(a => statusOf(a.id) === 'pending' && canAction(a)).length;
 
             return (
               <div
                 key={insight.id}
                 style={{ animationDelay: `${i * 60}ms` }}
+                // Neutral card, severity as a stripe: when every row is a colour
+                // wash, the critical one stops standing out.
                 className={cn(
-                  'reveal rounded-2xl border transition-all duration-300 overflow-hidden',
-                  config.bg, config.border,
-                  insight.severity === 'Critical' ? `shadow-lg ${config.glowClass}` : ''
+                  'reveal rounded-2xl border border-l-4 border-[var(--border)] bg-[var(--surface-1)] transition-all duration-300 overflow-hidden',
+                  config.stripe,
                 )}
               >
                 {/* Card Header */}
@@ -186,7 +188,7 @@ export const AIInsights: React.FC = () => {
                   className="w-full p-5 flex items-start gap-4 text-left"
                   onClick={() => setExpandedInsight(isExpanded ? null : insight.id)}
                 >
-                  <div className={`p-2.5 rounded-xl bg-black/20 ${config.color} flex-shrink-0`}>
+                  <div className={`p-2.5 rounded-xl ${config.bg} ${config.color} flex-shrink-0`}>
                     {config.icon}
                   </div>
 

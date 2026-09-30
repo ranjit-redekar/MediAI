@@ -6,6 +6,7 @@ import { db } from '../../data';
 import { useSession } from '../../context/SessionContext';
 import { navSections } from '../../data/navigation';
 import { todayKey } from '../../utils/date';
+import { useAppointments } from '../../context/AppointmentsContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,7 +18,8 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, onToggleCompact }) => {
   const { canSeeNav, workspace } = useSession();
   const today = todayKey();
-  const todaysAppointments = db.appointments.filter(a => a.date === today && a.status === 'Scheduled').length;
+  const { appointments } = useAppointments();
+  const todaysAppointments = appointments.filter(a => a.date === today && a.status === 'Scheduled').length;
   const pendingBills = db.bills.filter(b => b.status !== 'Paid').length;
   const pendingLabs = db.labTests.filter(l => l.status !== 'Completed').length;
 
@@ -136,20 +138,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
 
         </nav>
 
-        {/* Bottom Actions */}
-        <div className="p-4 border-t border-white/10 space-y-3">
+        {/* Collapse toggle — desktop only; on mobile the sidebar is a drawer. */}
+        <div className={cn('hidden lg:flex p-3 border-t border-white/10', isCompact ? 'justify-center' : 'justify-end')}>
           <button
             onClick={onToggleCompact}
-            className={cn(
-              'w-full flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 text-white/70 hover:text-white transition-all',
-              isCompact ? 'justify-center px-3 py-2' : 'px-4 py-2'
-            )}
+            className="p-2 rounded-lg text-app-subtle hover:text-app hover:bg-[var(--surface-2)] transition-colors focus-ring"
             title={isCompact ? 'Expand menu' : 'Collapse menu'}
+            aria-label={isCompact ? 'Expand menu' : 'Collapse menu'}
           >
             {isCompact ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            {!isCompact && <span>{isCompact ? 'Expand Menu' : 'Compact Menu'}</span>}
           </button>
-
         </div>
       </aside>
     </>

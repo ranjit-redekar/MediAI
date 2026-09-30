@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { Doctor } from '../types';
 import { doctors as seed } from '../data/doctors';
 import { avatarFor } from '../utils/avatar';
@@ -26,17 +26,17 @@ export const DoctorsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const getDoctor = useCallback((id: string) => doctors.find(d => d.id === id), [doctors]);
 
+  const lastId = useRef(Math.max(0, ...seed.map(d => Number(d.id.slice(1)) || 0)));
+
   const addDoctor = useCallback((data: Partial<Doctor>) => {
+    // Id from a counter past the highest in use: `length + 1` reuses an id after a delete.
     const doctor = {
       ...data,
+      id: `D${String(++lastId.current).padStart(3, '0')}`,
+      avatar: avatarFor(data.name ?? '', data.gender),
       schedule: data.schedule ?? defaultSchedule
     } as Doctor;
-    setDoctors(prev => {
-      const id = `D${String(prev.length + 1).padStart(3, '0')}`;
-      doctor.id = id;
-      doctor.avatar = avatarFor(doctor.name ?? '', doctor.gender);
-      return [...prev, doctor];
-    });
+    setDoctors(prev => [...prev, doctor]);
     return doctor;
   }, []);
 

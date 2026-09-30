@@ -1,4 +1,5 @@
 import { doctors } from './doctors';
+import { toDateKey } from '../utils/date';
 import { patients } from './patients';
 import { aiInsights } from './aiMockData';
 import { medicines, stockStatus, daysUntilExpiry, TARGET_STOCK_UNITS } from './pharmacy';
@@ -68,9 +69,12 @@ function nextSlot(doctorId: string, withinHours: number, seed: number) {
     weekday: 'short', day: 'numeric', month: 'short',
   });
 
+  const time = `${String(hour).padStart(2, '0')}:${minute}`;
   return {
-    display: `${dateLabel}, ${String(hour).padStart(2, '0')}:${minute}`,
+    display: `${dateLabel}, ${time}`,
     dayName: DAY_NAMES[candidate.getDay()],
+    date: toDateKey(candidate),
+    time,
   };
 }
 
@@ -238,6 +242,10 @@ export function buildAIActions(): AIAction[] {
         confidence: insight.confidence,
         minutesSaved: intent.minutesSaved,
         requiresClinician: intent.requiresClinician,
+        // Bookings carry the slot as data, so approving can put it on the calendar.
+        booking: (intent.kind === 'appointment' || intent.kind === 'referral') && doctor
+          ? { doctorId: doctor.id, doctorName: doctor.name, specialty: doctor.specialty, date: slot.date, time: slot.time }
+          : undefined,
       });
     });
   });

@@ -77,8 +77,9 @@ export const ACCESS_ROLES: AccessRole[] = [
     persona: 'Dispensing and stock — reviews medication orders and supply risk.',
     shell: 'admin',
     home: '/pharmacy',
-    navIds: ['dashboard', 'pharmacy', 'patients', 'settings'],
-    routes: ['/', '/pharmacy', '/patients', '/settings'],
+    // Today is where prescriptions reach the store, so dispensing happens there.
+    navIds: ['dashboard', 'journey', 'pharmacy', 'patients', 'settings'],
+    routes: ['/', '/journey', '/pharmacy', '/patients', '/settings'],
     // Stock work only: pharmacists dispense what a prescriber signed; they never sign the order itself.
     actionKinds: ['stock'],
     accent: { text: 'text-violet-300', bg: 'bg-violet-500/15', ring: 'ring-violet-500/40' },

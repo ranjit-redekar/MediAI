@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React, { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -85,7 +86,9 @@ export const GlassModal: React.FC<GlassModalProps> = ({
     xl: 'max-w-4xl',
   };
 
-  return (
+  // Portalled to <body>: rendered inside a page, a `space-y-*` parent gives the
+  // fixed overlay a top margin, leaving a strip of the header uncovered.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="glass-modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -129,6 +132,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

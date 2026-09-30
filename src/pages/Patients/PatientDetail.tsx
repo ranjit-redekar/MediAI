@@ -17,9 +17,11 @@ import { MedicalTimeline } from '../../components/timeline/MedicalTimeline';
 import { usePatients } from '../../context/PatientsContext';
 import { db } from '../../data';
 import { cn } from '../../utils/cn';
+import { todayKey } from '../../utils/date';
 import type { Appointment, MedicalRecord, Patient } from '../../types';
 import { useAIActions } from '../../context/AIActionsContext';
 import { AIActionCard } from '../../components/ai/AIActionCard';
+import { useAppointments } from '../../context/AppointmentsContext';
 
 type TabId = 'overview' | 'history' | 'labs' | 'appointments';
 
@@ -37,7 +39,8 @@ export const PatientDetail: React.FC = () => {
   const { getPatient } = usePatients();
   const patient = getPatient(id ?? '');
   const aiInsight = db.aiInsights.find(i => i.patientId === id);
-  const patientAppointments = db.appointments.filter(a => a.patientId === id);
+  const { appointments } = useAppointments();
+  const patientAppointments = appointments.filter(a => a.patientId === id);
 
   const [activeTab, setActiveTab] = useState<TabId>('overview');
 
@@ -427,6 +430,11 @@ const OverviewTab: React.FC<{
 }> = ({ patient, aiInsight, medicalRecords, appointments }) => {
   // This patient's drafts, approvable right here — not a list of advice to act on elsewhere.
   const drafts = useAIActions().allActions.filter(a => a.patientId === patient?.id);
+  // Future, still-scheduled visits, soonest first — not the first three in data order.
+  const today = todayKey();
+  const upcoming = appointments
+    .filter(a => a.status === 'Scheduled' && a.date >= today)
+    .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
   const navigate = useNavigate();
   if (!patient) return null;
 
@@ -606,7 +614,7 @@ const OverviewTab: React.FC<{
               <CalendarPlus className="w-4 h-4 text-indigo-400" />
               Upcoming Appointments
             </h3>
-            {appointments.length === 0 ? (
+            {upcoming.length === 0 ? (
               <div className="text-center py-4">
                 <p className="text-white/40 text-sm mb-3">No upcoming appointments</p>
                 <GlassButton variant="ghost" size="sm" onClick={() => navigate('/appointments/new')}>
@@ -615,7 +623,7 @@ const OverviewTab: React.FC<{
               </div>
             ) : (
               <div className="space-y-2">
-                {appointments.slice(0, 3).map(apt => (
+                {upcoming.slice(0, 3).map(apt => (
                   <button
                     key={apt.id}
                     onClick={() => navigate(`/appointments/${apt.id}/edit`)}

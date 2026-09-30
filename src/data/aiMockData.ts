@@ -1,3 +1,4 @@
+import { patients } from './patients';
 import type { AIInsight, DashboardStats } from '../types';
 import { recentMonthLabels, shiftDemoDates } from '../utils/date';
 import { CLINICAL_DEMO_TODAY } from './demoToday';
@@ -111,20 +112,11 @@ export const revenueChartData = [
   { revenue: 125840, appointments: 542 }
 ].map((d, i, all) => ({ month: recentMonthLabels(all.length)[i], ...d }));
 
-export const patientDemographics = [
-  { name: '0-18', value: 320, color: '#6366f1' },
-  { name: '19-35', value: 680, color: '#06b6d4' },
-  { name: '36-50', value: 850, color: '#8b5cf6' },
-  { name: '51-65', value: 620, color: '#10b981' },
-  { name: '65+', value: 377, color: '#f59e0b' }
-];
-
-export const departmentDistribution = [
-  { name: 'General Medicine', value: 35 },
-  { name: 'Cardiology', value: 18 },
-  { name: 'Orthopedics', value: 15 },
-  { name: 'Pediatrics', value: 12 },
-  { name: 'OB/GYN', value: 10 },
-  { name: 'Others', value: 10 }
-];
+/** Age bands counted from the patient list, so the chart and the roster agree. */
+export const patientDemographics = ([
+  ['0-18', 0, 18, '#6366f1'], ['19-35', 19, 35, '#06b6d4'], ['36-50', 36, 50, '#8b5cf6'],
+  ['51-65', 51, 65, '#10b981'], ['65+', 66, 200, '#f59e0b'],
+] as const).map(([name, lo, hi, color]) => ({
+  name, color, value: patients.filter(p => p.age >= lo && p.age <= hi).length,
+}));
 

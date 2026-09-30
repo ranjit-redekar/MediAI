@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { Consultation, PrescribedMedicine, Visit } from '../types/journey';
-import { initialVisits } from '../data/journeyMock';
+import { initialVisits, mergeWithBook } from '../data/journeyMock';
+import { useAppointments } from './AppointmentsContext';
 
 interface DoctorRef {
   id: string;
@@ -40,11 +41,14 @@ let seq = 100;
 const uid = (prefix: string) => `${prefix}-${++seq}`;
 
 export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [visits, setVisits] = useState<Visit[]>(initialVisits);
+  const { appointments } = useAppointments();
+  const [stored, setVisits] = useState<Visit[]>(initialVisits);
+  const visits = useMemo(() => mergeWithBook(stored, appointments), [stored, appointments]);
 
+  // A visit that joined from the book isn't in `stored` yet; it's added on its first step.
   const patch = useCallback((visitId: string, updater: (v: Visit) => Visit) => {
-    setVisits(prev => prev.map(v => (v.id === visitId ? updater(v) : v)));
-  }, []);
+    setVisits(prev => mergeWithBook(prev, appointments).map(v => (v.id === visitId ? updater(v) : v)));
+  }, [appointments]);
 
   const scheduleVisit = useCallback((input: NewVisitInput) => {
     const visit: Visit = {

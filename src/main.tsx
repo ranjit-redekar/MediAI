@@ -25,19 +25,20 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       <ToastProvider>
         <SessionProvider>
-          <AIActionsProvider>
           <PatientsProvider>
             <DoctorsProvider>
               <AppointmentsProvider>
-                <JourneyProvider>
-                  <StaffProvider>
-                    <App />
-                  </StaffProvider>
-                </JourneyProvider>
+                {/* Inside Appointments: approving a booking draft adds it to the calendar. */}
+                <AIActionsProvider>
+                  <JourneyProvider>
+                    <StaffProvider>
+                      <App />
+                    </StaffProvider>
+                  </JourneyProvider>
+                </AIActionsProvider>
               </AppointmentsProvider>
             </DoctorsProvider>
           </PatientsProvider>
-          </AIActionsProvider>
         </SessionProvider>
       </ToastProvider>
     </ThemeProvider>

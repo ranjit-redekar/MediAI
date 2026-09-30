@@ -83,10 +83,13 @@ export const TaskInboxDrawer: React.FC<TaskInboxDrawerProps> = ({ isOpen, onClos
               <h2 className="text-xl font-semibold text-app mt-1">
                 {pending.length > 0 ? `${pending.length} waiting on you` : 'All clear'}
               </h2>
-              <p className="text-xs text-app-subtle mt-1 flex items-center gap-1.5">
-                <Clock className="w-3 h-3" />
-                {minutesSaved} min of manual work avoided today
-              </p>
+              {/* Shown once there's something to show — a "0 min saved" line reads as failure. */}
+              {minutesSaved > 0 && (
+                <p className="text-xs text-app-subtle mt-1 flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" />
+                  {minutesSaved} min of manual work avoided today
+                </p>
+              )}
             </div>
             <button
               onClick={onClose}
@@ -130,7 +133,7 @@ export const TaskInboxDrawer: React.FC<TaskInboxDrawerProps> = ({ isOpen, onClos
                   </p>
                   <div className="space-y-2">
                     {group.items.map((action, i) => (
-                      <AIActionCard key={action.id} action={action} index={i} />
+                      <AIActionCard key={action.id} action={action} index={i} stacked />
                     ))}
                   </div>
                 </div>

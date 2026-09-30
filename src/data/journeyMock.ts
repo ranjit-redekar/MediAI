@@ -152,66 +152,80 @@ const toClock = (hhmm: string) => {
  * is still waiting at the store), the next booked patient has checked in, and
  * the rest are still to arrive.
  */
+const isTodayInPerson = (a: Appointment, today: string) =>
+  a.date === today && a.type === 'In-Person' && (a.status === 'Completed' || a.status === 'Scheduled');
+
+/** One appointment as a journey visit at the given stage. */
+function toVisit(a: Appointment, stage: Visit['stage'], prescription: Visit['prescription'] = []): Visit | null {
+  const patient = patients.find(p => p.id === a.patientId);
+  if (!patient) return null;
+  const seen = stage === 'Pharmacy' || stage === 'Completed';
+  return {
+    id: `V-${a.id}`,
+    patientId: patient.id,
+    patientName: patient.name,
+    patientAvatar: patient.avatar,
+    age: patient.age,
+    gender: patient.gender,
+    reason: a.notes ?? a.specialty,
+    symptoms: [],
+    scheduledTime: toClock(a.time),
+    priority: patient.status === 'Critical' || /urgent/i.test(a.notes ?? '') ? 'Urgent' : 'Routine',
+    stage,
+    checkedInAt: stage === 'Scheduled' ? undefined : toClock(a.time),
+    consultations: seen
+      ? [{ id: `C-${a.id}`, doctorId: a.doctorId, doctorName: a.doctorName, specialty: a.specialty, diagnosis: a.notes ?? '', notes: a.notes ?? '', completed: true }]
+      : [],
+    prescription,
+    pharmacyStatus: stage === 'Completed' ? 'Fulfilled' : 'Awaiting',
+  };
+}
+
 function buildTodayVisits(): Visit[] {
   const today = todayKey();
   const booked = appointments
-    .filter(a => a.date === today && a.type === 'In-Person' && (a.status === 'Completed' || a.status === 'Scheduled'))
+    .filter(a => isTodayInPerson(a, today))
     .sort((a, b) => a.time.localeCompare(b.time));
-  const latestOf = (a: Appointment) => patients.find(p => p.id === a.patientId)?.medicalHistory?.[0];
+  // The visit's own reason drives everything here. The patient's latest record
+  // may be about something else entirely (an allergy flare vs. a fatigue workup).
   const suggestionFor = (a: Appointment) =>
-    recommendMedicines(latestOf(a)?.diagnosis ?? '', latestOf(a)?.symptoms ?? [],
-      patients.find(p => p.id === a.patientId)?.allergies).slice(0, 1);
+    recommendMedicines(a.notes ?? '', [], patients.find(p => p.id === a.patientId)?.allergies).slice(0, 1);
   // The latest finished consult that produced a prescription is the one at the store.
   const atStoreAppt = booked.filter(a => a.status === 'Completed' && suggestionFor(a).length > 0).at(-1);
   const firstWaiting = booked.find(a => a.status === 'Scheduled');
 
   return booked.flatMap(a => {
-    const patient = patients.find(p => p.id === a.patientId);
-    if (!patient) return [];
-    const latest = latestOf(a);
-    const done = a.status === 'Completed';
     const atStore = a === atStoreAppt;
-    const stage: Visit['stage'] = atStore ? 'Pharmacy' : done ? 'Completed' : a === firstWaiting ? 'Reception' : 'Scheduled';
-    const consultation = {
-      id: `C-${a.id}`,
-      doctorId: a.doctorId,
-      doctorName: a.doctorName,
-      specialty: a.specialty,
-      diagnosis: latest?.diagnosis ?? '',
-      notes: a.notes ?? '',
-      completed: true,
-    };
+    const stage: Visit['stage'] = atStore ? 'Pharmacy' : a.status === 'Completed' ? 'Completed' : a === firstWaiting ? 'Reception' : 'Scheduled';
     const rx = atStore
       ? suggestionFor(a).map(s => ({
-          id: `RX-${a.id}`,
-          medicineId: s.medicineId,
-          name: s.name,
-          category: s.category,
-          dosage: s.dosage,
-          prescribedBy: a.doctorName,
-          aiSuggested: false,
-          dispensed: false,
+          id: `RX-${a.id}`, medicineId: s.medicineId, name: s.name, category: s.category,
+          dosage: s.dosage, prescribedBy: a.doctorName, aiSuggested: false, dispensed: false,
         }))
       : [];
-
-    return [{
-      id: `V-${a.id}`,
-      patientId: patient.id,
-      patientName: patient.name,
-      patientAvatar: patient.avatar,
-      age: patient.age,
-      gender: patient.gender,
-      reason: a.notes ?? a.specialty,
-      symptoms: latest?.symptoms ?? [],
-      scheduledTime: toClock(a.time),
-      priority: patient.status === 'Critical' || /urgent/i.test(a.notes ?? '') ? 'Urgent' : 'Routine',
-      stage,
-      checkedInAt: stage === 'Scheduled' ? undefined : toClock(a.time),
-      consultations: done ? [consultation] : [],
-      prescription: rx,
-      pharmacyStatus: done && !atStore ? 'Fulfilled' : 'Awaiting',
-    }];
+    const visit = toVisit(a, stage, rx);
+    return visit ? [visit] : [];
   });
+}
+
+/**
+ * The board follows the live appointment book: a visit booked for today (by
+ * hand or by approving an AI draft) joins as Scheduled, and one whose booking
+ * was removed drops off unless it's already under way. Progress through the
+ * stages lives in `stored`; the book decides who is on the board at all.
+ */
+export function mergeWithBook(stored: Visit[], book: Appointment[]): Visit[] {
+  const today = todayKey();
+  const booked = book.filter(a => isTodayInPerson(a, today));
+  const bookedIds = new Set(booked.map(a => `V-${a.id}`));
+  const storedIds = new Set(stored.map(v => v.id));
+  const fromBook = (id: string) => id.startsWith('V-A');
+  const kept = stored.filter(v => !fromBook(v.id) || bookedIds.has(v.id) || v.stage !== 'Scheduled');
+  const added = booked
+    .filter(a => !storedIds.has(`V-${a.id}`))
+    .map(a => toVisit(a, 'Scheduled'))
+    .filter((v): v is Visit => v !== null);
+  return [...kept, ...added];
 }
 
 export const initialVisits: Visit[] = buildTodayVisits();

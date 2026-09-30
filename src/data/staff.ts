@@ -1,14 +1,34 @@
 import type { StaffMember } from '../types/staff';
 import { avatarFor } from '../utils/avatar';
+import { doctors } from './doctors';
+
+/**
+ * Doctors come from the doctors table rather than being typed in again here, so
+ * the staff directory and the Doctors page can never disagree about who a
+ * doctor is or what they practise.
+ */
+function doctorStaff(): StaffMember[] {
+  return doctors.map(d => ({
+    id: `EMP-1${d.id.slice(1)}`,
+    name: d.name,
+    gender: d.gender,
+    role: d.specialty,
+    category: 'Doctors',
+    department: d.department,
+    status: d.status === 'Offline' ? 'Off Duty' : 'Active',
+    shift: 'General',
+    employmentType: 'Full-time',
+    phone: d.phone,
+    email: d.email,
+    avatar: d.avatar,
+    joinedDate: d.joinedDate ?? '',
+    location: d.department,
+  }));
+}
 
 // A representative cross-section of the positions found in a real hospital.
 export const staffMembers: StaffMember[] = [
-  // --- Doctors ---
-  { id: 'EMP-1001', name: 'Dr. James Wilson', gender: 'Male', role: 'Chief Medical Officer', category: 'Doctors', department: 'Internal Medicine', status: 'Active', shift: 'General', employmentType: 'Full-time', phone: '+1 (555) 201-1001', email: 'j.wilson@mediai.com', avatar: avatarFor('Dr. James Wilson', 'Male'), joinedDate: '2015-04-12', location: 'Block A' },
-  { id: 'EMP-1002', name: 'Dr. Maria Garcia', gender: 'Female', role: 'Cardiologist', category: 'Doctors', department: 'Cardiology', status: 'Active', shift: 'Morning', employmentType: 'Full-time', phone: '+1 (555) 201-1002', email: 'm.garcia@mediai.com', avatar: avatarFor('Dr. Maria Garcia', 'Female'), joinedDate: '2017-09-03', location: 'Block B' },
-  { id: 'EMP-1003', name: 'Dr. Robert Taylor', gender: 'Male', role: 'Orthopedic Surgeon', category: 'Doctors', department: 'Orthopedics', status: 'On Leave', shift: 'Rotating', employmentType: 'Full-time', phone: '+1 (555) 201-1003', email: 'r.taylor@mediai.com', avatar: avatarFor('Dr. Robert Taylor', 'Male'), joinedDate: '2018-01-22', location: 'OT Wing' },
-  { id: 'EMP-1004', name: 'Dr. Priya Nair', gender: 'Female', role: 'Pediatrician', category: 'Doctors', department: 'Pediatrics', status: 'Active', shift: 'Morning', employmentType: 'Full-time', phone: '+1 (555) 201-1004', email: 'p.nair@mediai.com', avatar: avatarFor('Dr. Priya Nair', 'Female'), joinedDate: '2019-06-18', location: 'Block C' },
-  { id: 'EMP-1005', name: 'Dr. Ahmed Khan', gender: 'Male', role: 'Anesthesiologist', category: 'Doctors', department: 'Anesthesiology', status: 'Off Duty', shift: 'Night', employmentType: 'Full-time', phone: '+1 (555) 201-1005', email: 'a.khan@mediai.com', avatar: avatarFor('Dr. Ahmed Khan', 'Male'), joinedDate: '2016-11-30', location: 'OT Wing' },
+  ...doctorStaff(),
 
   // --- Nursing ---
   { id: 'EMP-2001', name: 'Linda Martinez', gender: 'Female', role: 'Nursing Superintendent', category: 'Nursing', department: 'Nursing Admin', status: 'Active', shift: 'General', employmentType: 'Full-time', phone: '+1 (555) 202-2001', email: 'l.martinez@mediai.com', avatar: avatarFor('Linda Martinez', 'Female'), joinedDate: '2014-03-05', location: 'Block A' },

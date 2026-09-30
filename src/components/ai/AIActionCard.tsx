@@ -26,7 +26,12 @@ const KIND_META: Record<AIActionKind, { icon: LucideIcon; tint: string; ring: st
  * One AI-drafted step, presented as work that is already done pending approval
  * — not as advice the user has to go and act on somewhere else.
  */
-export const AIActionCard: React.FC<{ action: AIAction; index?: number }> = ({ action, index = 0 }) => {
+/**
+ * `stacked` puts the buttons on their own row. Used in narrow containers (the
+ * approval drawer) where the screen is wide but the card is not, so a
+ * breakpoint alone would squeeze the text to one word per line.
+ */
+export const AIActionCard: React.FC<{ action: AIAction; index?: number; stacked?: boolean }> = ({ action, index = 0, stacked = false }) => {
   const { statusOf, approve, dismiss, reset, amend, canAction } = useAIActions();
   const { toast } = useToast();
   const [showWhy, setShowWhy] = useState(false);
@@ -131,12 +136,12 @@ export const AIActionCard: React.FC<{ action: AIAction; index?: number }> = ({ a
       style={{ animationDelay: `${index * 50}ms` }}
     >
       {/* Actions wrap under the text on narrow screens instead of squeezing it to one word per line. */}
-      <div className="p-3.5 flex flex-wrap sm:flex-nowrap items-start gap-3">
+      <div className={cn('p-3.5 flex flex-wrap items-start gap-3', !stacked && 'sm:flex-nowrap')}>
         <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', ring)}>
           <Icon className={cn('w-4 h-4', tint)} />
         </div>
 
-        <div className="flex-1 min-w-0 basis-[calc(100%-2.75rem)] sm:basis-0">
+        <div className={cn('flex-1 min-w-0 basis-[calc(100%-2.75rem)]', !stacked && 'sm:basis-0')}>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-app">{action.label}</p>
             {action.requiresClinician && (
@@ -186,7 +191,7 @@ export const AIActionCard: React.FC<{ action: AIAction; index?: number }> = ({ a
         </div>
 
         {!editing && (
-          <div className="flex items-center justify-end gap-1 flex-shrink-0 w-full sm:w-auto">
+          <div className={cn('flex items-center justify-end gap-1 flex-shrink-0 w-full', !stacked && 'sm:w-auto')}>
             <button
               onClick={() => setEditing(true)}
               aria-label={`Edit ${action.label}`}

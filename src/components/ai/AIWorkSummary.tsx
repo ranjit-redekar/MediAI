@@ -49,6 +49,7 @@ export const AIWorkSummary: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-5 lg:gap-6 flex-shrink-0">
+          {approved.length > 0 && (<>
           <div>
             <p className="text-2xl font-bold text-app tabular-nums leading-none">{approved.length}</p>
             <p className="text-[11px] text-app-subtle mt-1 flex items-center gap-1">
@@ -61,6 +62,7 @@ export const AIWorkSummary: React.FC = () => {
               <Clock className="w-3 h-3" /> work avoided
             </p>
           </div>
+          </>)}
 
           <div className="flex items-center gap-2">
             {approved.length > 0 && (

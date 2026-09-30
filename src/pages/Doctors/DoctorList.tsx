@@ -8,9 +8,9 @@ import { SearchInput } from '../../components/ui/SearchInput';
 import { DeleteConfirmModal } from '../../components/ui/DeleteConfirmModal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useDoctors } from '../../context/DoctorsContext';
-import { db } from '../../data';
 import type { Doctor } from '../../types';
 import { cn } from '../../utils/cn';
+import { useAppointments } from '../../context/AppointmentsContext';
 
 const STATUS_CONFIG = {
   Available: { dot: 'bg-emerald-500', text: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30' },
@@ -23,6 +23,7 @@ export const DoctorList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const { doctors, removeDoctor } = useDoctors();
+  const { appointments } = useAppointments();
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
@@ -105,7 +106,7 @@ export const DoctorList: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {filteredDoctors.map((doctor, i) => {
           const sc = STATUS_CONFIG[doctor.status];
-          const doctorApts = db.appointments.filter(a => a.doctorId === doctor.id);
+          const doctorApts = appointments.filter(a => a.doctorId === doctor.id);
           const completedCount = doctorApts.filter(a => a.status === 'Completed').length;
           const availableDays = doctor.schedule.filter(s => s.isAvailable).length;
 

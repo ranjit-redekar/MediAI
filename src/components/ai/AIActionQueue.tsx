@@ -45,7 +45,7 @@ export const AIActionQueue: React.FC<{ limit?: number }> = ({ limit = 4 }) => {
               <h3 className="text-sm font-semibold text-app">Ready for your approval</h3>
               <p className="text-xs text-app-subtle">
                 {pending.length > 0
-                  ? `${pending.length} action${pending.length === 1 ? '' : 's'} drafted · ${minutesSaved} min saved so far`
+                  ? `${pending.length} action${pending.length === 1 ? '' : 's'} drafted${minutesSaved > 0 ? ` · ${minutesSaved} min saved so far` : ''}`
                   : `Queue clear · ${minutesSaved} min saved today`}
               </p>
             </div>

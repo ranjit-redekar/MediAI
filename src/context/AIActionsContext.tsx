@@ -1,7 +1,8 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { buildAIActions } from '../data/aiActions';
 import { ownsAction } from '../data/accessRoles';
 import { useSession } from './SessionContext';
+import { useAppointments } from './AppointmentsContext';
 import type { AIAction, AIActionStatus } from '../types/aiActions';
 
 interface AIActionsContextValue {
@@ -33,6 +34,10 @@ export const AIActionsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [actions, setActions] = useState<AIAction[]>(buildAIActions);
   const [statuses, setStatuses] = useState<Record<string, AIActionStatus>>({});
   const { role } = useSession();
+  const { addAppointment, removeAppointment } = useAppointments();
+  // Approval is the work, not a checkmark: a booking draft becomes a real
+  // appointment on the calendar, and undo takes it back off.
+  const booked = useRef(new Map<string, string>()); // action id → appointment id
 
   const statusOf = useCallback((id: string) => statuses[id] ?? 'pending', [statuses]);
 
@@ -40,26 +45,56 @@ export const AIActionsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setStatuses(prev => ({ ...prev, [id]: status }));
   }, []);
 
-  const approve = useCallback((id: string) => setStatus(id, 'approved'), [setStatus]);
+  const carryOut = useCallback((ids: string[]) => {
+    for (const id of ids) {
+      const a = actions.find(x => x.id === id);
+      if (!a?.booking || booked.current.has(id)) continue;
+      const appt = addAppointment({
+        patientId: a.patientId, patientName: a.patientName,
+        doctorId: a.booking.doctorId, doctorName: a.booking.doctorName, specialty: a.booking.specialty,
+        date: a.booking.date, time: a.booking.time, status: 'Scheduled', type: 'In-Person',
+        notes: `${a.label} — booked from AI draft`,
+      });
+      booked.current.set(id, appt.id);
+    }
+  }, [actions, addAppointment]);
+
+  const undoBookings = useCallback((ids: string[]) => {
+    for (const id of ids) {
+      const apptId = booked.current.get(id);
+      if (apptId) removeAppointment(apptId);
+      booked.current.delete(id);
+    }
+  }, [removeAppointment]);
+
+  const approve = useCallback((id: string) => {
+    carryOut([id]);
+    setStatus(id, 'approved');
+  }, [carryOut, setStatus]);
   const dismiss = useCallback((id: string) => setStatus(id, 'dismissed'), [setStatus]);
 
   const reset = useCallback((id: string) => {
+    undoBookings([id]);
     setStatuses(prev => {
       const next = { ...prev };
       delete next[id];
       return next;
     });
-  }, []);
+  }, [undoBookings]);
 
   const approveMany = useCallback((ids: string[]) => {
+    carryOut(ids);
     setStatuses(prev => {
       const next = { ...prev };
       for (const id of ids) next[id] = 'approved';
       return next;
     });
-  }, []);
+  }, [carryOut]);
 
-  const resetAll = useCallback(() => setStatuses({}), []);
+  const resetAll = useCallback(() => {
+    undoBookings([...booked.current.keys()]);
+    setStatuses({});
+  }, [undoBookings]);
 
   const amend = useCallback((id: string, detail: string) => {
     setActions(prev => prev.map(a => (a.id === id ? { ...a, detail } : a)));

@@ -8,8 +8,7 @@ import {
   aiInsights, 
   dashboardStats, 
   revenueChartData, 
-  patientDemographics,
-  departmentDistribution
+  patientDemographics
 } from './aiMockData';
 
 export { patients } from './patients';
@@ -22,8 +21,7 @@ export {
   aiInsights, 
   dashboardStats, 
   revenueChartData, 
-  patientDemographics,
-  departmentDistribution
+  patientDemographics
 } from './aiMockData';
 
 // Export all data as a single object for easy access
@@ -37,6 +35,5 @@ export const db = {
   aiInsights,
   dashboardStats,
   revenueChartData,
-  patientDemographics,
-  departmentDistribution
+  patientDemographics
 };

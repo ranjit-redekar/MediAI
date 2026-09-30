@@ -23,7 +23,7 @@ export const AppointmentFormPage: React.FC = () => {
     <FormPageLayout
       title={isEdit ? 'Edit Appointment' : 'Add New Appointment'}
       subtitle={isEdit ? `${editing?.patientName} · ${editing?.date}` : 'Schedule a new appointment'}
-      backLabel="Back to Schedule"
+      backLabel="Back to Appointments"
       backTo="/appointments"
       icon={isEdit ? <Edit className="w-5 h-5 text-white" /> : <Plus className="w-5 h-5 text-white" />}
     >

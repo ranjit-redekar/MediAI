@@ -55,6 +55,30 @@ try {
   assert.equal(shifted.a[0].when, today);
   assert.match(shifted.at, /T10:30:00Z$/);
 
+  // 6. Booking: next free slot skips taken slots and past times; booking drafts carry a slot.
+  const { nextFreeSlot } = await load('/src/data/slots.ts');
+  const { doctors } = await load('/src/data/doctors.ts');
+  const doc = doctors[0];
+  const monday = new Date(2030, 0, 7, 8, 0); // a Monday, before hours
+  const first = nextFreeSlot(doc, [], monday);
+  assert.equal(first.date, '2030-01-07');
+  const taken = [{ doctorId: doc.id, date: first.date, time: first.time, status: 'Scheduled' }];
+  const second = nextFreeSlot(doc, taken, monday);
+  assert.notDeepEqual(second, first, 'a booked slot is never offered again');
+  const late = nextFreeSlot(doc, [], new Date(2030, 0, 7, 23, 0));
+  assert.notEqual(late.date, '2030-01-07', 'no slots in the past');
+  assert.ok(actions.filter(a => a.kind === 'referral').every(a => a.booking?.date && a.booking?.time), 'referrals carry a bookable slot');
+
+  // 7. Today board follows the book: new bookings join, undone ones leave, started ones stay.
+  const { mergeWithBook } = await load('/src/data/journeyMock.ts');
+  const extra = { id: 'A999', patientId: 'P001', patientName: 'Sarah Johnson', doctorId: 'D001', doctorName: 'Dr. James Wilson', specialty: 'Internal Medicine', date: today, time: '17:30', status: 'Scheduled', type: 'In-Person', notes: 'Booked from draft' };
+  const withExtra = mergeWithBook(initialVisits, [...appointments, extra]);
+  assert.equal(withExtra.find(v => v.id === 'V-A999')?.stage, 'Scheduled', 'a booking for today joins the board');
+  assert.equal(mergeWithBook(withExtra, appointments).some(v => v.id === 'V-A999'), false, 'undoing it takes it off');
+  const started = withExtra.map(v => v.id === 'V-A999' ? { ...v, stage: 'Consultation' } : v);
+  assert.ok(mergeWithBook(started, appointments).some(v => v.id === 'V-A999'), 'a visit under way is never dropped');
+  assert.equal(mergeWithBook(initialVisits, appointments).length, initialVisits.length, 'seed is stable');
+
   console.log('safety checks passed');
 } finally {
   await vite.close();

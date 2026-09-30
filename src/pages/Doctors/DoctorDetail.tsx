@@ -17,6 +17,7 @@ import { useDoctors } from '../../context/DoctorsContext';
 import { db } from '../../data';
 import { cn } from '../../utils/cn';
 import type { Appointment } from '../../types';
+import { useAppointments } from '../../context/AppointmentsContext';
 
 type TabId = 'overview' | 'schedule' | 'appointments' | 'patients';
 
@@ -46,7 +47,8 @@ export const DoctorDetail: React.FC = () => {
 
   const { getDoctor } = useDoctors();
   const doctor = getDoctor(id ?? '');
-  const doctorAppointments = db.appointments.filter(a => a.doctorId === id);
+  const { appointments } = useAppointments();
+  const doctorAppointments = appointments.filter(a => a.doctorId === id);
 
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [aptFilter, setAptFilter] = useState<string>('All');

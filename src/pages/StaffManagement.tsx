@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Users, Plus, Edit, Trash2, Stethoscope, HeartPulse, Activity, Pill,
+  Users, Plus, Edit, Archive, Stethoscope, HeartPulse, Activity, Pill,
   FlaskConical, Briefcase, Sparkles, Shield, Cpu, Phone, Mail,
   UserCheck, UserMinus, Building2, UserCog
 } from 'lucide-react';
@@ -11,7 +11,7 @@ import { GlassButton } from '../components/ui/GlassButton';
 import { GlassSelect } from '../components/ui/GlassSelect';
 import { PageHeader } from '../components/ui/PageHeader';
 import { SearchInput } from '../components/ui/SearchInput';
-import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
+import { useToast } from '../context/ToastContext';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useStaff } from '../context/StaffContext';
 import { cn } from '../utils/cn';
@@ -32,12 +32,21 @@ const categoryMeta: Record<StaffCategory, { icon: LucideIcon; tint: string }> = 
 
 export const StaffManagement: React.FC = () => {
   const navigate = useNavigate();
-  const { staff, removeStaff, setStatus } = useStaff();
+  const { staff, setStatus } = useStaff();
+  const { toast } = useToast();
   const [search, setSearch] = React.useState('');
   const [category, setCategory] = React.useState<'all' | StaffCategory>('all');
   const [status, setStatusFilter] = React.useState<'all' | StaffStatus>('all');
 
-  const [deleting, setDeleting] = React.useState<StaffMember | null>(null);
+  // Archive (Inactive) instead of delete: the directory keeps employment history.
+  const archive = (member: StaffMember) => {
+    const previous = member.status;
+    setStatus(member.id, 'Inactive');
+    toast('Staff member archived', {
+      description: `${member.name} is now Inactive.`,
+      action: { label: 'Undo', onClick: () => setStatus(member.id, previous) },
+    });
+  };
 
   const resetFilters = () => { setSearch(''); setCategory('all'); setStatusFilter('all'); };
 
@@ -164,28 +173,27 @@ export const StaffManagement: React.FC = () => {
                       <p className="text-xs text-white/40 flex items-center gap-1 truncate max-w-[180px]"><Mail className="w-3 h-3" />{s.email}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <select
-                        value={s.status}
-                        onChange={e => setStatus(s.id, e.target.value as StaffStatus)}
-                        className={cn(
-                          'text-xs rounded-lg px-2 py-1 border bg-transparent outline-none cursor-pointer',
-                          s.status === 'Active' && 'text-emerald-300 border-emerald-500/30',
-                          s.status === 'On Leave' && 'text-amber-300 border-amber-500/30',
-                          s.status === 'Off Duty' && 'text-cyan-300 border-cyan-500/30',
-                          s.status === 'Inactive' && 'text-white/50 border-white/20'
-                        )}
-                      >
-                        {STAFF_STATUSES.map(st => <option key={st} value={st} className="bg-slate-900 text-white">{st}</option>)}
-                      </select>
+                      {/* Read-only here; status changes go through Edit, so a misclick can't mark someone on leave. */}
+                      <span className={cn(
+                        'inline-block text-xs rounded-lg px-2 py-1 border',
+                        s.status === 'Active' && 'text-emerald-300 border-emerald-500/30',
+                        s.status === 'On Leave' && 'text-amber-300 border-amber-500/30',
+                        s.status === 'Off Duty' && 'text-cyan-300 border-cyan-500/30',
+                        s.status === 'Inactive' && 'text-white/50 border-white/20'
+                      )}>
+                        {s.status}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => openEdit(s)} title="Edit" className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => setDeleting(s)} title="Remove" className="p-2 rounded-lg hover:bg-red-500/20 text-white/50 hover:text-red-300 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {s.status !== 'Inactive' && (
+                          <button onClick={() => archive(s)} title="Archive" aria-label={`Archive ${s.name}`} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+                            <Archive className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -204,14 +212,6 @@ export const StaffManagement: React.FC = () => {
         </div>
       </GlassCard>
 
-      <DeleteConfirmModal
-        isOpen={!!deleting}
-        onClose={() => setDeleting(null)}
-        onConfirm={() => { if (deleting) removeStaff(deleting.id); setDeleting(null); }}
-        title="Remove staff member"
-        message="This will remove the staff member from the directory."
-        itemName={deleting?.name}
-      />
     </div>
   );
 };

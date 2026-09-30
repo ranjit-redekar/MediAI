@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React from 'react';
 import {
   X,
@@ -133,7 +134,9 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
     close();
   };
 
-  return (
+  // Portalled to <body>: rendered inside a page, a `space-y-*` parent gives the
+  // fixed overlay a top margin, leaving a strip of the header uncovered.
+  return createPortal(
     <div
       className={cn(
         'fixed inset-0 z-[60] flex items-start justify-center p-4 transition-colors duration-200',
@@ -404,7 +407,8 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

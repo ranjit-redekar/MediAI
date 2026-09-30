@@ -9,6 +9,7 @@ import { GlassButton } from '../ui/GlassButton';
 import { EmptyState } from '../ui/EmptyState';
 import { useAppointments } from '../../context/AppointmentsContext';
 import { useSession } from '../../context/SessionContext';
+import { useJourney } from '../../context/JourneyContext';
 import { useToast } from '../../context/ToastContext';
 import { db } from '../../data';
 import { cn } from '../../utils/cn';
@@ -37,6 +38,7 @@ export const TodaySchedule: React.FC = () => {
   const { role } = useSession();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { visits, checkIn, sendToDoctor } = useJourney();
 
   const today = todayKey();
 
@@ -54,6 +56,26 @@ export const TodaySchedule: React.FC = () => {
   const nextUp = remaining[0];
 
   const heading = role.doctorId ? 'Your schedule today' : "Today's schedule";
+  // Only clinicians start a consultation; everyone else sees where it stands.
+  const canConsult = role.id === 'doctor' || role.id === 'assistant-doctor';
+
+  /**
+   * Starting an in-person visit moves it to "With doctor" on the Today board and
+   * opens it there, so the dashboard and the board are one state, not two.
+   */
+  const start = (apt: Appointment) => {
+    if (apt.type === 'Video') {
+      toast('Joining video visit', { description: `${apt.patientName} · ${apt.time}`, variant: 'info' });
+      return;
+    }
+    const visitId = `V-${apt.id}`;
+    const visit = visits.find(v => v.id === visitId);
+    if (visit && visit.stage !== 'Consultation') {
+      checkIn(visitId);
+      sendToDoctor(visitId, { id: apt.doctorId, name: apt.doctorName, specialty: apt.specialty });
+    }
+    navigate(`/journey?visit=${visitId}`);
+  };
 
   return (
     <GlassCard hover={false} padding="sm" className="reveal h-full flex flex-col" style={{ animationDelay: '140ms' }}>
@@ -134,17 +156,12 @@ export const TodaySchedule: React.FC = () => {
                   </div>
                 </button>
 
-                {apt.status === 'Scheduled' ? (
+                {apt.status === 'Scheduled' && canConsult ? (
                   <GlassButton
                     variant={isNext ? 'primary' : 'default'}
                     size="sm"
                     className="flex-shrink-0 h-8 px-2.5"
-                    onClick={() =>
-                      toast(apt.type === 'Video' ? 'Joining video visit' : 'Visit started', {
-                        description: `${apt.patientName} · ${apt.time}`,
-                        variant: 'info',
-                      })
-                    }
+                    onClick={() => start(apt)}
                   >
                     {apt.type === 'Video'
                       ? <><Video className="w-3 h-3" /> Join</>
@@ -161,7 +178,7 @@ export const TodaySchedule: React.FC = () => {
 
           {mine.length > 6 && (
             <button
-              onClick={() => navigate('/appointments')}
+              onClick={() => navigate('/journey')}
               className="w-full text-center text-[11px] text-app-subtle hover:text-app transition-colors py-1.5 focus-ring rounded-lg"
             >
               +{mine.length - 6} more today

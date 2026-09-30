@@ -161,7 +161,9 @@ export const Pharmacy: React.FC = () => {
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                     <Pill className="w-6 h-6 text-primary" />
                   </div>
-                  <GlassBadge variant={statusVariant(status)} size="sm">{status}</GlassBadge>
+                  {statusOf(`STOCK-${medicine.id}-quarantine`) === 'approved'
+                    ? <GlassBadge variant="default" size="sm">Quarantined</GlassBadge>
+                    : <GlassBadge variant={statusVariant(status)} size="sm">{status}</GlassBadge>}
                 </div>
 
                 <h3 className="font-semibold text-app text-lg leading-snug">{medicine.name}</h3>

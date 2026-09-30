@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { Patient } from '../types';
 import { patients as seed } from '../data/patients';
 import { todayKey } from '../utils/date';
@@ -19,8 +19,11 @@ export const PatientsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getPatient = useCallback((id: string) => patients.find(p => p.id === id), [patients]);
 
+  const lastId = useRef(Math.max(0, ...seed.map(p => Number(p.id.slice(1)) || 0)));
+
   const addPatient = useCallback((data: Partial<Patient>) => {
-    const id = `P${String(seed.length + 1).padStart(3, '0')}`;
+    // Id from a counter past the highest in use, assigned before the update so the caller gets it.
+    const id = `P${String(++lastId.current).padStart(3, '0')}`;
     const patient = {
       ...data,
       id,
@@ -29,12 +32,7 @@ export const PatientsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       avatar: avatarFor(data.name ?? '', data.gender),
       medicalHistory: data.medicalHistory ?? []
     } as Patient;
-    setPatients(prev => {
-      // keep ids unique even after multiple adds in one session
-      const seq = prev.length + 1;
-      patient.id = `P${String(seq).padStart(3, '0')}`;
-      return [...prev, patient];
-    });
+    setPatients(prev => [...prev, patient]);
     return patient;
   }, []);
 
