@@ -11,6 +11,11 @@ export interface Patient {
   lastVisit: string;
   status: 'Active' | 'Inactive' | 'Critical';
   avatar?: string;
+  /**
+   * Drug allergies. `undefined` means nobody has asked — which is not the same
+   * as `[]`, "no known drug allergies", and must never be shown as if it were.
+   */
+  allergies?: string[];
   medicalHistory?: MedicalRecord[];
   aiRiskScore?: number;
   aiRecommendations?: string[];
@@ -126,8 +131,9 @@ export interface Medicine {
   expiryDate: string;
   manufacturer: string;
   description: string;
-  status: 'In Stock' | 'Low Stock' | 'Out of Stock';
 }
+
+export type StockStatus = 'In Stock' | 'Low Stock' | 'Out of Stock' | 'Expired';
 
 export interface LabTest {
   id: string;
@@ -160,63 +166,6 @@ export interface AIInsight {
   recommendations: string[];
   createdAt: string;
   severity: 'Low' | 'Medium' | 'High' | 'Critical';
-  agentId?: string;
-}
-
-export interface AIAgentMetric {
-  label: string;
-  value: string;
-  helper?: string;
-  trend?: 'up' | 'down';
-}
-
-export interface AIAgent {
-  id: string;
-  name: string;
-  focus: string;
-  description: string;
-  status: 'Online' | 'Monitoring' | 'Idle';
-  statusMessage: string;
-  lastUpdated: string;
-  metrics: AIAgentMetric[];
-  highlights: string[];
-  primaryAction: string;
-  viewBook: AIAgentViewBook;
-}
-
-export interface AIAgentViewBook {
-  tagline: string;
-  mission: string;
-  promise: string;
-  pillars: AgentPillar[];
-  workflows: AgentWorkflow[];
-  successStories: AgentSuccessStory[];
-  timeline: AgentTimelineEvent[];
-}
-
-export interface AgentPillar {
-  title: string;
-  description: string;
-  badge?: string;
-}
-
-export interface AgentWorkflow {
-  title: string;
-  description: string;
-  impact: string;
-  metric: string;
-}
-
-export interface AgentSuccessStory {
-  title: string;
-  result: string;
-  detail: string;
-}
-
-export interface AgentTimelineEvent {
-  phase: string;
-  detail: string;
-  timestamp: string;
 }
 
 export interface DashboardStats {
@@ -238,73 +187,3 @@ export interface NavItem {
   badge?: number;
 }
 
-export interface RoleMetric {
-  label: string;
-  value: string;
-  change?: string;
-  trend?: 'up' | 'down';
-  helper?: string;
-}
-
-export interface RoleAction {
-  label: string;
-  description: string;
-  route: string;
-  emphasis?: 'primary' | 'ghost';
-}
-
-export interface RoleFocusArea {
-  title: string;
-  description: string;
-  status: 'Healthy' | 'Watch' | 'Critical';
-  indicator?: string;
-}
-
-export interface RoleWorkflow {
-  title: string;
-  description: string;
-  sla: string;
-  lastUpdated: string;
-}
-
-export interface RoleQueueItem {
-  id: string;
-  title: string;
-  meta: string;
-  eta: string;
-  priority: 'Low' | 'Medium' | 'High' | 'Critical';
-}
-
-export interface RoleAlert {
-  title: string;
-  detail: string;
-  severity: 'info' | 'warning' | 'critical';
-  timestamp: string;
-  route?: string;
-}
-
-export interface RoleScreenLink {
-  title: string;
-  description: string;
-  route: string;
-  badge: string;
-  icon: string;
-}
-
-export interface RoleDefinition {
-  id: string;
-  name: string;
-  persona: string;
-  summary: string;
-  shift: string;
-  status: string;
-  aiCopilot: string;
-  metrics: RoleMetric[];
-  focusAreas: RoleFocusArea[];
-  workflows: RoleWorkflow[];
-  actions: RoleAction[];
-  queue: RoleQueueItem[];
-  alerts: RoleAlert[];
-  screens: RoleScreenLink[];
-  handoffNotes: string[];
-}

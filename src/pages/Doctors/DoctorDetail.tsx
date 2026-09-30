@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Star, Mail, Phone, Calendar, Clock, Users,
+  ArrowLeft, Mail, Phone, Calendar, Clock, Users,
   Award, Globe, Stethoscope, TrendingUp, CheckCircle,
-  DollarSign, BarChart2, Video, UserRound, Activity, Edit,
+  BarChart2, Video, UserRound, Activity, Edit,
   ChevronDown, Pill, FileText, ArrowRight
 } from 'lucide-react';
 import {
@@ -132,23 +132,11 @@ export const DoctorDetail: React.FC = () => {
                 </GlassButton>
               </div>
 
-              {/* Star rating */}
-              <div className="flex items-center gap-2 mt-3">
-                <div className="flex">
-                  {[1,2,3,4,5].map(s => (
-                    <Star key={s} className={`w-4 h-4 ${s <= Math.round(doctor.rating) ? 'text-amber-400 fill-amber-400' : 'text-white/20'}`} />
-                  ))}
-                </div>
-                <span className="text-white font-semibold">{doctor.rating}</span>
-                <span className="text-white/40 text-sm">({doctor.totalAppointments?.toLocaleString()} total appointments)</span>
-              </div>
-
               {/* Key metrics row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
                 <MetricChip icon={<Users className="w-4 h-4 text-indigo-400" />} label="Patients" value={doctor.patientsCount.toLocaleString()} />
                 <MetricChip icon={<TrendingUp className="w-4 h-4 text-emerald-400" />} label="Experience" value={`${doctor.experience} yrs`} />
                 <MetricChip icon={<BarChart2 className="w-4 h-4 text-violet-400" />} label="Completion" value={`${doctor.completionRate ?? 95}%`} />
-                <MetricChip icon={<DollarSign className="w-4 h-4 text-amber-400" />} label="Fee / Visit" value={`$${doctor.consultationFee}`} />
               </div>
             </div>
           </div>

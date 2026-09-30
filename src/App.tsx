@@ -25,13 +25,10 @@ const Pharmacy = lazy(() => import('./pages/Pharmacy').then(m => ({ default: m.P
 const Laboratory = lazy(() => import('./pages/Laboratory').then(m => ({ default: m.Laboratory })));
 const Reports = lazy(() => import('./pages/Reports').then(m => ({ default: m.Reports })));
 const AIInsights = lazy(() => import('./pages/AIInsights').then(m => ({ default: m.AIInsights })));
-const AIAgentDetail = lazy(() => import('./pages/AIAgentDetail').then(m => ({ default: m.AIAgentDetail })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
 const Register = lazy(() => import('./pages/Register').then(m => ({ default: m.Register })));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
-const RoleDirectory = lazy(() => import('./pages/Roles/RoleDirectory').then(m => ({ default: m.RoleDirectory })));
-const RoleDetail = lazy(() => import('./pages/Roles/RoleDetail').then(m => ({ default: m.RoleDetail })));
 const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 const PortalHome = lazy(() => import('./pages/Portal/PortalHome').then(m => ({ default: m.PortalHome })));
 
@@ -71,10 +68,7 @@ function App() {
             <Route path="laboratory" element={<Laboratory />} />
             <Route path="reports" element={<Reports />} />
             <Route path="ai-insights" element={<AIInsights />} />
-            <Route path="agents/:agentId" element={<AIAgentDetail />} />
             <Route path="settings" element={<Settings />} />
-            <Route path="roles" element={<RoleDirectory />} />
-            <Route path="roles/:roleId" element={<RoleDetail />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

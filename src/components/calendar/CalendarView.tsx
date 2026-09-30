@@ -42,14 +42,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onSelectAppointment,
   onDateSelect,
 }) => {
-  // Default to the month of the most recent appointment so the calendar always
-  // lands on data (mock data may not be in the current real-world month).
-  const [currentDate, setCurrentDate] = useState(() => {
-    const dates = appointments.map(a => a.date).sort();
-    const latest = dates[dates.length - 1];
-    return latest ? new Date(latest + 'T00:00:00') : new Date();
-  });
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  // Open on today, with today selected, so the side panel shows the day's list
+  // instead of an empty "click a date" prompt.
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => toDateKey());
   const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
 
   const year = currentDate.getFullYear();
@@ -195,16 +191,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     className={`
                       min-h-[110px] p-2 border-r border-b border-white/5 cursor-pointer
                       transition-all duration-150
-                      ${isOther    ? 'opacity-40' : ''}
                       ${isWeekend && !isOther ? 'bg-white/[0.02]' : ''}
                       ${isToday   ? 'bg-indigo-500/10' : ''}
                       ${isSelected ? 'bg-white/[0.08] ring-inset ring-2 ring-indigo-500/70' : 'hover:bg-white/[0.05]'}
                     `}
                   >
-                    {/* Date number */}
+                    {/* Date number — only this dims outside the month; the visits don't */}
                     <div className={`
                       w-7 h-7 flex items-center justify-center rounded-full text-sm font-semibold mb-1.5
-                      ${isToday ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/40' : 'text-white/80'}
+                      ${isToday ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/40' : isOther ? 'text-white/40' : 'text-white/80'}
                     `}>
                       {day.date}
                     </div>
@@ -260,7 +255,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             ))}
             <div className="ml-auto flex items-center gap-3">
               {(['In-Person', 'Video', 'Phone'] as const).map(t => (
-                <div key={t} className={`flex items-center gap-1 text-xs ${TYPE_COLOR[t]} opacity-70`}>
+                <div key={t} className={`flex items-center gap-1 text-xs ${TYPE_COLOR[t]}`}>
                   {TYPE_ICON[t]} {t}
                 </div>
               ))}
@@ -320,7 +315,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <Clock className="w-3 h-3 text-white/30" />
                                 <span className="text-xs text-white/50">{apt.time}</span>
-                                <span className={`flex items-center gap-0.5 text-xs ${TYPE_COLOR[apt.type]}`}>
+                                <span className={`flex items-center gap-0.5 text-xs whitespace-nowrap ${TYPE_COLOR[apt.type]}`}>
                                   {TYPE_ICON[apt.type]} {apt.type}
                                 </span>
                               </div>

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { buildAIActions } from '../data/aiActions';
+import { ownsAction } from '../data/accessRoles';
 import { useSession } from './SessionContext';
 import type { AIAction, AIActionStatus } from '../types/aiActions';
 
@@ -65,8 +66,7 @@ export const AIActionsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const value = useMemo<AIActionsContextValue>(() => {
-    const kinds = new Set(role.actionKinds);
-    const mine = (a: AIAction) => kinds.has(a.kind);
+    const mine = (a: AIAction) => ownsAction(role, a);
 
     const allPending = actions.filter(a => (statuses[a.id] ?? 'pending') === 'pending');
     const pending = allPending.filter(mine);

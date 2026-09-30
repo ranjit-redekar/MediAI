@@ -18,14 +18,13 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
-import { GlassBadge } from '../components/ui/GlassBadge';
 import { GlassButton } from '../components/ui/GlassButton';
 import { GlassInput } from '../components/ui/GlassInput';
 import { GlassSelect } from '../components/ui/GlassSelect';
 import { useJourney } from '../context/JourneyContext';
 import { ScheduleVisitWizard } from '../components/journey/ScheduleVisitWizard';
 import { PageHeader } from '../components/ui/PageHeader';
-import { recommendMedicines } from '../data/journeyMock';
+import { allergyConflict, recommendMedicines } from '../data/journeyMock';
 import { db } from '../data';
 import { cn } from '../utils/cn';
 import type { JourneyStage, MedicineSuggestion, Visit } from '../types/journey';
@@ -65,14 +64,10 @@ export const PatientJourney: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Patient Journey"
-        subtitle="Track every patient from booking through reception, consultation, and the medical store."
+        title="Today"
+        subtitle="Every patient in the building today — arrival, consultation, and the medical store."
         actions={
           <>
-            <GlassBadge variant="primary" className="hidden sm:inline-flex">
-              <Sparkles className="w-3 h-3 mr-1" />
-              AI-assisted prescribing
-            </GlassBadge>
             <GlassButton variant="primary" onClick={() => setScheduleOpen(true)}>
               <CalendarPlus className="w-4 h-4" />
               New Appointment
@@ -335,15 +330,20 @@ const ConsultationPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
   const active = visit.consultations.find(c => !c.completed) ?? visit.consultations[visit.consultations.length - 1];
   const [suggestions, setSuggestions] = React.useState<MedicineSuggestion[] | null>(null);
   const [manualMed, setManualMed] = React.useState('');
+  const [allergyBlock, setAllergyBlock] = React.useState<string | null>(null);
+  const allergies = db.patients.find(p => p.id === visit.patientId)?.allergies;
   const [referId, setReferId] = React.useState('');
 
   if (!active) return null;
 
-  const runAI = () => setSuggestions(recommendMedicines(active.diagnosis, visit.symptoms));
+  const runAI = () => setSuggestions(recommendMedicines(active.diagnosis, visit.symptoms, allergies));
 
   const addManual = (medId: string) => {
     const med = db.medicines.find(m => m.id === medId);
     if (!med) return;
+    const clash = allergyConflict(med.name, allergies);
+    setAllergyBlock(clash ? `${med.name} not added — ${visit.patientName} has a recorded ${clash} allergy.` : null);
+    if (clash) return;
     addPrescriptionItem(visit.id, {
       medicineId: med.id,
       name: med.name,
@@ -500,6 +500,11 @@ const ConsultationPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
         </div>
         <div className="mt-2">
           <GlassSelect options={medicineOptions} value={manualMed} onChange={e => addManual(e.target.value)} />
+          {allergyBlock && (
+            <p role="alert" className="mt-2 px-3 py-2 rounded-lg border border-red-500/30 bg-red-500/10 text-xs font-semibold text-app">
+              {allergyBlock}
+            </p>
+          )}
         </div>
       </div>
 

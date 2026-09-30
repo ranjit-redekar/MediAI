@@ -9,21 +9,22 @@ import { FilterTabs } from '../components/ui/FilterTabs';
 import { EmptyState } from '../components/ui/EmptyState';
 import { MiniStat } from '../components/ui/StatCard';
 import { useToast } from '../context/ToastContext';
+import { useAIActions } from '../context/AIActionsContext';
 import { db } from '../data';
+import { daysUntilExpiry, stockStatus, TARGET_STOCK_UNITS } from '../data/pharmacy';
+import type { StockStatus } from '../types';
 import { cn } from '../utils/cn';
 
-const statusVariant = (status: string) => {
+const statusVariant = (status: StockStatus) => {
   switch (status) {
     case 'In Stock': return 'success' as const;
     case 'Low Stock': return 'warning' as const;
-    case 'Out of Stock': return 'danger' as const;
-    default: return 'default' as const;
+    case 'Out of Stock':
+    case 'Expired': return 'danger' as const;
   }
 };
 
-/** Days until a date string, used to surface medicines expiring soon. */
-const daysUntil = (date: string) =>
-  Math.ceil((new Date(date).getTime() - Date.now()) / 86_400_000);
+const countBy = (status: StockStatus) => db.medicines.filter(m => stockStatus(m) === status).length;
 
 export const Pharmacy: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,32 +33,43 @@ export const Pharmacy: React.FC = () => {
 
   const statusTabs = useMemo(() => [
     { label: 'All items', value: 'All', count: db.medicines.length },
-    { label: 'In stock', value: 'In Stock', count: db.medicines.filter(m => m.status === 'In Stock').length },
-    { label: 'Low stock', value: 'Low Stock', count: db.medicines.filter(m => m.status === 'Low Stock').length },
-    { label: 'Out of stock', value: 'Out of Stock', count: db.medicines.filter(m => m.status === 'Out of Stock').length },
+    { label: 'In stock', value: 'In Stock', count: countBy('In Stock') },
+    { label: 'Low stock', value: 'Low Stock', count: countBy('Low Stock') },
+    { label: 'Out of stock', value: 'Out of Stock', count: countBy('Out of Stock') },
+    { label: 'Expired', value: 'Expired', count: countBy('Expired') },
   ], []);
 
   const query = searchTerm.trim().toLowerCase();
   const filteredMedicines = db.medicines.filter(med =>
     (!query || med.name.toLowerCase().includes(query) || med.category.toLowerCase().includes(query)) &&
-    (statusFilter === 'All' || med.status === statusFilter)
+    (statusFilter === 'All' || stockStatus(med) === statusFilter)
   );
 
-  const lowStockCount = db.medicines.filter(m => m.status === 'Low Stock').length;
-  const outOfStockCount = db.medicines.filter(m => m.status === 'Out of Stock').length;
+  const lowStockCount = countBy('Low Stock');
+  const outOfStockCount = countBy('Out of Stock');
+  const expiredCount = countBy('Expired');
   const expiringSoon = db.medicines.filter(m => {
-    const d = daysUntil(m.expiryDate);
-    return d > 0 && d <= 90;
+    const d = daysUntilExpiry(m);
+    return m.stock > 0 && d > 0 && d <= 90;
   });
 
   const isFiltered = query !== '' || statusFilter !== 'All';
   const resetFilters = () => { setSearchTerm(''); setStatusFilter('All'); };
 
-  const reorder = (name: string) =>
-    toast('Reorder requested', {
-      description: `A purchase order for ${name} was drafted for the supplier.`,
-      variant: 'info',
+  // The card's button acts on the same reorder draft that sits in the queue,
+  // so approving in either place is one decision, not two purchase orders.
+  const { allActions, statusOf, approve, reset, canAction } = useAIActions();
+  const reorderDraft = (medicineId: string) => allActions.find(a => a.id === `STOCK-${medicineId}-reorder`);
+  const approveReorder = (medicineId: string) => {
+    const draft = reorderDraft(medicineId);
+    if (!draft) return;
+    approve(draft.id);
+    toast('Reorder approved', {
+      description: draft.detail,
+      variant: 'ai',
+      action: { label: 'Undo', onClick: () => reset(draft.id) },
     });
+  };
 
   return (
     <div className="space-y-6">
@@ -74,19 +86,21 @@ export const Pharmacy: React.FC = () => {
         }
       />
 
-      {(outOfStockCount > 0 || expiringSoon.length > 0) && (
+      {(expiredCount > 0 || outOfStockCount > 0 || expiringSoon.length > 0) && (
         <div className="reveal flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-2xl bg-amber-500/[0.07] border border-amber-500/20">
           <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-app">Supply needs attention</p>
             <p className="text-xs text-app-muted mt-0.5">
-              {outOfStockCount > 0 && `${outOfStockCount} item${outOfStockCount === 1 ? '' : 's'} out of stock`}
-              {outOfStockCount > 0 && expiringSoon.length > 0 && ' · '}
-              {expiringSoon.length > 0 && `${expiringSoon.length} expiring within 90 days`}
+              {[
+                expiredCount > 0 && `${expiredCount} expired batch${expiredCount === 1 ? '' : 'es'} still on the shelf`,
+                outOfStockCount > 0 && `${outOfStockCount} out of stock`,
+                expiringSoon.length > 0 && `${expiringSoon.length} expiring within 90 days`,
+              ].filter(Boolean).join(' · ')}
             </p>
           </div>
-          {outOfStockCount > 0 && (
-            <GlassButton variant="ghost" size="sm" onClick={() => setStatusFilter('Out of Stock')}>
+          {(expiredCount > 0 || outOfStockCount > 0) && (
+            <GlassButton variant="ghost" size="sm" onClick={() => setStatusFilter(expiredCount > 0 ? 'Expired' : 'Out of Stock')}>
               Show items
             </GlassButton>
           )}
@@ -94,7 +108,7 @@ export const Pharmacy: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <MiniStat icon={Package} label="Total Medicines" value={db.medicines.length} tint="text-emerald-400" ring="bg-emerald-500/15" index={0} />
+        <MiniStat icon={Package} label="Expired on shelf" value={expiredCount} tint="text-red-400" ring="bg-red-500/15" index={0} />
         <MiniStat icon={AlertTriangle} label="Low Stock" value={lowStockCount} tint="text-amber-400" ring="bg-amber-500/15" index={1} />
         <MiniStat icon={Pill} label="Out of Stock" value={outOfStockCount} tint="text-red-400" ring="bg-red-500/15" index={2} />
         <MiniStat icon={CalendarClock} label="Expiring ≤ 90d" value={expiringSoon.length} tint="text-cyan-400" ring="bg-cyan-500/15" index={3} />
@@ -130,11 +144,11 @@ export const Pharmacy: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {filteredMedicines.map((medicine, i) => {
-            const days = daysUntil(medicine.expiryDate);
+            const status = stockStatus(medicine);
+            const days = daysUntilExpiry(medicine);
             const expirySoon = days > 0 && days <= 90;
             const expired = days <= 0;
-            // Stock bar is relative to a 200-unit "healthy" shelf target.
-            const stockPct = Math.min(100, Math.round((medicine.stock / 200) * 100));
+            const stockPct = Math.min(100, Math.round((medicine.stock / TARGET_STOCK_UNITS) * 100));
 
             return (
               <GlassCard
@@ -147,7 +161,7 @@ export const Pharmacy: React.FC = () => {
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                     <Pill className="w-6 h-6 text-primary" />
                   </div>
-                  <GlassBadge variant={statusVariant(medicine.status)} size="sm">{medicine.status}</GlassBadge>
+                  <GlassBadge variant={statusVariant(status)} size="sm">{status}</GlassBadge>
                 </div>
 
                 <h3 className="font-semibold text-app text-lg leading-snug">{medicine.name}</h3>
@@ -165,14 +179,14 @@ export const Pharmacy: React.FC = () => {
                       role="progressbar"
                       aria-valuenow={medicine.stock}
                       aria-valuemin={0}
-                      aria-valuemax={200}
+                      aria-valuemax={TARGET_STOCK_UNITS}
                       aria-label={`${medicine.name} stock level`}
                     >
                       <div
                         className={cn(
                           'h-full rounded-full transition-all duration-700',
-                          medicine.status === 'Out of Stock' ? 'bg-red-400'
-                            : medicine.status === 'Low Stock' ? 'bg-amber-400'
+                          status === 'Out of Stock' || status === 'Expired' ? 'bg-red-400'
+                            : status === 'Low Stock' ? 'bg-amber-400'
                             : 'bg-emerald-400'
                         )}
                         style={{ width: `${stockPct}%` }}
@@ -200,16 +214,21 @@ export const Pharmacy: React.FC = () => {
                   </div>
                 </div>
 
-                {medicine.status !== 'In Stock' && (
-                  <GlassButton
-                    variant="default"
-                    size="sm"
-                    className="w-full mt-4"
-                    onClick={() => reorder(medicine.name)}
-                  >
-                    <ShoppingCart className="w-3.5 h-3.5" /> Reorder
-                  </GlassButton>
-                )}
+                {(() => {
+                  const draft = reorderDraft(medicine.id);
+                  if (!draft) return null;
+                  if (statusOf(draft.id) === 'approved') {
+                    return <p className="mt-4 text-sm font-medium text-emerald-400 text-center">Reorder approved</p>;
+                  }
+                  if (!canAction(draft)) {
+                    return <p className="mt-4 text-xs text-app-subtle text-center">Reorder drafted for the pharmacist</p>;
+                  }
+                  return (
+                    <GlassButton variant="default" size="sm" className="w-full mt-4" onClick={() => approveReorder(medicine.id)}>
+                      <ShoppingCart className="w-3.5 h-3.5" /> Approve reorder · {TARGET_STOCK_UNITS - (status === 'Expired' ? 0 : medicine.stock)} units
+                    </GlassButton>
+                  );
+                })()}
               </GlassCard>
             );
           })}

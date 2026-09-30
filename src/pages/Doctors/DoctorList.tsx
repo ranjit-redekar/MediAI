@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, Calendar, Plus, Edit, Trash2, Eye, TrendingUp, DollarSign, Globe, UserRound } from 'lucide-react';
+import { Calendar, Plus, Edit, Trash2, Eye, TrendingUp, Globe, UserRound } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -117,12 +117,6 @@ export const DoctorList: React.FC = () => {
               className="reveal hover-lift relative group flex flex-col cursor-pointer"
               onClick={() => navigate(`/doctors/${doctor.id}`)}
             >
-              {/* Status badge top-right */}
-              <div className={`absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full ${sc.bg} border ${sc.border}`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                <span className={`text-xs font-medium ${sc.text}`}>{doctor.status}</span>
-              </div>
-
               {/* Avatar + Rating */}
               <div className="flex items-start gap-4 mb-4">
                 <div className="relative flex-shrink-0">
@@ -132,19 +126,18 @@ export const DoctorList: React.FC = () => {
                     className="w-16 h-16 rounded-2xl border-2 border-white/10 object-cover"
                   />
                 </div>
-                <div className="pt-1 min-w-0 pr-16">
-                  <h3 className="font-semibold text-white text-base leading-tight truncate">{doctor.name}</h3>
+                {/* Status sits in the text flow, not over the corner, so the name never truncates. */}
+                <div className="pt-1 min-w-0">
+                  <h3 className="font-semibold text-white text-base leading-tight">{doctor.name}</h3>
                   <p className="text-indigo-300 text-sm mt-0.5">{doctor.specialty}</p>
-                  <p className="text-white/40 text-xs">{doctor.qualification}</p>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${sc.bg} border ${sc.border}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                      <span className={`text-xs font-medium ${sc.text}`}>{doctor.status}</span>
+                    </span>
+                    <span className="text-white/40 text-xs">{doctor.qualification}</span>
+                  </div>
                 </div>
-              </div>
-
-              {/* Star rating */}
-              <div className="flex items-center gap-1.5 mb-4">
-                {[1,2,3,4,5].map(s => (
-                  <Star key={s} className={`w-3.5 h-3.5 ${s <= Math.round(doctor.rating) ? 'text-amber-400 fill-amber-400' : 'text-white/20'}`} />
-                ))}
-                <span className="text-sm text-white/70 ml-1">{doctor.rating}</span>
               </div>
 
               {/* Stats row */}
@@ -190,13 +183,6 @@ export const DoctorList: React.FC = () => {
                 </div>
               )}
 
-              {/* Fee */}
-              {doctor.consultationFee && (
-                <div className="flex items-center gap-1.5 text-xs text-amber-400/80 mb-2">
-                  <DollarSign className="w-3.5 h-3.5" />
-                  ${doctor.consultationFee} / consultation
-                </div>
-              )}
 
               {/* Action Buttons overlay */}
               <div

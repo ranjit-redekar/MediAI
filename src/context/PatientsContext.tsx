@@ -9,7 +9,6 @@ interface PatientsContextValue {
   getPatient: (id: string) => Patient | undefined;
   addPatient: (data: Partial<Patient>) => Patient;
   updatePatient: (id: string, data: Partial<Patient>) => void;
-  removePatient: (id: string) => void;
 }
 
 const PatientsContext = createContext<PatientsContextValue | undefined>(undefined);
@@ -47,13 +46,10 @@ export const PatientsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
   }, []);
 
-  const removePatient = useCallback((id: string) => {
-    setPatients(prev => prev.filter(p => p.id !== id));
-  }, []);
 
   const value = useMemo<PatientsContextValue>(
-    () => ({ patients, getPatient, addPatient, updatePatient, removePatient }),
-    [patients, getPatient, addPatient, updatePatient, removePatient]
+    () => ({ patients, getPatient, addPatient, updatePatient }),
+    [patients, getPatient, addPatient, updatePatient]
   );
 
   return <PatientsContext.Provider value={value}>{children}</PatientsContext.Provider>;

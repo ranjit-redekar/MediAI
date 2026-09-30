@@ -1,31 +1,11 @@
 import type { Appointment } from '../types';
-import { toDateKey, fromDateKey } from '../utils/date';
+import { shiftDemoDates } from '../utils/date';
 
 /**
  * The date this dataset was authored around: everything before it is Completed,
  * and it carries the first full day of Scheduled visits.
  */
 const DEMO_TODAY = '2026-03-06';
-
-/**
- * The mock schedule is anchored to a fixed date, so left alone it would drift
- * into the past and leave "Today's Schedule" permanently empty. Shifting every
- * date by the same offset keeps the authored past/future shape intact while
- * always landing a realistic day of visits on today.
- */
-function shiftToToday(list: Appointment[]): Appointment[] {
-  const anchor = fromDateKey(DEMO_TODAY);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const offsetDays = Math.round((today.getTime() - anchor.getTime()) / 86_400_000);
-  if (offsetDays === 0) return list;
-
-  return list.map(appointment => {
-    const shifted = fromDateKey(appointment.date);
-    shifted.setDate(shifted.getDate() + offsetDays);
-    return { ...appointment, date: toDateKey(shifted) };
-  });
-}
 
 const rawAppointments: Appointment[] = [
   // ── D001 Dr. James Wilson (Internal Medicine) ──────────────────────────────
@@ -683,4 +663,4 @@ const rawAppointments: Appointment[] = [
   },
 ];
 
-export const appointments: Appointment[] = shiftToToday(rawAppointments);
+export const appointments: Appointment[] = shiftDemoDates(rawAppointments, DEMO_TODAY, ['date']);

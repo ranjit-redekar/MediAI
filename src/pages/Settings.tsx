@@ -100,13 +100,13 @@ export const Settings: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-300 ${
                   activeTab === tab.id
                     ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-white border border-primary/30'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <tab.icon className="w-5 h-5" />
+                <tab.icon className="w-5 h-5 flex-shrink-0" />
                 <span className="font-medium">{tab.label}</span>
               </button>
             ))}

@@ -38,8 +38,9 @@
 
   /* Text */
   --text: #f1f5f9;
-  --text-muted: rgba(241, 245, 249, 0.64);
-  --text-subtle: rgba(241, 245, 249, 0.42);
+  --text-muted: rgba(241, 245, 249, 0.72);
+  /* 0.42 measured ~3.6:1; 0.6 clears 4.5:1 on the darkest surfaces. */
+  --text-subtle: rgba(241, 245, 249, 0.6);
 
   /* Status */
   --success: #10b981;
@@ -90,8 +91,9 @@
   --border-strong: rgba(15, 23, 42, 0.2);
 
   --text: #0f172a;
-  --text-muted: rgba(15, 23, 42, 0.64);
-  --text-subtle: rgba(15, 23, 42, 0.48);
+  --text-muted: rgba(15, 23, 42, 0.74);
+  /* 0.48 measured ~3:1 on white; 0.66 clears 4.5:1 on white and tinted tiles. */
+  --text-subtle: rgba(15, 23, 42, 0.66);
 
   --success: #059669;
   --warning: #d97706;
@@ -115,37 +117,6 @@
   --app-text: var(--text);
   --card-bg: var(--surface-1);
   --card-border: var(--border);
-}
-
-/* ── Additional dark-family themes (override only brand + backdrop deltas;
-      text/surfaces inherit the readable dark base from :root) ─────────────── */
-:root[data-theme='midnight'] {
-  --primary: #3b82f6; --primary-strong: #2563eb; --accent: #6366f1;
-  --app-bg: #03040a;
-  --app-glow: radial-gradient(1100px 540px at 50% -8%, rgba(59, 130, 246, 0.13), transparent 70%);
-  --ring: rgba(59, 130, 246, 0.55);
-  --shadow-primary: 0 10px 30px rgba(59, 130, 246, 0.35);
-}
-:root[data-theme='emerald'] {
-  --primary: #10b981; --primary-strong: #059669; --accent: #14b8a6;
-  --app-bg: #04130f;
-  --app-glow: radial-gradient(1100px 540px at 50% -8%, rgba(16, 185, 129, 0.14), transparent 70%);
-  --ring: rgba(16, 185, 129, 0.5);
-  --shadow-primary: 0 10px 30px rgba(16, 185, 129, 0.3);
-}
-:root[data-theme='royal'] {
-  --primary: #a855f7; --primary-strong: #9333ea; --accent: #ec4899;
-  --app-bg: #0c0718;
-  --app-glow: radial-gradient(1100px 540px at 50% -8%, rgba(168, 85, 247, 0.16), transparent 70%);
-  --ring: rgba(168, 85, 247, 0.55);
-  --shadow-primary: 0 10px 30px rgba(168, 85, 247, 0.35);
-}
-:root[data-theme='sunset'] {
-  --primary: #f97316; --primary-strong: #ea580c; --accent: #f43f5e;
-  --app-bg: #140a06;
-  --app-glow: radial-gradient(1100px 540px at 50% -8%, rgba(249, 115, 22, 0.14), transparent 70%);
-  --ring: rgba(249, 115, 22, 0.5);
-  --shadow-primary: 0 10px 30px rgba(249, 115, 22, 0.32);
 }
 
 * {
@@ -235,73 +206,101 @@ body::before {
    so existing markup stays readable on any light-family theme. Keyed to the
    `is-light` body class (set by ThemeProvider) so new light themes also work.
    ============================================================================ */
+/* Dark-theme markup uses white-at-opacity text. Light mode maps it to slate,
+   floored at a level that still reads on tinted tiles (WCAG AA, 4.5:1) —
+   /30 and /40 used to land near 3:1. */
 body.is-light .text-white { color: #0f172a !important; }
 body.is-light .text-white\/90 { color: rgba(15, 23, 42, 0.9) !important; }
-body.is-light .text-white\/80 { color: rgba(15, 23, 42, 0.85) !important; }
-body.is-light .text-white\/70 { color: rgba(15, 23, 42, 0.72) !important; }
-body.is-light .text-white\/60 { color: rgba(15, 23, 42, 0.62) !important; }
-body.is-light .text-white\/50 { color: rgba(15, 23, 42, 0.55) !important; }
-body.is-light .text-white\/40 { color: rgba(15, 23, 42, 0.48) !important; }
-body.is-light .text-white\/30 { color: rgba(15, 23, 42, 0.4) !important; }
-body.is-light .text-white\/20 { color: rgba(15, 23, 42, 0.3) !important; }
+body.is-light .text-white\/80,
+body.is-light .text-white\/75 { color: rgba(15, 23, 42, 0.84) !important; }
+body.is-light .text-white\/70 { color: rgba(15, 23, 42, 0.8) !important; }
+body.is-light .text-white\/60 { color: rgba(15, 23, 42, 0.76) !important; }
+body.is-light .text-white\/50 { color: rgba(15, 23, 42, 0.72) !important; }
+body.is-light .text-white\/40,
+body.is-light .text-white\/30 { color: rgba(15, 23, 42, 0.68) !important; }
+body.is-light .text-white\/20 { color: rgba(15, 23, 42, 0.5) !important; }
 
-/* Colored text utilities tuned for contrast on light surfaces. The app uses
-   these classes directly for status/brand labels, so remap only in light mode
-   and leave dark-family themes unchanged. */
-body.is-light .text-emerald-100,
-body.is-light .text-emerald-200,
-body.is-light .text-emerald-300,
-body.is-light .text-emerald-400,
-body.is-light .text-emerald-400\/80,
-body.is-light .hover\:text-emerald-300:hover,
-body.is-light .hover\:text-emerald-400:hover { color: #047857 !important; }
+/* …except where white sits on a saturated fill: primary buttons, count
+   badges, avatars, status pills. Those stay white. Gradients are matched by
+   their solid `from-` stop, so translucent ones (from-violet-500/20) still remap. */
+body.is-light .text-white:is(.from-primary, .from-violet-500, .from-indigo-500, .bg-primary, .bg-red-500,
+  .bg-indigo-500, .bg-emerald-500, .bg-amber-500, .bg-gray-500, .bg-red-600, .bg-emerald-600, .bg-emerald-700, .bg-gray-600, [class*="bg-[color:var(--danger)]"]),
+body.is-light :is(.from-primary, .from-violet-500, .from-indigo-500, .bg-primary) .text-white {
+  color: #ffffff !important;
+}
 
-body.is-light .text-amber-100,
-body.is-light .text-amber-200,
-body.is-light .text-amber-300,
-body.is-light .text-amber-400,
-body.is-light .text-amber-400\/80,
-body.is-light .hover\:text-amber-300:hover,
-body.is-light .hover\:text-amber-400:hover { color: #b45309 !important; }
+/* Colored text. Dark themes use pale shades (-100…-400) that vanish on white,
+   so every shade of a family maps to one dark tone that passes AA even as
+   small text on its own tinted pill (e.g. amber on bg-amber-500/20). Matching the
+   class prefix (not a hand-kept list) means a new shade can't slip through;
+   the leading space / ^= keeps `hover:` variants from applying at rest. */
+body.is-light [class^="text-emerald-"],
+body.is-light [class*=" text-emerald-"],
+body.is-light [class*="hover:text-emerald-"]:hover,
+body.is-light [class^="text-green-"],
+body.is-light [class*=" text-green-"],
+body.is-light [class*="hover:text-green-"]:hover,
+body.is-light [class^="text-lime-"],
+body.is-light [class*=" text-lime-"],
+body.is-light [class*="hover:text-lime-"]:hover { color: #065f46 !important; }
+body.is-light [class^="text-teal-"],
+body.is-light [class*=" text-teal-"],
+body.is-light [class*="hover:text-teal-"]:hover { color: #115e59 !important; }
+body.is-light [class^="text-cyan-"],
+body.is-light [class*=" text-cyan-"],
+body.is-light [class*="hover:text-cyan-"]:hover,
+body.is-light [class^="text-sky-"],
+body.is-light [class*=" text-sky-"],
+body.is-light [class*="hover:text-sky-"]:hover { color: #155e75 !important; }
+body.is-light [class^="text-blue-"],
+body.is-light [class*=" text-blue-"],
+body.is-light [class*="hover:text-blue-"]:hover,
+body.is-light [class^="text-indigo-"],
+body.is-light [class*=" text-indigo-"],
+body.is-light [class*="hover:text-indigo-"]:hover { color: #4338ca !important; }
+body.is-light [class^="text-violet-"],
+body.is-light [class*=" text-violet-"],
+body.is-light [class*="hover:text-violet-"]:hover,
+body.is-light [class^="text-purple-"],
+body.is-light [class*=" text-purple-"],
+body.is-light [class*="hover:text-purple-"]:hover { color: #5b21b6 !important; }
+body.is-light [class^="text-fuchsia-"],
+body.is-light [class*=" text-fuchsia-"],
+body.is-light [class*="hover:text-fuchsia-"]:hover,
+body.is-light [class^="text-pink-"],
+body.is-light [class*=" text-pink-"],
+body.is-light [class*="hover:text-pink-"]:hover { color: #a21caf !important; }
+body.is-light [class^="text-rose-"],
+body.is-light [class*=" text-rose-"],
+body.is-light [class*="hover:text-rose-"]:hover,
+body.is-light [class^="text-red-"],
+body.is-light [class*=" text-red-"],
+body.is-light [class*="hover:text-red-"]:hover { color: #991b1b !important; }
+body.is-light [class^="text-orange-"],
+body.is-light [class*=" text-orange-"],
+body.is-light [class*="hover:text-orange-"]:hover { color: #9a3412 !important; }
+body.is-light [class^="text-amber-"],
+body.is-light [class*=" text-amber-"],
+body.is-light [class*="hover:text-amber-"]:hover,
+body.is-light [class^="text-yellow-"],
+body.is-light [class*=" text-yellow-"],
+body.is-light [class*="hover:text-yellow-"]:hover { color: #92400e !important; }
+body.is-light [class^="text-gray-"],
+body.is-light [class*=" text-gray-"],
+body.is-light [class*="hover:text-gray-"]:hover,
+body.is-light [class^="text-slate-"],
+body.is-light [class*=" text-slate-"],
+body.is-light [class*="hover:text-slate-"]:hover,
+body.is-light [class^="text-zinc-"],
+body.is-light [class*=" text-zinc-"],
+body.is-light [class*="hover:text-zinc-"]:hover,
+body.is-light [class^="text-neutral-"],
+body.is-light [class*=" text-neutral-"],
+body.is-light [class*="hover:text-neutral-"]:hover { color: #475569 !important; }
 
-body.is-light .text-red-100,
-body.is-light .text-red-200,
-body.is-light .text-red-300,
-body.is-light .text-red-400,
-body.is-light .hover\:text-red-300:hover,
-body.is-light .hover\:text-red-400:hover { color: #dc2626 !important; }
-
-body.is-light .text-cyan-100,
-body.is-light .text-cyan-200,
-body.is-light .text-cyan-300,
-body.is-light .text-cyan-400,
-body.is-light .hover\:text-cyan-300:hover,
-body.is-light .hover\:text-cyan-400:hover { color: #0e7490 !important; }
-
-body.is-light .text-indigo-100,
-body.is-light .text-indigo-200,
-body.is-light .text-indigo-300,
-body.is-light .text-indigo-400,
-body.is-light .hover\:text-indigo-300:hover,
-body.is-light .hover\:text-indigo-400:hover { color: #4f46e5 !important; }
-
-body.is-light .text-violet-100,
-body.is-light .text-violet-200,
-body.is-light .text-violet-300,
-body.is-light .text-violet-400,
-body.is-light .hover\:text-violet-200:hover,
-body.is-light .hover\:text-violet-300:hover,
-body.is-light .hover\:text-violet-400:hover { color: #7c3aed !important; }
-
-body.is-light .text-sky-100,
-body.is-light .text-sky-200,
-body.is-light .text-sky-300,
-body.is-light .text-sky-400 { color: #0369a1 !important; }
-
-body.is-light .text-fuchsia-100,
-body.is-light .text-fuchsia-200,
-body.is-light .text-fuchsia-300,
-body.is-light .text-fuchsia-400 { color: #a21caf !important; }
+body.is-light .text-primary,
+body.is-light .text-primary-light,
+body.is-light .hover\:text-primary-light:hover { color: #4338ca !important; }
 
 /* Inner surfaces — bumped so tiles/chips read on white cards */
 body.is-light .bg-white\/5 { background-color: rgba(15, 23, 42, 0.05) !important; }
@@ -341,8 +340,6 @@ body.is-light .backdrop-blur-2xl {
   background-color: rgba(255, 255, 255, 0.92) !important;
 }
 
-body.is-light .glass-card .text-white { color: #0f172a !important; }
-body.is-light .glass-card .text-white\/60 { color: rgba(15, 23, 42, 0.6) !important; }
 body.is-light .glass-modal {
   background-color: #ffffff !important;
   color: #0f172a;
@@ -351,6 +348,10 @@ body.is-light .glass-modal {
 body.is-light .glass-modal-backdrop {
   background-color: rgba(15, 23, 42, 0.3) !important;
 }
+
+/* Dark-family floor for the faintest white-at-opacity text (was ~2.6:1). */
+body:not(.is-light) .text-white\/30,
+body:not(.is-light) .text-white\/40 { color: rgba(241, 245, 249, 0.6); }
 
 /* ── Scrollbars ──────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 9px; height: 9px; }

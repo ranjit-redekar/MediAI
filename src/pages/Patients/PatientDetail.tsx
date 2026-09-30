@@ -4,8 +4,8 @@ import {
   ArrowLeft, Calendar, Phone, Mail, Droplet, Brain, AlertTriangle,
   CheckCircle, Plus, MapPin, User, Activity, FlaskConical, Clock,
   Stethoscope, Heart, Thermometer, Wind, Weight, Sparkles,
-  CalendarPlus, FileText, Pill, ShieldAlert, TrendingUp, ExternalLink, ArrowRight, Pencil,
-  ChevronDown, Video, UserRound
+  CalendarPlus, FileText, Pill, ShieldAlert, TrendingUp, ArrowRight, Pencil,
+  ChevronDown, Video, UserRound, ShieldCheck
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
@@ -17,7 +17,9 @@ import { MedicalTimeline } from '../../components/timeline/MedicalTimeline';
 import { usePatients } from '../../context/PatientsContext';
 import { db } from '../../data';
 import { cn } from '../../utils/cn';
-import type { AIAgent, Appointment, MedicalRecord, Patient } from '../../types';
+import type { Appointment, MedicalRecord, Patient } from '../../types';
+import { useAIActions } from '../../context/AIActionsContext';
+import { AIActionCard } from '../../components/ai/AIActionCard';
 
 type TabId = 'overview' | 'history' | 'labs' | 'appointments';
 
@@ -38,7 +40,6 @@ export const PatientDetail: React.FC = () => {
   const patientAppointments = db.appointments.filter(a => a.patientId === id);
 
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const careGuideAgent = db.aiAgents.find(a => a.id === 'careguide-agent');
 
   const [patientData, setPatientData] = useState(patient);
   const [isEditingContact, setIsEditingContact] = useState(false);
@@ -130,14 +131,6 @@ export const PatientDetail: React.FC = () => {
                 alt={patientData.name}
                 className="w-24 h-24 md:w-32 md:h-32 rounded-3xl border-4 border-white/20 object-cover shadow-2xl"
               />
-              <div className={`
-                absolute -bottom-2 -right-2 px-2.5 py-1 rounded-full text-xs font-bold border-2 border-slate-900
-                ${patientData.status === 'Active' ? 'bg-emerald-500 text-white' :
-                  patientData.status === 'Critical' ? 'bg-red-500 text-white animate-pulse' :
-                  'bg-gray-500 text-white'}
-              `}>
-                {patientData.status}
-              </div>
             </div>
 
             {/* Core Info */}
@@ -145,7 +138,7 @@ export const PatientDetail: React.FC = () => {
               <div className="flex flex-wrap items-center gap-3 mb-1">
                 <h1 className="text-2xl sm:text-[28px] font-bold text-app tracking-tight">{patientData.name}</h1>
                 {patientData.status === 'Critical' && (
-                  <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 text-sm animate-pulse">
+                  <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 text-sm">
                     <AlertTriangle className="w-3.5 h-3.5" /> Critical
                   </span>
                 )}
@@ -206,6 +199,7 @@ export const PatientDetail: React.FC = () => {
                   </div>
                 </div>
               </div>
+              <AllergyRow allergies={patientData.allergies} />
               <div className="mt-4 flex items-center gap-2">
                 <span className="text-xs text-white/40">Status</span>
                 {isEditingContact ? (
@@ -347,7 +341,7 @@ export const PatientDetail: React.FC = () => {
             {tab.icon}
             {tab.label}
             {tab.id === 'labs' && criticalLabs.length > 0 && (
-              <span className="w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center ml-1">
+              <span className="w-4 h-4 rounded-full bg-red-600 text-white text-xs flex items-center justify-center ml-1">
                 {criticalLabs.length}
               </span>
             )}
@@ -379,7 +373,6 @@ export const PatientDetail: React.FC = () => {
           aiInsight={aiInsight}
           medicalRecords={medicalRecords}
           appointments={patientAppointments}
-          careGuideAgent={careGuideAgent}
         />
       )}
 
@@ -431,8 +424,9 @@ const OverviewTab: React.FC<{
   aiInsight: ReturnType<typeof db.aiInsights.find>;
   medicalRecords: MedicalRecord[];
   appointments: Appointment[];
-  careGuideAgent: AIAgent | undefined;
-}> = ({ patient, aiInsight, medicalRecords, appointments, careGuideAgent }) => {
+}> = ({ patient, aiInsight, medicalRecords, appointments }) => {
+  // This patient's drafts, approvable right here — not a list of advice to act on elsewhere.
+  const drafts = useAIActions().allActions.filter(a => a.patientId === patient?.id);
   const navigate = useNavigate();
   if (!patient) return null;
 
@@ -450,11 +444,6 @@ const OverviewTab: React.FC<{
 
   return (
     <div className="space-y-6">
-      {/* Health Trends — full-width premium chart */}
-      {vitalsSeries.length > 1 && (
-        <HealthTrends data={vitalsSeries} latest={latestRecord} />
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Primary column */}
         <div className="lg:col-span-2 space-y-6">
@@ -480,21 +469,20 @@ const OverviewTab: React.FC<{
                   </div>
                   <span className="text-sm font-semibold text-violet-400">{aiInsight.confidence}%</span>
                 </div>
-                {patient.aiRecommendations && (
-                  <div className="grid sm:grid-cols-2 gap-2">
-                    {patient.aiRecommendations.map((rec, i) => (
-                      <div key={i} className="flex items-start gap-2.5 text-sm text-white/75 p-2.5 rounded-xl bg-white/5 border border-white/10">
-                        <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <CheckCircle className="w-3 h-3 text-emerald-400" />
-                        </div>
-                        {rec}
-                      </div>
-                    ))}
-                  </div>
+                {drafts.length > 0 && (
+                  <>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-app-subtle mb-2">Drafted for approval</p>
+                    <div className="space-y-2">
+                      {drafts.map((action, i) => <AIActionCard key={action.id} action={action} index={i} />)}
+                    </div>
+                  </>
                 )}
               </div>
             </GlassCard>
           )}
+
+          {/* Trends after the drafts: reference, not the first thing to act on. */}
+          {vitalsSeries.length > 1 && <HealthTrends data={vitalsSeries} />}
 
           {latestRecord && (
             <GlassCard>
@@ -564,25 +552,6 @@ const OverviewTab: React.FC<{
 
         {/* Secondary column */}
         <div className="space-y-6">
-          {/* Care Guidance */}
-          {careGuideAgent && (
-            <GlassCard className="bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 border-violet-500/20">
-              <div className="flex items-center gap-2 text-white/70 text-sm mb-3">
-                <Sparkles className="w-4 h-4 text-violet-300" />
-                Care Guidance
-              </div>
-              <p className="text-base font-semibold text-white">{careGuideAgent.name}</p>
-              <p className="text-sm text-white/50 mb-3">{careGuideAgent.focus}</p>
-              <div className="flex items-center gap-2 text-xs text-white/50 mb-3">
-                <GlassBadge variant="primary" size="sm">{careGuideAgent.status}</GlassBadge>
-                <span className="truncate">{careGuideAgent.statusMessage}</span>
-              </div>
-              <GlassButton variant="ghost" size="sm" className="w-full" onClick={() => navigate(`/agents/${careGuideAgent.id}`)}>
-                <ExternalLink className="w-3 h-3 mr-1" /> Open CareGuide
-              </GlassButton>
-            </GlassCard>
-          )}
-
           {/* Patient Details */}
           <GlassCard>
             <h3 className="font-semibold text-white mb-4">Patient Details</h3>
@@ -674,15 +643,8 @@ const OverviewTab: React.FC<{
 // ─── Health Trends chart ──────────────────────────────────────────────────────
 const HealthTrends: React.FC<{
   data: { date: string; hr: number; o2: number; weight: number }[];
-  latest?: MedicalRecord;
-}> = ({ data, latest }) => {
-  const v = latest?.vitals;
-  const stats = [
-    { label: 'Heart Rate', value: v?.heartRate ? `${v.heartRate}` : '—', unit: 'bpm', icon: <Heart className="w-4 h-4 text-rose-400" />, tint: 'bg-rose-500/15' },
-    { label: 'Blood Pressure', value: v?.bloodPressure ?? '—', unit: 'mmHg', icon: <Activity className="w-4 h-4 text-indigo-400" />, tint: 'bg-indigo-500/15' },
-    { label: 'Temperature', value: v?.temperature ? `${v.temperature}` : '—', unit: '°F', icon: <Thermometer className="w-4 h-4 text-orange-400" />, tint: 'bg-orange-500/15' },
-    { label: 'O₂ Saturation', value: v?.oxygenSaturation ? `${v.oxygenSaturation}` : '—', unit: '%', icon: <Wind className="w-4 h-4 text-cyan-400" />, tint: 'bg-cyan-500/15' }
-  ];
+}> = ({ data }) => {
+  // Latest values already sit in the header's vitals strip; this card is only the trend.
   return (
     <GlassCard>
       <div className="flex items-center justify-between mb-5">
@@ -692,19 +654,8 @@ const HealthTrends: React.FC<{
         </h3>
         <span className="text-xs text-white/40">Heart rate across last {data.length} visits</span>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Stat tiles */}
-        <div className="grid grid-cols-2 gap-3 content-start">
-          {stats.map(s => (
-            <div key={s.label} className="p-3 rounded-2xl bg-white/5 border border-white/10">
-              <div className={`w-8 h-8 rounded-lg ${s.tint} flex items-center justify-center mb-2`}>{s.icon}</div>
-              <p className="text-xs text-white/40">{s.label}</p>
-              <p className="text-lg font-bold text-white leading-tight">{s.value} <span className="text-xs font-normal text-white/40">{s.unit}</span></p>
-            </div>
-          ))}
-        </div>
-        {/* Chart */}
-        <div className="lg:col-span-2 h-56">
+      <div>
+        <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 10, right: 10, left: -16, bottom: 0 }}>
               <defs>
@@ -713,9 +664,9 @@ const HealthTrends: React.FC<{
                   <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
-              <XAxis dataKey="date" stroke="rgba(255,255,255,0.4)" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="rgba(255,255,255,0.4)" fontSize={11} tickLine={false} axisLine={false} domain={['dataMin - 8', 'dataMax + 8']} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
+              <XAxis dataKey="date" stroke="rgba(148,163,184,0.7)" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis stroke="rgba(148,163,184,0.7)" fontSize={11} tickLine={false} axisLine={false} domain={['dataMin - 8', 'dataMax + 8']} />
               <Tooltip
                 contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', fontSize: '12px' }}
                 labelStyle={{ color: 'rgba(255,255,255,0.6)' }}
@@ -765,9 +716,9 @@ const LabResultsTab: React.FC<{
             className={`
               px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2
               ${filter === f
-                ? f === 'Critical' ? 'bg-red-500 text-white' :
+                ? f === 'Critical' ? 'bg-red-600 text-white' :
                   f === 'Abnormal' ? 'bg-amber-500 text-white' :
-                  f === 'Normal' ? 'bg-emerald-500 text-white' :
+                  f === 'Normal' ? 'bg-emerald-700 text-white' :
                   'bg-indigo-500 text-white'
                 : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10'
               }
@@ -957,6 +908,38 @@ const AppointmentsTab: React.FC<{
           </GlassCard>
         );
       })}
+    </div>
+  );
+};
+
+/**
+ * Allergies sit in the header because they are checked before every order.
+ * "Not recorded" is shown as a warning, never collapsed into "none".
+ */
+const AllergyRow: React.FC<{ allergies?: string[] }> = ({ allergies }) => {
+  if (allergies === undefined) {
+    return (
+      <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-sm">
+        <ShieldAlert className="w-4 h-4 text-amber-500 flex-shrink-0" />
+        <span className="font-semibold text-app">Allergies not recorded</span>
+        <span className="text-app-muted">— confirm with the patient before prescribing</span>
+      </div>
+    );
+  }
+  if (allergies.length === 0) {
+    return (
+      <p className="mt-4 flex items-center gap-2 text-sm text-app-muted">
+        <ShieldCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" /> No known drug allergies
+      </p>
+    );
+  }
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2 px-3 py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-sm">
+      <ShieldAlert className="w-4 h-4 text-red-500 flex-shrink-0" />
+      <span className="font-semibold text-app">Allergies:</span>
+      {allergies.map(a => (
+        <span key={a} className="px-2 py-0.5 rounded-md bg-red-500/15 font-semibold text-app">{a}</span>
+      ))}
     </div>
   );
 };

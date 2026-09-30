@@ -1,6 +1,8 @@
 import type { Bill } from '../types';
+import { shiftDemoDates } from '../utils/date';
+import { CLINICAL_DEMO_TODAY } from './demoToday';
 
-export const bills: Bill[] = [
+const authoredBills: Bill[] = [
   {
     id: 'B001',
     patientId: 'P001',
@@ -104,3 +106,5 @@ export const bills: Bill[] = [
     paymentMethod: 'Pending'
   }
 ];
+
+export const bills = shiftDemoDates(authoredBills, CLINICAL_DEMO_TODAY, ['date']);

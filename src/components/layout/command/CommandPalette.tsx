@@ -1,9 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Command, Search, Sparkles, ArrowRight, CornerDownLeft, Users, UserRound,
+  Command, Search, ArrowRight, CornerDownLeft, Users, UserRound,
   LayoutDashboard, Calendar, CreditCard, Pill, FlaskConical, FileText,
-  Settings as SettingsIcon, Brain, Shield, Route, UserCog, Plus,
+  Settings as SettingsIcon, Brain, Route, UserCog, Plus,
 } from 'lucide-react';
 import { db } from '../../../data';
 import { cn } from '../../../utils/cn';
@@ -46,22 +46,20 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
       { id: 'new-patient', path: '/patients/new', label: 'Add new patient', description: 'Create a patient record', group: 'Actions', keywords: 'create register admit', icon: <Plus className="w-4 h-4 text-emerald-400" />, onSelect: go('/patients/new') },
       { id: 'new-appointment', path: '/appointments/new', label: 'Book an appointment', description: 'Schedule a new visit', group: 'Actions', keywords: 'create schedule booking', icon: <Plus className="w-4 h-4 text-emerald-400" />, onSelect: go('/appointments/new') },
       { id: 'new-doctor', path: '/doctors/new', label: 'Add a doctor', description: 'Onboard a clinician', group: 'Actions', keywords: 'create hire staff', icon: <Plus className="w-4 h-4 text-emerald-400" />, onSelect: go('/doctors/new') },
-      { id: 'run-scan', path: '/ai-insights', label: 'Run AI scan', description: 'Re-run triage across all patients', group: 'Actions', keywords: 'ai analyze triage risk', icon: <Sparkles className="w-4 h-4 text-violet-400" />, onSelect: go('/ai-insights') },
     ];
 
     const pages: CommandAction[] = [
       { id: 'p-dash', path: '/', label: 'Dashboard', description: 'Executive overview', group: 'Pages', icon: <LayoutDashboard className="w-4 h-4 text-app-subtle" />, onSelect: go('/') },
       { id: 'p-patients', path: '/patients', label: 'Patients', description: 'Patient roster', group: 'Pages', icon: <Users className="w-4 h-4 text-app-subtle" />, onSelect: go('/patients') },
       { id: 'p-doctors', path: '/doctors', label: 'Doctors', description: 'Clinician directory', group: 'Pages', icon: <UserRound className="w-4 h-4 text-app-subtle" />, onSelect: go('/doctors') },
-      { id: 'p-appts', path: '/appointments', label: "Today's Schedule", description: 'Calendar and agenda', group: 'Pages', keywords: 'appointments calendar', icon: <Calendar className="w-4 h-4 text-app-subtle" />, onSelect: go('/appointments') },
-      { id: 'p-journey', path: '/journey', label: 'Patient Journey', description: 'End-to-end visit flow', group: 'Pages', icon: <Route className="w-4 h-4 text-app-subtle" />, onSelect: go('/journey') },
+      { id: 'p-appts', path: '/appointments', label: 'Appointments', description: 'Calendar and booking', group: 'Pages', keywords: 'appointments calendar', icon: <Calendar className="w-4 h-4 text-app-subtle" />, onSelect: go('/appointments') },
+      { id: 'p-journey', path: '/journey', label: 'Today', description: 'Arrivals, consults and the medical store', group: 'Pages', icon: <Route className="w-4 h-4 text-app-subtle" />, onSelect: go('/journey') },
       { id: 'p-staff', path: '/staff', label: 'Staff Management', description: 'Workforce directory', group: 'Pages', icon: <UserCog className="w-4 h-4 text-app-subtle" />, onSelect: go('/staff') },
       { id: 'p-billing', path: '/billing', label: 'Billing', description: 'Invoices and payments', group: 'Pages', keywords: 'invoice finance revenue', icon: <CreditCard className="w-4 h-4 text-app-subtle" />, onSelect: go('/billing') },
       { id: 'p-pharmacy', path: '/pharmacy', label: 'Pharmacy', description: 'Medicine inventory', group: 'Pages', keywords: 'stock medicine drugs', icon: <Pill className="w-4 h-4 text-app-subtle" />, onSelect: go('/pharmacy') },
       { id: 'p-lab', path: '/laboratory', label: 'Laboratory', description: 'Lab orders and results', group: 'Pages', keywords: 'tests results', icon: <FlaskConical className="w-4 h-4 text-app-subtle" />, onSelect: go('/laboratory') },
       { id: 'p-reports', path: '/reports', label: 'Reports', description: 'Export and analytics', group: 'Pages', icon: <FileText className="w-4 h-4 text-app-subtle" />, onSelect: go('/reports') },
       { id: 'p-insights', path: '/ai-insights', label: 'AI Insights', description: 'Risk alerts and recommendations', group: 'Pages', icon: <Brain className="w-4 h-4 text-violet-400" />, onSelect: go('/ai-insights') },
-      { id: 'p-roles', path: '/roles', label: 'Role Workspaces', description: 'Receptionist, doctor, pharmacy views', group: 'Pages', icon: <Shield className="w-4 h-4 text-app-subtle" />, onSelect: go('/roles') },
       { id: 'p-settings', path: '/settings', label: 'Settings', description: 'Profile, theme, notifications', group: 'Pages', keywords: 'preferences theme appearance', icon: <SettingsIcon className="w-4 h-4 text-app-subtle" />, onSelect: go('/settings') },
     ];
 
@@ -87,17 +85,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
       onSelect: go(`/doctors/${d.id}`),
     }));
 
-    const agents: CommandAction[] = db.aiAgents.map(a => ({
-      id: `agent-${a.id}`,
-      path: '/agents',
-      label: a.name,
-      description: a.focus,
-      group: 'AI Agents',
-      icon: <Sparkles className="w-4 h-4 text-violet-400" />,
-      onSelect: go(`/agents/${a.id}`),
-    }));
-
-    return [...quickActions, ...pages, ...patients, ...doctors, ...agents].filter(a => can(a.path));
+    return [...quickActions, ...pages, ...patients, ...doctors].filter(a => can(a.path));
   }, [go, can]);
 
   const q = query.trim().toLowerCase();

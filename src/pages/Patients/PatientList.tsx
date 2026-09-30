@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, Brain, Eye, Users } from 'lucide-react';
+import { Plus, Edit, Archive, Brain, Eye, Users } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { GlassBadge } from '../../components/ui/GlassBadge';
@@ -9,7 +9,6 @@ import { SearchInput } from '../../components/ui/SearchInput';
 import { FilterTabs } from '../../components/ui/FilterTabs';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SortableHeader, TableHeader, useSort } from '../../components/ui/DataTable';
-import { DeleteConfirmModal } from '../../components/ui/DeleteConfirmModal';
 import { usePatients } from '../../context/PatientsContext';
 import { useToast } from '../../context/ToastContext';
 import type { Patient } from '../../types';
@@ -41,12 +40,11 @@ export const PatientList: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const { patients, removePatient } = usePatients();
+  const { patients, updatePatient } = usePatients();
   const { toast } = useToast();
-  const { sortKey, direction, onSort, sortRows } = useSort<Patient>('name', 'asc');
+  // Riskiest first: the patient who needs attention should never be seventh of eight.
+  const { sortKey, direction, onSort, sortRows } = useSort<Patient>('aiRiskScore', 'desc');
 
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   const statusTabs = useMemo(() => [
     { label: 'All Patients', value: 'all', count: patients.length },
@@ -78,26 +76,19 @@ export const PatientList: React.FC = () => {
   const isFiltered = query !== '' || statusFilter !== 'all';
   const resetFilters = () => { setSearchTerm(''); setStatusFilter('all'); };
 
-  const handleDelete = () => {
-    if (!selectedPatient) return;
-    removePatient(selectedPatient.id);
-    toast('Patient removed', {
-      description: `${selectedPatient.name} was deleted from the roster.`,
-      variant: 'warning',
+  // Hospitals keep records; "delete" becomes archive (status Inactive), undoable.
+  const archive = (patient: Patient, e: React.MouseEvent) => {
+    e.stopPropagation();
+    updatePatient(patient.id, { status: 'Inactive' });
+    toast('Patient archived', {
+      description: `${patient.name} moved to Inactive. Their records are kept.`,
+      action: { label: 'Undo', onClick: () => updatePatient(patient.id, { status: patient.status }) },
     });
-    setIsDeleteModalOpen(false);
-    setSelectedPatient(null);
   };
 
   const openEdit = (patient: Patient, e: React.MouseEvent) => {
     e.stopPropagation();
     navigate(`/patients/${patient.id}/edit`);
-  };
-
-  const openDelete = (patient: Patient, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedPatient(patient);
-    setIsDeleteModalOpen(true);
   };
 
   return (
@@ -172,12 +163,12 @@ export const PatientList: React.FC = () => {
                 <thead className="bg-[var(--surface-2)] border-b border-[var(--border)]">
                   <tr>
                     <SortableHeader label="Patient" columnKey="name" activeKey={sortKey} direction={direction} onSort={onSort} />
-                    <SortableHeader label="ID" columnKey="id" activeKey={sortKey} direction={direction} onSort={onSort} />
-                    <TableHeader>Contact</TableHeader>
-                    <SortableHeader label="Status" columnKey="status" activeKey={sortKey} direction={direction} onSort={onSort} />
+                    <SortableHeader label="ID" columnKey="id" activeKey={sortKey} direction={direction} onSort={onSort} className="hidden md:table-cell" />
+                    <TableHeader className="hidden md:table-cell">Contact</TableHeader>
+                    <SortableHeader label="Status" columnKey="status" activeKey={sortKey} direction={direction} onSort={onSort} className="hidden md:table-cell" />
                     <SortableHeader label="AI Risk" columnKey="aiRiskScore" activeKey={sortKey} direction={direction} onSort={onSort} />
-                    <SortableHeader label="Last Visit" columnKey="lastVisit" activeKey={sortKey} direction={direction} onSort={onSort} />
-                    <TableHeader align="right">Actions</TableHeader>
+                    <SortableHeader label="Last Visit" columnKey="lastVisit" activeKey={sortKey} direction={direction} onSort={onSort} className="hidden md:table-cell" />
+                    <TableHeader align="right" className="hidden md:table-cell">Actions</TableHeader>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
@@ -187,7 +178,7 @@ export const PatientList: React.FC = () => {
                       onClick={() => navigate(`/patients/${patient.id}`)}
                       className="hover:bg-[var(--surface-2)] transition-colors cursor-pointer"
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-4 md:px-6 py-4">
                         <div className="flex items-center gap-3">
                           <img
                             src={patient.avatar}
@@ -200,12 +191,12 @@ export const PatientList: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-app-muted font-mono text-sm">{patient.id}</td>
-                      <td className="px-6 py-4">
+                      <td className="hidden md:table-cell px-6 py-4 text-app-muted font-mono text-sm">{patient.id}</td>
+                      <td className="hidden md:table-cell px-6 py-4">
                         <div className="text-sm text-app-muted">{patient.phone}</div>
                         <div className="text-sm text-app-subtle truncate max-w-[180px]">{patient.email}</div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="hidden md:table-cell px-6 py-4">
                         <GlassBadge
                           size="sm"
                           variant={
@@ -217,9 +208,10 @@ export const PatientList: React.FC = () => {
                           {patient.status}
                         </GlassBadge>
                       </td>
-                      <td className="px-6 py-4"><RiskMeter score={patient.aiRiskScore} /></td>
-                      <td className="px-6 py-4 text-app-muted text-sm">{patient.lastVisit}</td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 md:px-6 py-4"><RiskMeter score={patient.aiRiskScore} /></td>
+                      <td className="hidden md:table-cell px-6 py-4 text-app-muted text-sm">{patient.lastVisit}</td>
+                      {/* On phones the row itself opens the patient; action icons would crowd out risk. */}
+                      <td className="hidden md:table-cell px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             className="p-2 rounded-lg text-app-subtle hover:text-app hover:bg-[var(--surface-3)] transition-colors focus-ring"
@@ -235,13 +227,16 @@ export const PatientList: React.FC = () => {
                           >
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button
-                            className="p-2 rounded-lg text-red-400 hover:bg-red-500/15 transition-colors focus-ring"
-                            onClick={e => openDelete(patient, e)}
-                            aria-label={`Delete ${patient.name}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {patient.status !== 'Inactive' && (
+                            <button
+                              className="p-2 rounded-lg text-app-subtle hover:text-app hover:bg-[var(--surface-3)] transition-colors focus-ring"
+                              onClick={e => archive(patient, e)}
+                              aria-label={`Archive ${patient.name}`}
+                              title="Archive"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -256,14 +251,6 @@ export const PatientList: React.FC = () => {
         )}
       </GlassCard>
 
-      <DeleteConfirmModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => { setIsDeleteModalOpen(false); setSelectedPatient(null); }}
-        onConfirm={handleDelete}
-        title="Delete Patient"
-        message="This removes the patient and their records from the roster."
-        itemName={selectedPatient?.name}
-      />
     </div>
   );
 };

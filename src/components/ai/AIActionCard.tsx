@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import {
   CalendarPlus, FlaskConical, Pill, Stethoscope, Activity, Send, GraduationCap,
-  Check, X, Pencil, Info, Undo2, ShieldCheck, Clock, Lock,
+  Check, X, Pencil, Info, Undo2, ShieldCheck, Clock, Lock, Package,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { GlassButton } from '../ui/GlassButton';
 import { GlassInput } from '../ui/GlassInput';
 import { useAIActions } from '../../context/AIActionsContext';
-import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
 import { cn } from '../../utils/cn';
 import type { AIAction, AIActionKind } from '../../types/aiActions';
@@ -20,6 +19,7 @@ const KIND_META: Record<AIActionKind, { icon: LucideIcon; tint: string; ring: st
   monitoring:  { icon: Activity,      tint: 'text-rose-400',    ring: 'bg-rose-500/15',    verb: 'Escalated' },
   outreach:    { icon: Send,          tint: 'text-emerald-400', ring: 'bg-emerald-500/15', verb: 'Sent' },
   education:   { icon: GraduationCap, tint: 'text-teal-400',    ring: 'bg-teal-500/15',    verb: 'Enrolled' },
+  stock:       { icon: Package,       tint: 'text-orange-400',  ring: 'bg-orange-500/15',  verb: 'Actioned' },
 };
 
 /**
@@ -28,7 +28,6 @@ const KIND_META: Record<AIActionKind, { icon: LucideIcon; tint: string; ring: st
  */
 export const AIActionCard: React.FC<{ action: AIAction; index?: number }> = ({ action, index = 0 }) => {
   const { statusOf, approve, dismiss, reset, amend, canAction } = useAIActions();
-  const { role } = useSession();
   const { toast } = useToast();
   const [showWhy, setShowWhy] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -131,17 +130,18 @@ export const AIActionCard: React.FC<{ action: AIAction; index?: number }> = ({ a
       className="reveal rounded-xl border border-[var(--border)] bg-[var(--surface-1)] overflow-hidden"
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      <div className="p-3.5 flex items-start gap-3">
+      {/* Actions wrap under the text on narrow screens instead of squeezing it to one word per line. */}
+      <div className="p-3.5 flex flex-wrap sm:flex-nowrap items-start gap-3">
         <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', ring)}>
           <Icon className={cn('w-4 h-4', tint)} />
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 basis-[calc(100%-2.75rem)] sm:basis-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-app">{action.label}</p>
             {action.requiresClinician && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/15 text-amber-300">
-                <ShieldCheck className="w-2.5 h-2.5" /> {role.name} sign-off
+                <ShieldCheck className="w-2.5 h-2.5" /> Clinician sign-off
               </span>
             )}
             <span className="inline-flex items-center gap-1 text-[10px] text-app-subtle">
@@ -186,7 +186,7 @@ export const AIActionCard: React.FC<{ action: AIAction; index?: number }> = ({ a
         </div>
 
         {!editing && (
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center justify-end gap-1 flex-shrink-0 w-full sm:w-auto">
             <button
               onClick={() => setEditing(true)}
               aria-label={`Edit ${action.label}`}

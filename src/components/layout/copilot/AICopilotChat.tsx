@@ -5,6 +5,7 @@ import {
   CalendarDays, Pill, RefreshCw, Check, ArrowRight,
 } from 'lucide-react';
 import { db } from '../../../data';
+import { stockStatus } from '../../../data/pharmacy';
 import { cn } from '../../../utils/cn';
 import { useAIActions } from '../../../context/AIActionsContext';
 import { useToast } from '../../../context/ToastContext';
@@ -12,7 +13,6 @@ import { todayKey } from '../../../utils/date';
 
 interface AICopilotChatProps {
   isOpen: boolean;
-  onToggle: () => void;
   onClose: () => void;
 }
 
@@ -111,7 +111,7 @@ function generateReply(raw: string, pendingCount: number, safeCount: number, saf
     return {
       text: `You have ${todays.length} appointment${todays.length === 1 ? '' : 's'} today — ${scheduled} still scheduled.`,
       actions: [
-        { id: 'open-sched', label: "Open today's schedule", mode: 'go', run: ({ navigate }) => navigate('/appointments') },
+        { id: 'open-sched', label: 'Open Today', mode: 'go', run: ({ navigate }) => navigate('/journey') },
         { id: 'book', label: 'Book a new appointment', mode: 'go', run: ({ navigate }) => navigate('/appointments/new') },
       ],
     };
@@ -140,11 +140,11 @@ function generateReply(raw: string, pendingCount: number, safeCount: number, saf
   }
 
   if (/(pharmacy|medicine|stock|drug|inventory)/.test(q)) {
-    const low = db.medicines.filter(m => (m.stock ?? 0) < 50);
+    const low = db.medicines.filter(m => stockStatus(m) !== 'In Stock');
     if (low.length === 0) return { text: 'All medicines are comfortably stocked right now.' };
-    const lines = low.slice(0, 4).map(m => `• ${m.name} — ${m.stock} units left`);
+    const lines = low.slice(0, 4).map(m => `• ${m.name} — ${stockStatus(m).toLowerCase()} (${m.stock} units)`);
     return {
-      text: `${low.length} medicine${low.length === 1 ? '' : 's'} below the 50-unit threshold:\n${lines.join('\n')}`,
+      text: `${low.length} medicine${low.length === 1 ? '' : 's'} need${low.length === 1 ? 's' : ''} attention:\n${lines.join('\n')}`,
       actions: [
         {
           id: 'reorder',
@@ -193,7 +193,7 @@ const timeNow = () => new Date().toLocaleTimeString([], { hour: '2-digit', minut
 let messageSeq = 0;
 const nextId = () => `msg-${messageSeq++}`;
 
-export const AICopilotChat: React.FC<AICopilotChatProps> = ({ isOpen, onToggle, onClose }) => {
+export const AICopilotChat: React.FC<AICopilotChatProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [input, setInput] = React.useState('');
   const [isTyping, setIsTyping] = React.useState(false);
@@ -268,24 +268,8 @@ export const AICopilotChat: React.FC<AICopilotChatProps> = ({ isOpen, onToggle, 
 
   return (
     <>
-      <button
-        onClick={onToggle}
-        aria-label={isOpen ? 'Close MediAI Copilot' : 'Open MediAI Copilot'}
-        className={cn(
-          'fixed bottom-6 right-6 z-40 flex items-center justify-center',
-          'w-14 h-14 rounded-2xl shadow-lg shadow-violet-500/40',
-          'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white focus-ring',
-          'transition-all duration-300 hover:scale-105 active:scale-95',
-          isOpen && 'opacity-0 pointer-events-none translate-y-3'
-        )}
-      >
-        <Sparkles className="w-6 h-6" />
-        {pending.length > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-[color:var(--danger)] rounded-full text-[10px] font-bold flex items-center justify-center text-white border-2 border-[var(--app-bg)]">
-            {pending.length > 9 ? '9+' : pending.length}
-          </span>
-        )}
-      </button>
+      {/* No floating launcher: it covered row actions and Save buttons, and the
+          header's Copilot button already opens this on every screen size. */}
 
       <div
         role="dialog"

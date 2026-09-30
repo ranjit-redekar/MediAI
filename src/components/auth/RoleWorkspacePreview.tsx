@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Sparkles, Check, Lock, CalendarDays, Receipt, FlaskConical } from 'lucide-react';
 import { NAV_BY_ID } from '../../data/navigation';
 import { buildAIActions } from '../../data/aiActions';
+import { ownsAction } from '../../data/accessRoles';
 import { cn } from '../../utils/cn';
 import type { AccessRole } from '../../types/access';
 
@@ -14,10 +15,7 @@ const ALL_ACTIONS = buildAIActions();
  * shows what a role means instead of describing it.
  */
 export const RoleWorkspacePreview: React.FC<{ role: AccessRole }> = ({ role }) => {
-  const actions = useMemo(() => {
-    const kinds = new Set(role.actionKinds);
-    return ALL_ACTIONS.filter(a => kinds.has(a.kind));
-  }, [role]);
+  const actions = useMemo(() => ALL_ACTIONS.filter(a => ownsAction(role, a)), [role]);
 
   const navItems = role.navIds.map(id => NAV_BY_ID[id]).filter(Boolean);
   const isPatient = role.shell === 'patient';

@@ -1,4 +1,5 @@
 import type { AccessRole, RoleId } from '../types/access';
+import type { AIAction } from '../types/aiActions';
 import { avatarFor } from '../utils/avatar';
 
 /**
@@ -8,7 +9,7 @@ import { avatarFor } from '../utils/avatar';
  */
 export const ALL_NAV_IDS = [
   'dashboard', 'patients', 'doctors', 'appointments', 'journey', 'ai-insights',
-  'staff', 'billing', 'pharmacy', 'laboratory', 'roles', 'reports', 'settings',
+  'staff', 'billing', 'pharmacy', 'laboratory', 'reports', 'settings',
 ] as const;
 
 export const ACCESS_ROLES: AccessRole[] = [
@@ -20,7 +21,8 @@ export const ACCESS_ROLES: AccessRole[] = [
     home: '/',
     navIds: [...ALL_NAV_IDS],
     routes: ['/'],
-    actionKinds: ['appointment', 'referral', 'lab', 'medication', 'monitoring', 'outreach', 'education'],
+    // Sees clinical drafts but cannot sign them — running the hospital is not prescribing.
+    actionKinds: ['appointment', 'referral', 'lab', 'outreach', 'education'],
     accent: { text: 'text-indigo-300', bg: 'bg-indigo-500/15', ring: 'ring-indigo-500/40' },
     credentials: { username: 'admin@mediai.com', password: 'Admin@123' },
     demoUser: { name: 'Dr. Admin', email: 'admin@mediai.com', avatar: avatarFor('Dr. Admin') },
@@ -32,7 +34,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     shell: 'admin',
     home: '/',
     navIds: ['dashboard', 'patients', 'appointments', 'journey', 'ai-insights', 'laboratory', 'settings'],
-    routes: ['/', '/patients', '/appointments', '/journey', '/ai-insights', '/laboratory', '/agents', '/settings'],
+    routes: ['/', '/patients', '/appointments', '/journey', '/ai-insights', '/laboratory', '/settings'],
     // The only role that may sign off medication drafts.
     actionKinds: ['appointment', 'referral', 'lab', 'medication', 'monitoring', 'outreach', 'education'],
     accent: { text: 'text-sky-300', bg: 'bg-sky-500/15', ring: 'ring-sky-500/40' },
@@ -47,7 +49,7 @@ export const ACCESS_ROLES: AccessRole[] = [
     shell: 'admin',
     home: '/',
     navIds: ['dashboard', 'patients', 'appointments', 'journey', 'ai-insights', 'laboratory', 'settings'],
-    routes: ['/', '/patients', '/appointments', '/journey', '/ai-insights', '/laboratory', '/agents', '/settings'],
+    routes: ['/', '/patients', '/appointments', '/journey', '/ai-insights', '/laboratory', '/settings'],
     // Deliberately excludes 'medication' — drafts route to the attending instead.
     actionKinds: ['appointment', 'referral', 'lab', 'monitoring', 'outreach', 'education'],
     accent: { text: 'text-cyan-300', bg: 'bg-cyan-500/15', ring: 'ring-cyan-500/40' },
@@ -63,7 +65,8 @@ export const ACCESS_ROLES: AccessRole[] = [
     home: '/',
     navIds: ['dashboard', 'patients', 'appointments', 'journey', 'laboratory', 'settings'],
     routes: ['/', '/patients', '/appointments', '/journey', '/laboratory', '/settings'],
-    actionKinds: ['monitoring', 'outreach', 'education', 'appointment'],
+    // Monitoring changes are a clinician decision; nurses see them, the ward doctor signs.
+    actionKinds: ['outreach', 'education', 'appointment'],
     accent: { text: 'text-rose-300', bg: 'bg-rose-500/15', ring: 'ring-rose-500/40' },
     credentials: { username: 'nurse@mediai.com', password: 'Nurse@123' },
     demoUser: { name: 'Priya Nair', email: 'p.nair@hospital.com', avatar: avatarFor('Priya Nair', 'Female') },
@@ -76,7 +79,8 @@ export const ACCESS_ROLES: AccessRole[] = [
     home: '/pharmacy',
     navIds: ['dashboard', 'pharmacy', 'patients', 'settings'],
     routes: ['/', '/pharmacy', '/patients', '/settings'],
-    actionKinds: ['medication'],
+    // Stock work only: pharmacists dispense what a prescriber signed; they never sign the order itself.
+    actionKinds: ['stock'],
     accent: { text: 'text-violet-300', bg: 'bg-violet-500/15', ring: 'ring-violet-500/40' },
     credentials: { username: 'pharmacist@mediai.com', password: 'Pharma@123' },
     demoUser: { name: 'Sanjay Rao', email: 's.rao@hospital.com', avatar: avatarFor('Sanjay Rao', 'Male') },
@@ -100,8 +104,9 @@ export const ACCESS_ROLES: AccessRole[] = [
     persona: 'Front desk — arrivals, bookings, and payment collection.',
     shell: 'admin',
     home: '/appointments',
-    navIds: ['dashboard', 'appointments', 'patients', 'billing', 'settings'],
-    routes: ['/', '/appointments', '/patients', '/billing', '/settings'],
+    // Reception checks patients in, so the Today board is theirs too.
+    navIds: ['dashboard', 'journey', 'appointments', 'patients', 'billing', 'settings'],
+    routes: ['/', '/journey', '/appointments', '/patients', '/billing', '/settings'],
     actionKinds: ['appointment', 'referral', 'outreach'],
     accent: { text: 'text-amber-300', bg: 'bg-amber-500/15', ring: 'ring-amber-500/40' },
     credentials: { username: 'reception@mediai.com', password: 'Front@123' },
@@ -121,6 +126,17 @@ export const ACCESS_ROLES: AccessRole[] = [
     demoUser: { name: 'Sarah Johnson', email: 'sarah.j@email.com', avatar: avatarFor('Sarah Johnson', 'Female') },
   },
 ];
+
+/** Roles with clinical authority to sign medication and monitoring drafts. */
+const CLINICAL_SIGNERS = new Set<RoleId>(['doctor', 'assistant-doctor']);
+
+/**
+ * Whether this role may approve this draft. The clinician check backstops the
+ * role table: a clinical draft never becomes actionable for a non-clinician,
+ * even if someone later adds its kind to their role.
+ */
+export const ownsAction = (role: AccessRole, action: AIAction): boolean =>
+  role.actionKinds.includes(action.kind) && (!action.requiresClinician || CLINICAL_SIGNERS.has(role.id));
 
 export const getRole = (id: RoleId): AccessRole =>
   ACCESS_ROLES.find(r => r.id === id) ?? ACCESS_ROLES[0];

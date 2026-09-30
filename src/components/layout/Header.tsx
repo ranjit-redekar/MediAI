@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, Bell, Search, Moon, Sun, Sparkles, ChevronDown, HelpCircle, User, SlidersHorizontal, LogOut, Building2 } from 'lucide-react';
+import { Menu, Bell, Search, Moon, Sun, Sparkles, ChevronDown, User, SlidersHorizontal, LogOut, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlassButton } from '../ui/GlassButton';
-import { useTour } from '../../context/TourContext';
 import { useSession } from '../../context/SessionContext';
 import { getPlan, trialDaysLeft } from '../../data/workspace';
 import { cn } from '../../utils/cn';
@@ -25,7 +24,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  const { start: startTour } = useTour();
   const { role, workspace } = useSession();
   const daysLeft = trialDaysLeft(workspace.trialEndsAt);
   const navigate = useNavigate();
@@ -63,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Unified search → opens command palette */}
           <button
-            data-tour="search"
+           
             onClick={onOpenCommand}
             aria-label="Search patients, doctors and actions"
             className="hidden md:flex items-center gap-2.5 w-72 lg:w-80 h-10 px-3.5 rounded-xl glass-input border text-left text-app-subtle hover:border-[var(--border-strong)] transition-colors focus-ring"
@@ -106,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Section */}
         <div className="flex items-center gap-1 sm:gap-2">
           <GlassButton
-            data-tour="copilot"
+           
             variant="ghost"
             size="sm"
             onClick={onOpenCopilot}
@@ -115,10 +113,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Sparkles className="w-4 h-4" />
             <span className="hidden sm:inline">Copilot</span>
-          </GlassButton>
-
-          <GlassButton data-tour="help" variant="ghost" size="sm" onClick={startTour} className="hidden sm:flex w-9 px-0" title="Take a guided tour" aria-label="Take a guided tour">
-            <HelpCircle className="w-4 h-4" />
           </GlassButton>
 
           <GlassButton
@@ -133,7 +127,7 @@ export const Header: React.FC<HeaderProps> = ({
           </GlassButton>
 
           {/* Notifications */}
-          <div className="relative" data-tour="notifications">
+          <div className="relative">
             <GlassButton
               variant="ghost"
               size="sm"

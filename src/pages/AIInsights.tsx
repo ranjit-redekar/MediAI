@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Brain, AlertTriangle, CheckCircle, Activity, Shield,
   Zap, Eye, ChevronDown, ChevronUp,
-  Target, BarChart2, RefreshCw
+  Target, BarChart2
 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
@@ -15,11 +15,11 @@ import { GlassBadge } from '../components/ui/GlassBadge';
 import { GlassButton } from '../components/ui/GlassButton';
 import { CountUp } from '../components/ui/StatCard';
 import { PageHeader } from '../components/ui/PageHeader';
-import { AIAgentShowcase } from '../components/ai/AIAgentShowcase';
 import { AIActionCard } from '../components/ai/AIActionCard';
 import { AIWorkSummary } from '../components/ai/AIWorkSummary';
 import { useAIActions } from '../context/AIActionsContext';
 import { db } from '../data';
+import { recentMonthLabels } from '../utils/date';
 import { cn } from '../utils/cn';
 
 const riskRadarData = [
@@ -32,20 +32,19 @@ const riskRadarData = [
 ];
 
 const aiAccuracyData = [
-  { month: 'Aug', accuracy: 82, predictions: 45 },
-  { month: 'Sep', accuracy: 85, predictions: 62 },
-  { month: 'Oct', accuracy: 88, predictions: 78 },
-  { month: 'Nov', accuracy: 91, predictions: 95 },
-  { month: 'Dec', accuracy: 89, predictions: 110 },
-  { month: 'Jan', accuracy: 94, predictions: 128 },
-];
+  { accuracy: 82, predictions: 45 },
+  { accuracy: 85, predictions: 62 },
+  { accuracy: 88, predictions: 78 },
+  { accuracy: 91, predictions: 95 },
+  { accuracy: 89, predictions: 110 },
+  { accuracy: 94, predictions: 128 },
+].map((d, i, all) => ({ month: recentMonthLabels(all.length)[i], ...d }));
 
 export const AIInsights: React.FC = () => {
   const navigate = useNavigate();
   const { allActions, statusOf } = useAIActions();
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [isScanning, setIsScanning] = useState(false);
 
   const criticalCount = db.aiInsights.filter(i => i.severity === 'Critical').length;
   const highCount = db.aiInsights.filter(i => i.severity === 'High').length;
@@ -93,10 +92,6 @@ export const AIInsights: React.FC = () => {
     }
   };
 
-  const triggerScan = () => {
-    setIsScanning(true);
-    setTimeout(() => setIsScanning(false), 2500);
-  };
 
   const formatRelativeTime = (timestamp: string) => {
     const diffMs = Date.now() - new Date(timestamp).getTime();
@@ -114,12 +109,6 @@ export const AIInsights: React.FC = () => {
       <PageHeader
         title="AI Insights"
         subtitle={`${db.aiInsights.length} predictions across ${db.patients.length} monitored patients`}
-        actions={
-          <GlassButton variant="primary" onClick={triggerScan} disabled={isScanning}>
-            <RefreshCw className={cn('w-4 h-4', isScanning && 'animate-spin')} />
-            {isScanning ? 'Scanning…' : 'Run AI scan'}
-          </GlassButton>
-        }
       />
 
       {/* Alert Summary Cards */}
@@ -179,7 +168,6 @@ export const AIInsights: React.FC = () => {
             const patient = db.patients.find(p => p.id === insight.patientId);
             const config = getSeverityConfig(insight.severity);
             const isExpanded = expandedInsight === insight.id;
-            const agentMeta = insight.agentId ? db.aiAgents.find(a => a.id === insight.agentId) : null;
             const insightActions = allActions.filter(a => a.insightId === insight.id);
             const openActions = insightActions.filter(a => statusOf(a.id) === 'pending').length;
 
@@ -245,8 +233,6 @@ export const AIInsights: React.FC = () => {
 
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-xs text-app-subtle">
                           <span className={cn('font-semibold', config.color)}>{insight.confidence}% confidence</span>
-                          <span>·</span>
-                          <span>{agentMeta?.name ?? 'AI Hub'}</span>
                           <span>·</span>
                           <span>{formatRelativeTime(insight.createdAt)}</span>
                         </div>
@@ -360,9 +346,6 @@ export const AIInsights: React.FC = () => {
           </div>
         </GlassCard>
       </div>
-
-      {/* Agent Playbooks */}
-      <AIAgentShowcase variant="detailed" />
     </div>
   );
 };

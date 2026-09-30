@@ -2,9 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
-import { ThemeProvider, DEFAULT_THEME } from './context/ThemeContext.tsx';
+import { ThemeProvider, DEFAULT_THEME, THEMES } from './context/ThemeContext.tsx';
 import { JourneyProvider } from './context/JourneyContext.tsx';
-import { TourProvider } from './context/TourContext.tsx';
 import { StaffProvider } from './context/StaffContext.tsx';
 import { PatientsProvider } from './context/PatientsContext.tsx';
 import { DoctorsProvider } from './context/DoctorsContext.tsx';
@@ -14,7 +13,9 @@ import { AIActionsProvider } from './context/AIActionsContext.tsx';
 import { SessionProvider } from './context/SessionContext.tsx';
 
 // Apply the saved theme before first paint to avoid a flash.
-const savedTheme = (typeof window !== 'undefined' && localStorage.getItem('mediai-theme')) || DEFAULT_THEME;
+const stored = typeof window !== 'undefined' ? localStorage.getItem('mediai-theme') : null;
+// A theme removed since it was saved (e.g. "midnight") falls back instead of flashing unstyled.
+const savedTheme = stored && THEMES.some(t => t.id === stored) ? stored : DEFAULT_THEME;
 document.documentElement.setAttribute('data-theme', savedTheme);
 document.body.setAttribute('data-theme', savedTheme);
 document.body.classList.toggle('is-light', savedTheme === 'light');
@@ -30,9 +31,7 @@ createRoot(document.getElementById('root')!).render(
               <AppointmentsProvider>
                 <JourneyProvider>
                   <StaffProvider>
-                    <TourProvider>
-                      <App />
-                    </TourProvider>
+                    <App />
                   </StaffProvider>
                 </JourneyProvider>
               </AppointmentsProvider>

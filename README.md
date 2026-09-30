@@ -53,11 +53,13 @@ Everything else in the product falls out of that one decision:
    notification, so the notification *is* the action. The task inbox and the action queue are the
    same surface, reachable from the dashboard, the header, the Copilot, or AI Insights.
 3. **Clinical judgment stays human.** Medication and monitoring changes are flagged
-   `Clinician sign-off` and deliberately excluded from bulk approval. Administrative work —
+   `Clinician sign-off`, deliberately excluded from bulk approval, and signable only by a doctor
+   (medication) or a doctor or assistant doctor (monitoring) — never by an administrator, nurse,
+   or pharmacist, whatever their queue. Administrative work —
    booking, referrals, labs, outreach, enrolment — clears in one click. Where that line sits is a
    product decision, not a settings toggle.
-4. **The role subtracts work.** A pharmacist signs in to four medication drafts and a four-item
-   sidebar, not twenty-one drafts and thirteen nav entries belonging to other people. Signing in
+4. **The role subtracts work.** A pharmacist signs in to five stock drafts and a four-item
+   sidebar, not twenty-three drafts and thirteen nav entries belonging to other people. Signing in
    as a role removes what isn't yours rather than greying it out.
 5. **Reasoning is available, never mandatory.** Every draft can explain the specialty match, the
    slot choice, and the signal it came from. You read it when you doubt it — not every time.
@@ -71,7 +73,7 @@ Screens are built to answer one question first, then get out of the way. Three r
 2. **One decision per screen.** Login asks who you are — everything else on that page is a
    consequence of that choice, shown live rather than described.
 3. **Collapsed rows carry three signals, not nine.** An AI insight row shows urgency, patient, and
-   whether work is outstanding. Confidence, source agent, and timing appear when you open it.
+   whether work is outstanding. Confidence and timing appear when you open it.
 
 Nothing was deleted to achieve this — detail moved to where it is actually read, and content that
 appeared on two screens now appears on one.
@@ -83,11 +85,11 @@ command palette, the routes you may open, and **which drafted actions reach your
 
 | Role | Username | Password | Approves | Queue |
 | --- | --- | --- | --- | --- |
-| Administrator | `admin@mediai.com` | `Admin@123` | Everything | 18 |
+| Administrator | `admin@mediai.com` | `Admin@123` | Everything administrative — sees clinical drafts, can't sign them | 12 |
 | Doctor | `doctor@mediai.com` | `Doctor@123` | Everything, including medication | 18 |
 | Assistant Doctor | `assistant@mediai.com` | `Assist@123` | Everything **except** medication | 14 |
-| Nurse | `nurse@mediai.com` | `Nurse@123` | Monitoring, outreach, education, visits | 9 |
-| Pharmacist | `pharmacist@mediai.com` | `Pharma@123` | Medication orders only | 4 |
+| Nurse | `nurse@mediai.com` | `Nurse@123` | Outreach, education, visits | 7 |
+| Pharmacist | `pharmacist@mediai.com` | `Pharma@123` | Stock: expired-batch quarantine and reorders | 5 |
 | Lab Technician | `lab@mediai.com` | `Lab@123` | Lab orders only | 2 |
 | Receptionist | `reception@mediai.com` | `Front@123` | Bookings, referrals, outreach | 4 |
 | Patient | `patient@mediai.com` | `Patient@123` | — (own portal) | — |
@@ -106,7 +108,7 @@ Three details worth calling out:
 - **Drafts belonging to another role stay visible but locked** ("Not your queue"), so nobody is left
   wondering where an action went.
 - **Patients get a different shell entirely.** `PortalLayout` has no sidebar, no command palette, no
-  agent drawer, no copilot — just their next visit, results, prescriptions, and bills. An admin
+  copilot — just their next visit, results, prescriptions, and bills. An admin
   console with most items hidden still reads like an admin console.
 
 Switch roles from the account menu without signing out, which makes the differences easy to demo.
@@ -115,28 +117,28 @@ Switch roles from the account menu without signing out, which makes the differen
 
 - **Unified shell** — responsive sidebar + header, compact mode, skip-to-content link, and a
   keyboard-first command palette (`⌘K` / `Ctrl+K`).
-- **Command palette** — fuzzy search across patients, doctors, modules, AI agents, and quick
-  actions, with full arrow-key navigation and `↵` to open.
-- **Operational dashboards** — a compact KPI strip, the approval queue, a live activity feed, and
-  revenue/demographics charts, all scoped to the signed-in role.
-- **Today's Schedule** — clinicians see their own list for today with the next slot highlighted and
-  one-click start/join; desk roles see the whole day. Mock appointment dates are anchored to the
-  current date at load, so the demo never drifts into an empty past.
-- **Patients & doctors** — searchable, sortable rosters with AI risk meters, plus deep profile pages
-  covering vitals, medical timelines, labs, and appointments.
+- **Command palette** — fuzzy search across patients, doctors, modules, and quick actions, with
+  full arrow-key navigation and `↵` to open.
+- **Dashboards that open on work** — the approval queue first, then the day's list for roles that
+  run a clinic; revenue only for finance-facing roles. No KPI tiles to scroll past.
+- **Today** — every in-person patient in the building, from arrival through consultation to the
+  medical store, built from the same appointment book as every other screen. All mock dates are
+  anchored to the current date at load, so the demo never drifts into the past.
+- **Patients & doctors** — rosters sorted riskiest-first, and patient pages that lead with allergies
+  and the AI drafts for that patient, approvable in place. Patients are archived, never deleted.
 - **Appointments** — calendar and agenda views, rich filtering, and full booking/edit flows.
 - **Billing** — sortable invoice ledger, an overdue-first alert banner, and a detailed invoice modal
   with line items and totals.
-- **Pharmacy** — stock-level meters, expiry-window warnings, supply-risk banner, and reorder actions.
+- **Pharmacy** — status derived from stock and expiry (an expired batch is never "In Stock"), with
+  quarantine and reorder drafts in the pharmacist's queue.
 - **Laboratory** — order queue with expandable results and critical-value flagging.
 - **Approval queue** — every AI-drafted action in one place, grouped by patient, with batch approve,
   inline editing, per-action reasoning, and undo on everything.
-- **AI Intelligence Center** — severity filters, confidence scoring, drafted actions attached to every
-  insight, and a library of operational AI agents with dedicated viewbooks.
+- **AI Insights** — severity filters, confidence scoring, and the drafted actions attached to every
+  insight.
 - **Copilot that acts** — answers end in buttons that do the work: approve the safe queue, chase
   unpaid invoices, draft supplier reorders.
-- **Role workspaces** — tailored views for receptionists, attending doctors, and pharmacy/lab leads.
-- **Six themes** — five dark variants plus a full light mode, driven entirely by CSS design tokens.
+- **Light and dark themes** — light by default, both checked against WCAG AA text contrast.
 - **Login that previews the app** — every role has its own username and password. Picking one fills
   the credentials and renders a live miniature of that person's workspace — their real sidebar and
   their real approval queue, built from the same data the app runs on. Arrow keys walk the roles.
@@ -280,17 +282,12 @@ Supabase project secrets and are read by Edge Functions only.
 ## Mock Data & Wiring Up a Backend
 
 - `src/data/index.ts` aggregates every mock table (`patients`, `doctors`, `appointments`, `bills`,
-  `medicines`, `labTests`, AI insights, agents, chart series) into a single `db` object.
+  `medicines`, `labTests`, AI insights, chart series) into a single `db` object.
 - Feature pages read `db` once and hold mutations in React context (`PatientsContext`,
   `DoctorsContext`, `AppointmentsContext`, `StaffContext`, `TasksContext`).
 - To connect a real service layer, replace the `db` imports inside those context providers with API
   calls or React Query hooks. Page components consume the contexts, not the mock data directly, so
   they should need few or no changes.
-
-## Documentation
-
-A stakeholder-friendly walkthrough of every module lives in
-[`docs/MediAI_Technical_Overview.md`](docs/MediAI_Technical_Overview.md).
 
 ---
 

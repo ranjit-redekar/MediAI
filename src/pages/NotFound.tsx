@@ -7,7 +7,7 @@ import { GlassButton } from '../components/ui/GlassButton';
 const suggestions = [
   { label: 'Dashboard', path: '/' },
   { label: 'Patients', path: '/patients' },
-  { label: "Today's Schedule", path: '/appointments' },
+  { label: 'Today', path: '/journey' },
   { label: 'AI Insights', path: '/ai-insights' },
 ];
 

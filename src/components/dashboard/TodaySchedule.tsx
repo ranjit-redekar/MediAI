@@ -72,7 +72,7 @@ export const TodaySchedule: React.FC = () => {
           </div>
         </div>
 
-        <GlassButton variant="ghost" size="sm" onClick={() => navigate('/appointments')}>
+        <GlassButton variant="ghost" size="sm" onClick={() => navigate('/journey')}>
           Full day <ArrowUpRight className="w-3 h-3" />
         </GlassButton>
       </div>

@@ -29,6 +29,14 @@ const statuses = [
   { value: 'Critical', label: 'Critical' },
 ];
 
+/** Blank = not recorded; "none known" / "NKDA" = none; otherwise a comma-separated list. */
+function parseAllergies(text: string): string[] | undefined {
+  const t = text.trim();
+  if (!t) return undefined;
+  if (/^(none( known)?|nkda|no known( drug)? allergies)$/i.test(t)) return [];
+  return t.split(',').map(a => a.trim()).filter(Boolean);
+}
+
 export const PatientForm: React.FC<PatientFormProps> = ({
   patient,
   onSubmit,
@@ -43,18 +51,19 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     email: '',
     address: '',
     status: 'Active',
-    aiRiskScore: 0,
   });
+  const [allergyText, setAllergyText] = useState('');
 
   useEffect(() => {
     if (patient) {
       setFormData(patient);
+      setAllergyText(patient.allergies === undefined ? '' : patient.allergies.join(', ') || 'None known');
     }
   }, [patient]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({ ...formData, allergies: parseAllergies(allergyText) });
   };
 
   const handleChange = (field: keyof Patient, value: string | number) => {
@@ -109,15 +118,14 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           onChange={(e) => handleChange('status', e.target.value)}
           options={statuses}
         />
-        <GlassInput
-          label="AI Risk Score"
-          type="number"
-          min="0"
-          max="100"
-          value={formData.aiRiskScore}
-          onChange={(e) => handleChange('aiRiskScore', parseInt(e.target.value))}
-        />
       </div>
+      {/* No AI risk score field: scores come from MediAI's scoring rules, never typed in. */}
+      <GlassInput
+        label="Drug allergies"
+        placeholder="e.g. Penicillin, Sulfa — or “none known”"
+        value={allergyText}
+        onChange={(e) => setAllergyText(e.target.value)}
+      />
       <GlassInput
         label="Address"
         value={formData.address}

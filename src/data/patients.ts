@@ -1,13 +1,16 @@
 import { avatarFor } from '../utils/avatar';
+import { shiftDemoDates } from '../utils/date';
+import { CLINICAL_DEMO_TODAY } from './demoToday';
 import type { Patient } from '../types';
 
-export const patients: Patient[] = [
+const authoredPatients: Patient[] = [
   {
     id: 'P001',
     name: 'Sarah Johnson',
     age: 34,
     gender: 'Female',
     bloodGroup: 'O+',
+    allergies: ['Sulfonamides'],
     phone: '+1 (555) 123-4567',
     email: 'sarah.j@email.com',
     address: '123 Maple Street, Boston, MA',
@@ -72,6 +75,7 @@ export const patients: Patient[] = [
     age: 45,
     gender: 'Male',
     bloodGroup: 'A+',
+    allergies: [],
     phone: '+1 (555) 234-5678',
     email: 'michael.c@email.com',
     address: '456 Oak Avenue, New York, NY',
@@ -151,6 +155,7 @@ export const patients: Patient[] = [
     age: 28,
     gender: 'Female',
     bloodGroup: 'B+',
+    allergies: [],
     phone: '+1 (555) 345-6789',
     email: 'emily.r@email.com',
     address: '789 Pine Road, Los Angeles, CA',
@@ -218,6 +223,7 @@ export const patients: Patient[] = [
     age: 62,
     gender: 'Male',
     bloodGroup: 'AB-',
+    allergies: ['Penicillin'],
     phone: '+1 (555) 456-7890',
     email: 'robert.w@email.com',
     address: '321 Elm Street, Chicago, IL',
@@ -297,6 +303,7 @@ export const patients: Patient[] = [
     age: 52,
     gender: 'Female',
     bloodGroup: 'O-',
+    allergies: ['Codeine'],
     phone: '+1 (555) 567-8901',
     email: 'jennifer.l@email.com',
     address: '654 Cedar Lane, Seattle, WA',
@@ -365,6 +372,7 @@ export const patients: Patient[] = [
     age: 38,
     gender: 'Male',
     bloodGroup: 'A-',
+    allergies: [],
     phone: '+1 (555) 678-9012',
     email: 'david.m@email.com',
     address: '987 Birch Drive, Miami, FL',
@@ -489,6 +497,7 @@ export const patients: Patient[] = [
     age: 55,
     gender: 'Male',
     bloodGroup: 'O+',
+    allergies: ['Latex'],
     phone: '+1 (555) 890-1234',
     email: 'chris.b@email.com',
     address: '258 Willow Court, Austin, TX',
@@ -566,3 +575,5 @@ export const patients: Patient[] = [
     ]
   }
 ];
+
+export const patients = shiftDemoDates(authoredPatients, CLINICAL_DEMO_TODAY, ['date', 'followUpDate', 'lastVisit', 'registrationDate']);

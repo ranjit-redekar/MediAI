@@ -1,42 +1,15 @@
 import React from 'react';
-import { Users, UserRound, Calendar, CreditCard, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassBadge } from '../components/ui/GlassBadge';
-import { GlassButton } from '../components/ui/GlassButton';
 import { PageHeader } from '../components/ui/PageHeader';
-import { StatCard } from '../components/ui/StatCard';
 import { AIActionQueue } from '../components/ai/AIActionQueue';
-import { ActivityFeed } from '../components/dashboard/ActivityFeed';
 import { TodaySchedule } from '../components/dashboard/TodaySchedule';
 import { db } from '../data';
 import { useSession } from '../context/SessionContext';
 import { cn } from '../utils/cn';
-
-/** Shape of a dashboard KPI tile, before role filtering. */
-interface StatCardSpec {
-  label: string;
-  value: number;
-  icon: typeof Users;
-  gradient: string;
-  accent: string;
-  prefix?: string;
-  change: string;
-  trend: 'up' | 'down';
-  sparkline: number[];
-}
-const revenueSpark = db.revenueChartData.map(d => d.revenue);
-const apptSpark = db.revenueChartData.map(d => d.appointments);
-
-const statCards: (StatCardSpec & { navId: string })[] = [
-  { navId: 'patients', label: 'Total Patients', value: db.dashboardStats.totalPatients, icon: Users, gradient: 'from-blue-500 to-cyan-500', accent: '#22d3ee', change: `+${db.dashboardStats.patientGrowth}%`, trend: 'up' as const, sparkline: [2410, 2520, 2605, 2690, 2780, 2847] },
-  { navId: 'doctors', label: 'Total Doctors', value: db.dashboardStats.totalDoctors, icon: UserRound, gradient: 'from-violet-500 to-fuchsia-500', accent: '#c084fc', change: '+3', trend: 'up' as const, sparkline: [42, 43, 45, 46, 47, 48] },
-  { navId: 'appointments', label: "Today's Appointments", value: db.dashboardStats.todayAppointments, icon: Calendar, gradient: 'from-emerald-500 to-teal-500', accent: '#34d399', change: `+${db.dashboardStats.appointmentGrowth}%`, trend: 'up' as const, sparkline: apptSpark },
-  { navId: 'billing', label: 'Monthly Revenue', value: db.dashboardStats.monthlyRevenue, icon: CreditCard, gradient: 'from-amber-500 to-orange-500', accent: '#fbbf24', prefix: '$', change: `+${db.dashboardStats.revenueGrowth}%`, trend: 'up' as const, sparkline: revenueSpark },
-];
 
 const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) => {
   if (!active || !payload?.length) return null;
@@ -53,13 +26,14 @@ const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: 
   );
 };
 
+/**
+ * Opens on the work waiting for this role — drafts to approve, then the day's
+ * list. No KPI tiles: a headcount or a growth sparkline is something to read,
+ * not something to do, and it asked every role to scroll past it first.
+ */
 export const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
   const { role, canSeeNav } = useSession();
 
-  // A dashboard should only show numbers the viewer can act on. A nurse has no
-  // use for monthly revenue, and a lab tech has none for the doctor roster.
-  const visibleStats = statCards.filter(card => canSeeNav(card.navId));
   const showFinance = canSeeNav('billing');
   // Roles that run a clinic day get their list; pharmacy and lab do not.
   const showSchedule = canSeeNav('appointments');
@@ -75,44 +49,20 @@ export const Dashboard: React.FC = () => {
             {role.name}
           </span>
         }
-        actions={
-          <GlassButton variant="primary" onClick={() => navigate('/ai-insights')}>
-            <Sparkles className="w-4 h-4" />
-            Run AI scan
-          </GlassButton>
-        }
       />
 
-      {/* KPI strip — scoped to what this role owns */}
-      {visibleStats.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {visibleStats.map((s, i) => (
-            <StatCard key={s.label} {...s} index={i} />
-          ))}
-        </div>
-      )}
-
-      {/* Working area: what needs you, and what your day looks like */}
       {showSchedule ? (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="min-w-0">
-              <TodaySchedule />
-            </div>
-            <div className="min-w-0">
-              <AIActionQueue limit={3} />
-            </div>
-          </div>
-          <ActivityFeed onViewAll={() => navigate('/patients')} limit={4} horizontal />
-        </>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 min-w-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="min-w-0">
             <AIActionQueue limit={3} />
           </div>
           <div className="min-w-0">
-            <ActivityFeed onViewAll={() => navigate('/patients')} />
+            <TodaySchedule />
           </div>
+        </div>
+      ) : (
+        <div className="max-w-3xl">
+          <AIActionQueue limit={5} />
         </div>
       )}
 
@@ -140,12 +90,14 @@ export const Dashboard: React.FC = () => {
                     <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
+                <CartesianGrid yAxisId="revenue" strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
                 <XAxis dataKey="month" stroke="rgba(148,163,184,0.6)" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="rgba(148,163,184,0.6)" fontSize={12} tickLine={false} axisLine={false} width={48} />
+                {/* Revenue (~$100k) and visits (~500) need their own scales, or visits flatline at zero. */}
+                <YAxis yAxisId="revenue" stroke="rgba(148,163,184,0.6)" fontSize={12} tickLine={false} axisLine={false} width={48} tickFormatter={v => `$${Math.round(v / 1000)}k`} />
+                <YAxis yAxisId="appointments" orientation="right" stroke="rgba(148,163,184,0.6)" fontSize={12} tickLine={false} axisLine={false} width={36} />
                 <Tooltip content={<ChartTooltip />} />
-                <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2.5} fill="url(#rev)" animationDuration={1200} />
-                <Area type="monotone" dataKey="appointments" stroke="#06b6d4" strokeWidth={2} fill="url(#appt)" animationDuration={1400} />
+                <Area yAxisId="revenue" type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2.5} fill="url(#rev)" animationDuration={1200} />
+                <Area yAxisId="appointments" type="monotone" dataKey="appointments" stroke="#06b6d4" strokeWidth={2} fill="url(#appt)" animationDuration={1400} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

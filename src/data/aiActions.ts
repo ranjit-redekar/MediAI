@@ -1,6 +1,7 @@
 import { doctors } from './doctors';
 import { patients } from './patients';
 import { aiInsights } from './aiMockData';
+import { medicines, stockStatus, daysUntilExpiry, TARGET_STOCK_UNITS } from './pharmacy';
 import type { AIAction, AIActionKind } from '../types/aiActions';
 
 /**
@@ -172,7 +173,45 @@ function buildRationale(
   }
 }
 
-/** All actions the AI has drafted across every open insight. */
+/**
+ * Pharmacy work drafted from stock state: pull expired batches before they are
+ * dispensed, and top up anything low or out. Administrative, so batch-approvable.
+ */
+function buildStockActions(): AIAction[] {
+  // Quarantines lead: an expired batch is a dispensing risk, a low shelf is not.
+  const quarantines: AIAction[] = [];
+  const reorders: AIAction[] = [];
+  for (const m of medicines) {
+    const status = stockStatus(m);
+    const base = { insightId: 'stock', patientId: '', patientName: 'Pharmacy stock', kind: 'stock' as const, confidence: 99, requiresClinician: false };
+    if (status === 'Expired') {
+      quarantines.push({
+        ...base,
+        id: `STOCK-${m.id}-quarantine`,
+        label: 'Quarantine expired batch',
+        detail: `${m.name} · ${m.stock} units · expired ${-daysUntilExpiry(m)} days ago · pull from dispensing and log for disposal`,
+        rationale: 'Expired stock on an active shelf can be dispensed by mistake. Quarantining it is reversible; dispensing it is not.',
+        source: `Expiry date ${m.expiryDate} has passed with stock still on hand`,
+        minutesSaved: 5,
+      });
+    }
+    if (status !== 'In Stock') {
+      const units = TARGET_STOCK_UNITS - (status === 'Expired' ? 0 : m.stock);
+      reorders.push({
+        ...base,
+        id: `STOCK-${m.id}-reorder`,
+        label: 'Reorder from supplier',
+        detail: `${m.name} · ${units} units from ${m.manufacturer} · ≈$${(units * m.unitPrice).toLocaleString()}`,
+        rationale: `Tops the shelf back up to the ${TARGET_STOCK_UNITS}-unit target at the last unit price on file.`,
+        source: status === 'Expired' ? 'Replacing a quarantined batch' : `${m.stock} units left`,
+        minutesSaved: 6,
+      });
+    }
+  }
+  return [...quarantines, ...reorders];
+}
+
+/** All actions the AI has drafted across every open insight, plus stock work. */
 export function buildAIActions(): AIAction[] {
   const actions: AIAction[] = [];
 
@@ -203,5 +242,5 @@ export function buildAIActions(): AIAction[] {
     });
   });
 
-  return actions;
+  return [...actions, ...buildStockActions()];
 }

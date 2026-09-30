@@ -9,11 +9,7 @@ export interface ThemeDef {
 }
 
 export const THEMES: ThemeDef[] = [
-  { id: 'dark',     name: 'Indigo',   isDark: true,  swatch: ['#070b16', '#6366f1', '#8b5cf6'] },
-  { id: 'midnight', name: 'Midnight', isDark: true,  swatch: ['#03040a', '#3b82f6', '#6366f1'] },
-  { id: 'emerald',  name: 'Emerald',  isDark: true,  swatch: ['#04130f', '#10b981', '#14b8a6'] },
-  { id: 'royal',    name: 'Royal',    isDark: true,  swatch: ['#0c0718', '#a855f7', '#ec4899'] },
-  { id: 'sunset',   name: 'Sunset',   isDark: true,  swatch: ['#140a06', '#f97316', '#f43f5e'] },
+  { id: 'dark',     name: 'Dark',   isDark: true,  swatch: ['#070b16', '#6366f1', '#8b5cf6'] },
   { id: 'light',    name: 'Light',    isDark: false, swatch: ['#e7ebf3', '#6366f1', '#8b5cf6'] },
 ];
 

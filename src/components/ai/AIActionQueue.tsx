@@ -54,7 +54,8 @@ export const AIActionQueue: React.FC<{ limit?: number }> = ({ limit = 4 }) => {
           {batchApprovable.length > 0 && (
             <GlassButton variant="primary" size="sm" onClick={approveAll}>
               <CheckCheck className="w-3.5 h-3.5" />
-              Approve {batchApprovable.length}
+              {/* Say which ones when clinical drafts are held back, so "12" beside "18 drafted" isn't a mystery. */}
+              {batchApprovable.length === pending.length ? `Approve all ${pending.length}` : `Approve ${batchApprovable.length} non-clinical`}
             </GlassButton>
           )}
         </div>

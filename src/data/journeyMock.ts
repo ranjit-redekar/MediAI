@@ -1,5 +1,8 @@
-import { avatarFor } from '../utils/avatar';
-import { medicines } from './pharmacy';
+import { medicines, stockStatus } from './pharmacy';
+import { appointments } from './appointments';
+import type { Appointment } from '../types';
+import { patients } from './patients';
+import { todayKey } from '../utils/date';
 import type { MedicineSuggestion, Visit } from '../types/journey';
 
 // --- AI medicine recommendation engine -------------------------------------
@@ -89,7 +92,20 @@ const RULES: Rule[] = [
   }
 ];
 
-export function recommendMedicines(diagnosis: string, symptoms: string[]): MedicineSuggestion[] {
+/** Allergy names that cover a whole drug class, so "Penicillin" also blocks Amoxicillin. */
+const ALLERGY_CLASSES: Record<string, RegExp> = {
+  penicillin: /cillin/i,
+  sulfonamides: /sulfa/i,
+  nsaids: /ibuprofen|naproxen|diclofenac|aspirin/i,
+};
+
+/** The recorded allergy this medicine would trigger, if any. */
+export function allergyConflict(medicineName: string, allergies: string[] = []): string | undefined {
+  const name = medicineName.toLowerCase();
+  return allergies.find(a => name.includes(a.toLowerCase()) || ALLERGY_CLASSES[a.toLowerCase()]?.test(name));
+}
+
+export function recommendMedicines(diagnosis: string, symptoms: string[], allergies: string[] = []): MedicineSuggestion[] {
   const haystack = `${diagnosis} ${symptoms.join(' ')}`.toLowerCase();
   const suggestions: MedicineSuggestion[] = [];
   const usedCategories = new Set<string>();
@@ -98,7 +114,12 @@ export function recommendMedicines(diagnosis: string, symptoms: string[]): Medic
     if (usedCategories.has(rule.category)) continue;
     const matched = rule.keywords.some(k => haystack.includes(k));
     if (!matched) continue;
-    const med = medicines.find(m => m.category === rule.category && (m.stock ?? 0) > 0);
+    // Never suggest a batch that can't be dispensed: out of stock or expired.
+    // …and never one the patient is allergic to.
+    const med = medicines.find(m =>
+      m.category === rule.category &&
+      (stockStatus(m) === 'In Stock' || stockStatus(m) === 'Low Stock') &&
+      !allergyConflict(m.name, allergies));
     if (!med) continue;
     usedCategories.add(rule.category);
     suggestions.push({
@@ -114,106 +135,83 @@ export function recommendMedicines(diagnosis: string, symptoms: string[]): Medic
   return suggestions.sort((a, b) => b.confidence - a.confidence);
 }
 
-// --- Seed visits across the pipeline ---------------------------------------
+// --- Today's visits, derived from the appointment book ----------------------
 
-export const initialVisits: Visit[] = [
-  {
-    id: 'V001',
-    patientId: 'P001',
-    patientName: 'Sarah Johnson',
-    patientAvatar: avatarFor('Sarah Johnson', 'Female'),
-    age: 34,
-    gender: 'Female',
-    reason: 'Seasonal allergy flare-up',
-    symptoms: ['Sneezing', 'Nasal congestion', 'Itchy eyes'],
-    scheduledTime: '09:00 AM',
-    priority: 'Routine',
-    stage: 'Scheduled',
-    consultations: [],
-    prescription: [],
-    pharmacyStatus: 'Awaiting'
-  },
-  {
-    id: 'V002',
-    patientId: 'P004',
-    patientName: 'Robert Williams',
-    patientAvatar: avatarFor('Robert Williams', 'Male'),
-    age: 58,
-    gender: 'Male',
-    reason: 'Chest tightness and high BP',
-    symptoms: ['Chest discomfort', 'High blood pressure', 'Shortness of breath'],
-    scheduledTime: '09:30 AM',
-    priority: 'Urgent',
-    stage: 'Reception',
-    checkedInAt: '09:24 AM',
-    consultations: [],
-    prescription: [],
-    pharmacyStatus: 'Awaiting'
-  },
-  {
-    id: 'V003',
-    patientId: 'P002',
-    patientName: 'Michael Chen',
-    patientAvatar: avatarFor('Michael Chen', 'Male'),
-    age: 45,
-    gender: 'Male',
-    reason: 'Diabetes follow-up',
-    symptoms: ['Elevated glucose', 'Fatigue'],
-    scheduledTime: '10:00 AM',
-    priority: 'Routine',
-    stage: 'Consultation',
-    checkedInAt: '09:52 AM',
-    consultations: [
-      {
-        id: 'C-V003-1',
-        doctorId: 'D002',
-        doctorName: 'Dr. Emily Carter',
-        specialty: 'Endocrinology',
-        diagnosis: 'Type 2 Diabetes — sub-optimal control',
-        notes: 'Reviewing glucose logs. Considering dose adjustment.',
-        completed: false
-      }
-    ],
-    prescription: [],
-    pharmacyStatus: 'Awaiting'
-  },
-  {
-    id: 'V004',
-    patientId: 'P005',
-    patientName: 'Jennifer Lee',
-    patientAvatar: avatarFor('Jennifer Lee', 'Female'),
-    age: 29,
-    gender: 'Female',
-    reason: 'Acid reflux',
-    symptoms: ['Heartburn', 'Nausea'],
-    scheduledTime: '10:15 AM',
-    priority: 'Routine',
-    stage: 'Pharmacy',
-    checkedInAt: '10:08 AM',
-    consultations: [
-      {
-        id: 'C-V004-1',
-        doctorId: 'D001',
-        doctorName: 'Dr. James Wilson',
-        specialty: 'General Medicine',
-        diagnosis: 'Gastro-oesophageal reflux',
-        notes: 'Advise dietary changes; start PPI.',
-        completed: true
-      }
-    ],
-    prescription: [
-      {
-        id: 'RX-V004-1',
-        medicineId: 'M006',
-        name: 'Omeprazole 20mg',
-        category: 'Gastrointestinal',
-        dosage: '1 capsule before breakfast',
-        prescribedBy: 'Dr. James Wilson',
-        aiSuggested: true,
-        rationale: 'Acid-related GI symptoms — proton-pump inhibitor.',
-        dispensed: false
-      }
-    ],
-    pharmacyStatus: 'Awaiting'
-  }
-];
+/** `14:05` → `02:05 PM`, the format the journey board shows. */
+const toClock = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return `${String(((h + 11) % 12) + 1).padStart(2, '0')}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+};
+
+/**
+ * The journey board is today's in-person appointments, not a second dataset —
+ * so a patient has the same time, doctor, and age here as on every other screen.
+ * Video and phone visits never pass through reception, so they are left out.
+ *
+ * The demo places the day mid-morning: finished consults are done (the latest
+ * is still waiting at the store), the next booked patient has checked in, and
+ * the rest are still to arrive.
+ */
+function buildTodayVisits(): Visit[] {
+  const today = todayKey();
+  const booked = appointments
+    .filter(a => a.date === today && a.type === 'In-Person' && (a.status === 'Completed' || a.status === 'Scheduled'))
+    .sort((a, b) => a.time.localeCompare(b.time));
+  const latestOf = (a: Appointment) => patients.find(p => p.id === a.patientId)?.medicalHistory?.[0];
+  const suggestionFor = (a: Appointment) =>
+    recommendMedicines(latestOf(a)?.diagnosis ?? '', latestOf(a)?.symptoms ?? [],
+      patients.find(p => p.id === a.patientId)?.allergies).slice(0, 1);
+  // The latest finished consult that produced a prescription is the one at the store.
+  const atStoreAppt = booked.filter(a => a.status === 'Completed' && suggestionFor(a).length > 0).at(-1);
+  const firstWaiting = booked.find(a => a.status === 'Scheduled');
+
+  return booked.flatMap(a => {
+    const patient = patients.find(p => p.id === a.patientId);
+    if (!patient) return [];
+    const latest = latestOf(a);
+    const done = a.status === 'Completed';
+    const atStore = a === atStoreAppt;
+    const stage: Visit['stage'] = atStore ? 'Pharmacy' : done ? 'Completed' : a === firstWaiting ? 'Reception' : 'Scheduled';
+    const consultation = {
+      id: `C-${a.id}`,
+      doctorId: a.doctorId,
+      doctorName: a.doctorName,
+      specialty: a.specialty,
+      diagnosis: latest?.diagnosis ?? '',
+      notes: a.notes ?? '',
+      completed: true,
+    };
+    const rx = atStore
+      ? suggestionFor(a).map(s => ({
+          id: `RX-${a.id}`,
+          medicineId: s.medicineId,
+          name: s.name,
+          category: s.category,
+          dosage: s.dosage,
+          prescribedBy: a.doctorName,
+          aiSuggested: false,
+          dispensed: false,
+        }))
+      : [];
+
+    return [{
+      id: `V-${a.id}`,
+      patientId: patient.id,
+      patientName: patient.name,
+      patientAvatar: patient.avatar,
+      age: patient.age,
+      gender: patient.gender,
+      reason: a.notes ?? a.specialty,
+      symptoms: latest?.symptoms ?? [],
+      scheduledTime: toClock(a.time),
+      priority: patient.status === 'Critical' || /urgent/i.test(a.notes ?? '') ? 'Urgent' : 'Routine',
+      stage,
+      checkedInAt: stage === 'Scheduled' ? undefined : toClock(a.time),
+      consultations: done ? [consultation] : [],
+      prescription: rx,
+      pharmacyStatus: done && !atStore ? 'Fulfilled' : 'Awaiting',
+    }];
+  });
+}
+
+export const initialVisits: Visit[] = buildTodayVisits();

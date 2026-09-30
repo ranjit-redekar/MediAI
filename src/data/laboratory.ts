@@ -1,6 +1,8 @@
 import type { LabTest } from '../types';
+import { shiftDemoDates } from '../utils/date';
+import { CLINICAL_DEMO_TODAY } from './demoToday';
 
-export const labTests: LabTest[] = [
+const authoredLabTests: LabTest[] = [
   {
     id: 'L001',
     patientId: 'P002',
@@ -107,3 +109,5 @@ export const labTests: LabTest[] = [
     ]
   }
 ];
+
+export const labTests = shiftDemoDates(authoredLabTests, CLINICAL_DEMO_TODAY, ['orderedDate', 'completedDate']);

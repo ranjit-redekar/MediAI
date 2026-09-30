@@ -5,7 +5,8 @@ export type AIActionKind =
   | 'medication'
   | 'monitoring'
   | 'outreach'
-  | 'education';
+  | 'education'
+  | 'stock';
 
 export type AIActionStatus = 'pending' | 'approved' | 'dismissed';
 
@@ -17,7 +18,9 @@ export type AIActionStatus = 'pending' | 'approved' | 'dismissed';
 export interface AIAction {
   id: string;
   insightId: string;
+  /** Empty for work that isn't about a patient, such as pharmacy stock. */
   patientId: string;
+  /** Who or what the work is for — a patient's name, or "Pharmacy stock". */
   patientName: string;
   kind: AIActionKind;
   /** What will happen, in plain words: "Book cardiology consult". */
