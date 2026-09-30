@@ -18,6 +18,7 @@ import { usePatients } from '../../context/PatientsContext';
 import { db } from '../../data';
 import { cn } from '../../utils/cn';
 import { todayKey } from '../../utils/date';
+import { isDemo } from '../../lib/supabase';
 import type { Appointment, MedicalRecord, Patient } from '../../types';
 import { useAIActions } from '../../context/AIActionsContext';
 import { AIActionCard } from '../../components/ai/AIActionCard';
@@ -429,7 +430,17 @@ const OverviewTab: React.FC<{
   appointments: Appointment[];
 }> = ({ patient, aiInsight, medicalRecords, appointments }) => {
   // This patient's drafts, approvable right here — not a list of advice to act on elsewhere.
-  const drafts = useAIActions().allActions.filter(a => a.patientId === patient?.id);
+  const { allActions, draftFor } = useAIActions();
+  const drafts = allActions.filter(a => a.patientId === patient?.id);
+  const [drafting, setDrafting] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const runDraft = async () => {
+    if (!patient) return;
+    setDrafting(true);
+    setDraftError(null);
+    setDraftError(await draftFor(patient, aiInsight?.description));
+    setDrafting(false);
+  };
   // Future, still-scheduled visits, soonest first — not the first three in data order.
   const today = todayKey();
   const upcoming = appointments
@@ -455,7 +466,8 @@ const OverviewTab: React.FC<{
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Primary column */}
         <div className="lg:col-span-2 space-y-6">
-          {aiInsight && (
+          {/* With a live backend the card is always here, so any patient can be drafted for. */}
+          {(aiInsight || !isDemo) && (
             <GlassCard className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5" />
               <div className="relative">
@@ -465,18 +477,33 @@ const OverviewTab: React.FC<{
                   </div>
                   <h3 className="font-semibold text-white">AI Clinical Analysis</h3>
                   <Sparkles className="w-4 h-4 text-violet-400 ml-1" />
-                  <GlassBadge variant={aiInsight.severity === 'Critical' ? 'danger' : aiInsight.severity === 'High' ? 'warning' : 'info'} size="sm" className="ml-auto">
-                    {aiInsight.severity}
-                  </GlassBadge>
+                  {aiInsight && (
+                    <GlassBadge variant={aiInsight.severity === 'Critical' ? 'danger' : aiInsight.severity === 'High' ? 'warning' : 'info'} size="sm" className="ml-auto">
+                      {aiInsight.severity}
+                    </GlassBadge>
+                  )}
+                  {!isDemo && (
+                    <GlassButton size="sm" variant="default" className={aiInsight ? '' : 'ml-auto'} disabled={drafting} onClick={runDraft}>
+                      <Sparkles className="w-3.5 h-3.5" /> {drafting ? 'Drafting…' : drafts.length ? 'Redraft' : 'Draft with AI'}
+                    </GlassButton>
+                  )}
                 </div>
-                <p className="text-white/80 text-sm mb-4 leading-relaxed">{aiInsight.description}</p>
-                <div className="flex items-center gap-3 mb-4 p-2.5 rounded-xl bg-white/5">
-                  <span className="text-xs text-white/50">AI Confidence</span>
-                  <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-400 rounded-full" style={{ width: `${aiInsight.confidence}%` }} />
-                  </div>
-                  <span className="text-sm font-semibold text-violet-400">{aiInsight.confidence}%</span>
-                </div>
+                {aiInsight && (
+                  <>
+                    <p className="text-white/80 text-sm mb-4 leading-relaxed">{aiInsight.description}</p>
+                    <div className="flex items-center gap-3 mb-4 p-2.5 rounded-xl bg-white/5">
+                      <span className="text-xs text-white/50">AI Confidence</span>
+                      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-400 rounded-full" style={{ width: `${aiInsight.confidence}%` }} />
+                      </div>
+                      <span className="text-sm font-semibold text-violet-400">{aiInsight.confidence}%</span>
+                    </div>
+                  </>
+                )}
+                {draftError && <p role="alert" className="text-sm text-red-400 mb-3">{draftError}</p>}
+                {!isDemo && drafts.length === 0 && !drafting && !draftError && (
+                  <p className="text-sm text-app-muted">No drafts yet. The AI reads this record and drafts the follow-up work for approval.</p>
+                )}
                 {drafts.length > 0 && (
                   <>
                     <p className="text-xs font-semibold uppercase tracking-wide text-app-subtle mb-2">Drafted for approval</p>

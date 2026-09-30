@@ -31,7 +31,7 @@ interface ReplyContext {
   navigate: (path: string) => void;
   toast: ReturnType<typeof useToast>['toast'];
   approveMany: (ids: string[]) => void;
-  resetAll: () => void;
+  resetMany: (ids: string[]) => void;
   pendingIds: string[];
   safeIds: string[];
   safeMinutes: number;
@@ -79,12 +79,12 @@ function generateReply(raw: string, pendingCount: number, safeCount: number, saf
           id: 'approve-safe',
           label: `Approve ${safeCount} safe actions`,
           mode: 'do',
-          run: ({ approveMany, safeIds, toast, resetAll }) => {
+          run: ({ approveMany, safeIds, toast, resetMany }) => {
             approveMany(safeIds);
             toast(`${safeIds.length} actions approved`, {
               description: `About ${safeMinutes} minutes of manual work avoided.`,
               variant: 'ai',
-              action: { label: 'Undo all', onClick: resetAll },
+              action: { label: 'Undo all', onClick: () => resetMany(safeIds) },
             });
           },
         },
@@ -204,7 +204,7 @@ export const AICopilotChat: React.FC<AICopilotChatProps> = ({ isOpen, onClose })
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { pending, batchApprovable, approveMany, resetAll } = useAIActions();
+  const { pending, batchApprovable, approveMany, resetMany } = useAIActions();
   const { appointments } = useAppointments();
 
   React.useEffect(() => {
@@ -249,7 +249,7 @@ export const AICopilotChat: React.FC<AICopilotChatProps> = ({ isOpen, onClose })
       navigate,
       toast,
       approveMany,
-      resetAll,
+      resetMany,
       pendingIds: pending.map(a => a.id),
       safeIds: batchApprovable.map(a => a.id),
       safeMinutes: batchApprovable.reduce((sum, a) => sum + a.minutesSaved, 0),

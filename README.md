@@ -265,7 +265,10 @@ The same build runs in two modes, chosen by environment variables:
 | Trigger | `VITE_SUPABASE_*` unset | `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` set |
 | Sign-in | Role picker, demo credentials | Supabase Auth (email + password) |
 | Hospital, plan, invites | This browser's `localStorage` | Postgres, isolated per hospital by row-level security |
-| Clinical data | Mock | Still mock — migrated module by module |
+| Joining a hospital | Pick a role | Invited staff create an account at `/join`; a confirmed email claims the invite (`accept_invites()`) |
+| AI drafts | Built from mock insights | `draft-actions` Edge Function (Claude Opus 5.5) → `ai_actions` table |
+| Approvals | In memory | `decide_action()` — the database checks the signer's role (medication: doctors only) and appends to `ai_action_log` |
+| Clinical data | Mock | Still mock — migrated module by module. Until then the patient summary for drafting is sent by the browser |
 
 Run production mode locally (needs Docker):
 
@@ -273,8 +276,27 @@ Run production mode locally (needs Docker):
 npx supabase start                        # local Postgres + Auth, applies supabase/migrations
 cp .env.example .env.local                # paste PUBLISHABLE_KEY from `npx supabase status`
 npm run dev
-node supabase/tests/tenancy.check.mjs     # proves tenant isolation and billing-only columns
+node supabase/tests/tenancy.check.mjs     # tenant isolation, invites, and who may sign which draft
 ```
+
+The drafting function calls Claude. Serve it with a key, or with a stub for the checks:
+
+```sh
+# real calls (billed to the key's account)
+echo 'ANTHROPIC_API_KEY=sk-ant-...' > supabase/functions/.env   # gitignored
+npx supabase functions serve --env-file supabase/functions/.env
+
+# no key: the check runs its own stub model on port 54499
+printf 'ANTHROPIC_API_KEY=stub\nANTHROPIC_BASE_URL=http://host.docker.internal:54499\n' > /tmp/stub.env
+npx supabase functions serve --env-file /tmp/stub.env
+node supabase/tests/draft-actions.check.mjs
+```
+
+In a hosted project: `npx supabase secrets set ANTHROPIC_API_KEY=...` then
+`npx supabase functions deploy draft-actions`.
+
+`node tests/safety.check.mjs` covers the UI-side rules (sign-off, stock, allergies, dates, booking)
+without any backend.
 
 Secrets (Supabase secret key, Stripe, Claude) never go in the frontend or this repo — they live in
 Supabase project secrets and are read by Edge Functions only.

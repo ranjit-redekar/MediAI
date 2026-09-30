@@ -68,6 +68,11 @@ interface SessionContextValue {
   workspaceId: string | null;
   /** Production sign-in. Demo sign-in stays on `signInAs`. */
   signIn: (email: string, password: string) => Promise<{ error: string } | { role: AccessRole }>;
+  /**
+   * An invited person creates their account and joins the hospital that
+   * invited them. Resolves to an error, a note to confirm their email, or {}.
+   */
+  joinHospital: (fullName: string, email: string, password: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
   /** Creates the hospital, its admin and the first invites. */
   signUp: (input: SignUpInput) => Promise<{ error?: string; needsConfirmation?: boolean }>;
   /** Each resolves to an error message, or null on success. */
@@ -117,7 +122,7 @@ interface WorkspaceRow {
   plan_id: string; trial_ends_at: string | null; created_at: string;
 }
 
-async function loadMember(userId: string, email: string): Promise<Member | null> {
+async function loadMember(userId: string, email: string, claimInvites = true): Promise<Member | null> {
   const client = supabase!;
   // ponytail: first membership only — add a workspace switcher when one person works for two hospitals.
   const { data, error } = await client
@@ -128,7 +133,14 @@ async function loadMember(userId: string, email: string): Promise<Member | null>
     .maybeSingle();
   if (error) throw error;
   const ws = data?.workspace as unknown as WorkspaceRow | null;
-  if (!data || !ws) return null;
+  if (!data || !ws) {
+    // No hospital yet: an invited person joins by claiming their invite (the
+    // database checks the email is confirmed). Once, so a stranger can't loop.
+    if (!claimInvites) return null;
+    const { data: joined, error: claimError } = await client.rpc('accept_invites');
+    if (claimError) throw claimError;
+    return joined ? loadMember(userId, email, false) : null;
+  }
 
   const roleId = data.role as RoleId;
   // Row-level security returns no invites to non-admins, which is the right answer.
@@ -322,6 +334,30 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return { needsConfirmation: !data.session };
   }, [saveDemoWorkspace, signInAs]);
 
+  const joinHospital = useCallback(async (fullName: string, email: string, password: string) => {
+    if (!supabase) return { error: 'Joining a hospital needs the live service; the demo has no invites.' };
+    // No workspace metadata: the sign-up trigger creates nothing, and the
+    // invite is claimed by loadMember once the email is confirmed.
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+        data: { full_name: fullName.trim() },
+      },
+    });
+    if (error) return { error: error.message };
+    if (!data.session || !data.user) return { needsConfirmation: true };
+
+    const found = await loadMember(data.user.id, data.user.email ?? email.trim()).catch(() => null);
+    if (!found) {
+      await supabase.auth.signOut();
+      return { error: 'There’s no invite for this email. Ask your hospital’s administrator to invite you.' };
+    }
+    setLoaded({ userId: found.userId, member: found });
+    return {};
+  }, []);
+
   const updateWorkspace = useCallback(async (fields: WorkspaceFields) => {
     if (!supabase) {
       saveDemoWorkspace({ ...demoWorkspace, ...fields });
@@ -386,12 +422,13 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     workspaceId: member?.workspaceId ?? null,
     signIn,
     signUp,
+    joinHospital,
     updateWorkspace,
     addInvite,
     revokeInvite,
     can: (pathname: string) => canAccess(role, pathname),
     canSeeNav: (navId: string) => role.navIds.includes(navId),
-  }), [isLoading, role, activeSession, signInAs, signOut, workspace, member, signIn, signUp, updateWorkspace, addInvite, revokeInvite]);
+  }), [isLoading, role, activeSession, signInAs, signOut, workspace, member, signIn, signUp, joinHospital, updateWorkspace, addInvite, revokeInvite]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 };

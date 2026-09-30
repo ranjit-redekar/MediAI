@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { cn } from '../../utils/cn';
 
 interface GlassInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -14,10 +14,15 @@ export const GlassInput: React.FC<GlassInputProps> = ({
   className,
   ...props
 }) => {
+  // Label and error are tied to the field, so screen readers announce them and
+  // clicking the label focuses it.
+  const generatedId = useId();
+  const id = props.id ?? generatedId;
+  const errorId = `${id}-error`;
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-app-muted mb-1.5">
+        <label htmlFor={id} className="block text-sm font-medium text-app-muted mb-1.5">
           {label}
         </label>
       )}
@@ -37,9 +42,12 @@ export const GlassInput: React.FC<GlassInputProps> = ({
             className
           )}
           {...props}
+          id={id}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : props['aria-describedby']}
         />
       </div>
-      {error && <p className="mt-1.5 text-sm text-[color:var(--danger)]">{error}</p>}
+      {error && <p id={errorId} className="mt-1.5 text-sm text-[color:var(--danger)]">{error}</p>}
     </div>
   );
 };

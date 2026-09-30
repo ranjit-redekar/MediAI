@@ -50,7 +50,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed lg:static inset-y-0 left-0 z-50',
+          // Sticky on desktop so long pages don't scroll the navigation away.
+          'fixed lg:sticky lg:top-0 lg:h-screen inset-y-0 left-0 z-50',
           widthClass,
           'glass-panel backdrop-blur-2xl border-r',
           'transform transition-transform duration-300 ease-in-out',

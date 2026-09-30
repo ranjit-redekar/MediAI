@@ -7,13 +7,14 @@ import { EmptyState } from '../ui/EmptyState';
 import { AIActionCard } from './AIActionCard';
 import { useAIActions } from '../../context/AIActionsContext';
 import { useToast } from '../../context/ToastContext';
+import { isDemo } from '../../lib/supabase';
 
 /**
  * Dashboard-sized slice of the AI action queue. The point is that the day's
  * work can be cleared from here without navigating into another module.
  */
 export const AIActionQueue: React.FC<{ limit?: number }> = ({ limit = 4 }) => {
-  const { pending, batchApprovable, approveMany, minutesSaved, resetAll } = useAIActions();
+  const { pending, batchApprovable, approveMany, minutesSaved, resetAll, resetMany } = useAIActions();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -27,7 +28,7 @@ export const AIActionQueue: React.FC<{ limit?: number }> = ({ limit = 4 }) => {
     toast(`${ids.length} action${ids.length === 1 ? '' : 's'} approved`, {
       description: `Roughly ${saved} minutes of manual work avoided.`,
       variant: 'ai',
-      action: { label: 'Undo all', onClick: resetAll },
+      action: { label: 'Undo all', onClick: () => resetMany(ids) },
     });
   };
 
@@ -66,7 +67,7 @@ export const AIActionQueue: React.FC<{ limit?: number }> = ({ limit = 4 }) => {
             icon={Inbox}
             title="Nothing waiting on you"
             description="The AI has drafted and cleared everything it found. New work appears here automatically."
-            action={{ label: 'Replay demo queue', onClick: resetAll }}
+            action={isDemo ? { label: 'Replay demo queue', onClick: resetAll } : undefined}
           />
         ) : (
           <>

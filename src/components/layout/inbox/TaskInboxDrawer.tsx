@@ -6,6 +6,7 @@ import { useToast } from '../../../context/ToastContext';
 import { EmptyState } from '../../ui/EmptyState';
 import { GlassButton } from '../../ui/GlassButton';
 import { AIActionCard } from '../../ai/AIActionCard';
+import { isDemo } from '../../../lib/supabase';
 
 interface TaskInboxDrawerProps {
   isOpen: boolean;
@@ -18,7 +19,7 @@ interface TaskInboxDrawerProps {
  * so every item here is a drafted action you can approve, edit, or reject.
  */
 export const TaskInboxDrawer: React.FC<TaskInboxDrawerProps> = ({ isOpen, onClose }) => {
-  const { pending, batchApprovable, approveMany, resetAll, minutesSaved } = useAIActions();
+  const { pending, batchApprovable, approveMany, resetAll, resetMany, minutesSaved } = useAIActions();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export const TaskInboxDrawer: React.FC<TaskInboxDrawerProps> = ({ isOpen, onClos
     toast(`${ids.length} action${ids.length === 1 ? '' : 's'} approved`, {
       description: `Roughly ${saved} minutes of manual work avoided.`,
       variant: 'ai',
-      action: { label: 'Undo all', onClick: resetAll },
+      action: { label: 'Undo all', onClick: () => resetMany(ids) },
     });
   };
 
@@ -121,7 +122,7 @@ export const TaskInboxDrawer: React.FC<TaskInboxDrawerProps> = ({ isOpen, onClos
               icon={Inbox}
               title="Inbox zero"
               description="Everything the AI drafted has been actioned. New work lands here the moment an agent finds something."
-              action={{ label: 'Replay demo queue', onClick: resetAll }}
+              action={isDemo ? { label: 'Replay demo queue', onClick: resetAll } : undefined}
             />
           ) : (
             <div className="space-y-5">

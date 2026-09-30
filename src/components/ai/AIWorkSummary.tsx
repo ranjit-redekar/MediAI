@@ -3,6 +3,7 @@ import { Sparkles, CheckCheck, Clock, ShieldCheck, RotateCcw } from 'lucide-reac
 import { GlassButton } from '../ui/GlassButton';
 import { useAIActions } from '../../context/AIActionsContext';
 import { useToast } from '../../context/ToastContext';
+import { isDemo } from '../../lib/supabase';
 
 /**
  * Headline strip for the AI action queue: how much work is already drafted, how
@@ -10,7 +11,7 @@ import { useToast } from '../../context/ToastContext';
  * approve in bulk. Clinical steps are deliberately excluded from that button.
  */
 export const AIWorkSummary: React.FC = () => {
-  const { pending, approved, batchApprovable, minutesSaved, approveMany, resetAll } = useAIActions();
+  const { pending, approved, batchApprovable, minutesSaved, approveMany, resetAll, resetMany } = useAIActions();
   const { toast } = useToast();
 
   const clinicianCount = pending.length - batchApprovable.length;
@@ -23,7 +24,7 @@ export const AIWorkSummary: React.FC = () => {
     toast(`${ids.length} action${ids.length === 1 ? '' : 's'} approved`, {
       description: `Roughly ${saved} minutes of manual work avoided.`,
       variant: 'ai',
-      action: { label: 'Undo all', onClick: resetAll },
+      action: { label: 'Undo all', onClick: () => resetMany(ids) },
     });
   };
 
@@ -65,7 +66,7 @@ export const AIWorkSummary: React.FC = () => {
           </>)}
 
           <div className="flex items-center gap-2">
-            {approved.length > 0 && (
+            {isDemo && approved.length > 0 && (
               <GlassButton variant="ghost" size="sm" onClick={resetAll} title="Reset the demo queue">
                 <RotateCcw className="w-3.5 h-3.5" />
               </GlassButton>

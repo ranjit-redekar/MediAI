@@ -330,6 +330,15 @@ export const Login: React.FC = () => {
               Create a workspace
             </button>
           </p>
+          {/* Invites only exist with a real backend; the demo signs in by role. */}
+          {!isDemo && (
+            <p className="mt-2 text-xs text-app-muted">
+              Invited by your hospital?{' '}
+              <button type="button" onClick={() => navigate('/join')} className="font-semibold text-app hover:underline focus-ring rounded">
+                Create your account
+              </button>
+            </p>
+          )}
         </div>
 
         {/* Live preview of the workspace behind that sign-in */}
