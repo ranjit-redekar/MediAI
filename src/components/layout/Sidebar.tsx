@@ -7,6 +7,7 @@ import { useSession } from '../../context/SessionContext';
 import { navSections } from '../../data/navigation';
 import { todayKey } from '../../utils/date';
 import { useAppointments } from '../../context/AppointmentsContext';
+import { useLab } from '../../context/LabContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,7 +22,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
   const { appointments } = useAppointments();
   const todaysAppointments = appointments.filter(a => a.date === today && a.status === 'Scheduled').length;
   const pendingBills = db.bills.filter(b => b.status !== 'Paid').length;
-  const pendingLabs = db.labTests.filter(l => l.status !== 'Completed').length;
+  const { tests } = useLab();
+  // Today's open work at the bench, not future orders.
+  const pendingLabs = tests.filter(l => l.status !== 'Completed' && (l.collectOn ?? l.orderedDate) <= today).length;
 
   const navBadgeCounts: Record<string, number> = {
     journey: todaysAppointments,

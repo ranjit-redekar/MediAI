@@ -68,6 +68,10 @@ export const TaskInboxDrawer: React.FC<TaskInboxDrawerProps> = ({ isOpen, onClos
         role="dialog"
         aria-modal="true"
         aria-label="Approval queue"
+        // Closed panels stay mounted (for the slide animation) but must not take
+        // Tab focus or be read out while invisible.
+        inert={!isOpen}
+        aria-hidden={!isOpen || undefined}
         className={cn(
           'fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] glass-panel backdrop-blur-2xl border-l',
           'transition-transform duration-300 ease-in-out flex flex-col',

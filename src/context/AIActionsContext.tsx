@@ -3,6 +3,7 @@ import { buildAIActions } from '../data/aiActions';
 import { ownsAction } from '../data/accessRoles';
 import { useSession } from './SessionContext';
 import { useAppointments } from './AppointmentsContext';
+import { useLab } from './LabContext';
 import { useToast } from './ToastContext';
 import { supabase } from '../lib/supabase';
 import type { AIAction, AIActionStatus } from '../types/aiActions';
@@ -87,9 +88,11 @@ export const AIActionsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [toast, load]);
   const detailOf = useCallback((id: string) => actions.find(a => a.id === id)?.detail ?? '', [actions]);
   const { addAppointment, removeAppointment } = useAppointments();
+  const { addOrder, cancelOrder } = useLab();
   // Approval is the work, not a checkmark: a booking draft becomes a real
   // appointment on the calendar, and undo takes it back off.
   const booked = useRef(new Map<string, string>()); // action id → appointment id
+  const ordered = useRef(new Map<string, string>()); // action id → lab order id
 
   const statusOf = useCallback((id: string) => statuses[id] ?? 'pending', [statuses]);
 
@@ -100,6 +103,9 @@ export const AIActionsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const carryOut = useCallback((ids: string[]) => {
     for (const id of ids) {
       const a = actions.find(x => x.id === id);
+      if (a?.labOrder && !ordered.current.has(id)) {
+        ordered.current.set(id, addOrder({ patientId: a.patientId, patientName: a.patientName, ...a.labOrder }).id);
+      }
       if (!a?.booking || booked.current.has(id)) continue;
       const appt = addAppointment({
         patientId: a.patientId, patientName: a.patientName,
@@ -109,15 +115,18 @@ export const AIActionsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
       booked.current.set(id, appt.id);
     }
-  }, [actions, addAppointment]);
+  }, [actions, addAppointment, addOrder]);
 
   const undoBookings = useCallback((ids: string[]) => {
     for (const id of ids) {
       const apptId = booked.current.get(id);
       if (apptId) removeAppointment(apptId);
       booked.current.delete(id);
+      const orderId = ordered.current.get(id);
+      if (orderId) cancelOrder(orderId);
+      ordered.current.delete(id);
     }
-  }, [removeAppointment]);
+  }, [removeAppointment, cancelOrder]);
 
   const approve = useCallback((id: string) => {
     carryOut([id]);

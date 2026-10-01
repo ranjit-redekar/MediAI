@@ -12,6 +12,7 @@ import { useSession } from '../../context/SessionContext';
 import { db } from '../../data';
 import { cn } from '../../utils/cn';
 import { useAppointments } from '../../context/AppointmentsContext';
+import { useLab } from '../../context/LabContext';
 
 /** The demo patient this portal is signed in as. */
 const PATIENT_ID = 'P001';
@@ -40,7 +41,8 @@ export const PortalHome: React.FC = () => {
     [appointments]
   );
   const past = useMemo(() => appointments.filter(a => a.status !== 'Scheduled'), [appointments]);
-  const labs = useMemo(() => db.labTests.filter(t => t.patientId === PATIENT_ID), []);
+  const { tests } = useLab();
+  const labs = useMemo(() => tests.filter(t => t.patientId === PATIENT_ID), [tests]);
   const bills = useMemo(() => db.bills.filter(b => b.patientId === PATIENT_ID), []);
   const prescriptions = useMemo(
     () => (patient?.medicalHistory ?? []).flatMap(r => r.medications).slice(0, 4),

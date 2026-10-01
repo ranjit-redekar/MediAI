@@ -92,6 +92,23 @@ try {
   const noShowBook = appointments.map(a => (`V-${a.id}` === scheduled.id ? { ...a, status: 'No-Show' } : a));
   assert.equal(mergeWithBook(initialVisits, noShowBook).some(v => v.id === scheduled.id), false, 'no-show leaves the board');
 
+  // 9. Lab flags come from the catalogue: boundaries, critical beats abnormal, wording maps to tests.
+  const { LAB_CATALOG, flagValue, matchTest, rangeLabel } = await load('/src/data/labCatalog.ts');
+  const { labTests } = await load('/src/data/laboratory.ts');
+  const k = LAB_CATALOG.find(t => t.name === 'Basic Metabolic Panel').params.find(p => p.name === 'Potassium');
+  assert.equal(flagValue(k, 4.2), 'Normal');
+  assert.equal(flagValue(k, 3.5), 'Normal', 'range is inclusive');
+  assert.equal(flagValue(k, 5.5), 'Abnormal');
+  assert.equal(flagValue(k, 6.5), 'Critical', 'critical beats abnormal');
+  assert.equal(flagValue(k, 2.5), 'Critical');
+  assert.equal(rangeLabel(LAB_CATALOG.find(t => t.name === 'Lipid Panel').params.find(p => p.name === 'HDL')), '> 40');
+  assert.equal(matchTest('6-week follow-up for lipid recheck')?.name, 'Lipid Panel');
+  assert.equal(matchTest('Schedule glucose screening at 24 weeks')?.name, 'Glucose Challenge Test');
+  assert.equal(matchTest('Spinal MRI'), undefined, 'no guessing a test that is not in the catalogue');
+  const critical = labTests.filter(t => t.results?.some(r => r.status === 'Critical'));
+  assert.deepEqual(critical.map(t => `${t.patientName} ${t.testName}`), ['Robert Williams INR'], 'the demo day has exactly one planned critical');
+  assert.ok(actions.filter(a => a.kind === 'lab').every(a => a.labOrder?.testName && a.labOrder?.collectOn), 'lab drafts carry an order');
+
   console.log('safety checks passed');
 } finally {
   await vite.close();

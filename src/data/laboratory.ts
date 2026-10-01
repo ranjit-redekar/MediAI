@@ -1,6 +1,11 @@
 import type { LabTest } from '../types';
-import { shiftDemoDates } from '../utils/date';
+import { fromDateKey, shiftDemoDates, todayKey } from '../utils/date';
 import { CLINICAL_DEMO_TODAY } from './demoToday';
+import { seeded } from '../utils/seeded';
+import { LAB_CATALOG, resultsFor } from './labCatalog';
+import { clockNow, todayAt } from './demoToday';
+import { patients } from './patients';
+import { doctors } from './doctors';
 
 const authoredLabTests: LabTest[] = [
   {
@@ -110,4 +115,78 @@ const authoredLabTests: LabTest[] = [
   }
 ];
 
-export const labTests = shiftDemoDates(authoredLabTests, CLINICAL_DEMO_TODAY, ['orderedDate', 'completedDate']);
+// The authored examples sit in the past; ones still open are re-dated to this
+// morning, since a sample doesn't wait days at the bench.
+const examples = shiftDemoDates(authoredLabTests, CLINICAL_DEMO_TODAY, ['orderedDate', 'completedDate'])
+  .map(t => t.status === 'Completed'
+    ? { ...t, priority: 'Routine' as const, orderedAt: fromDateKey(t.orderedDate).getTime() + 9 * 3_600_000 }
+    : { ...t, priority: 'Routine' as const, orderedDate: todayKey(), orderedAt: todayAt('07:30') });
+
+// --- A morning at the bench -----------------------------------------------------
+// A hospital lab takes a hundred-plus orders a day; the screen has to work at
+// that size. Deterministic: same orders every load. Orders run from 06:00 to
+// just before the board's clock; older ones are done, newer ones still open.
+
+const NAMES = [
+  'Aarav Shah', 'Meera Iyer', 'Rohan Gupta', 'Ananya Rao', 'Vikram Singh', 'Priya Menon', 'Kabir Khan', 'Isha Patel',
+  'Arjun Nair', 'Sara Thomas', 'Dev Malhotra', 'Neha Joshi', 'Omar Siddiqui', 'Lakshmi Pillai', 'Rahul Verma', 'Zoya Ali',
+  'Karan Mehta', 'Diya Kapoor', 'Nikhil Das', 'Fatima Sheikh', 'Aditya Kulkarni', 'Pooja Reddy', 'Sameer Bhat', 'Tara Bose',
+];
+
+function morning(): LabTest[] {
+  const today = todayKey();
+  const now = clockNow().getTime();
+  const start = todayAt('06:00');
+  const span = Math.max(60 * 60_000, now - start - 5 * 60_000);
+  const COUNT = 110;
+  return Array.from({ length: COUNT }, (_, i): LabTest => {
+    const k = `lab-${i}`;
+    const def = LAB_CATALOG[Math.floor(seeded(k + 't') * LAB_CATALOG.length)];
+    const known = seeded(k + 'p') < 0.25 ? patients[Math.floor(seeded(k + 'q') * patients.length)] : null;
+    const doctor = doctors[Math.floor(seeded(k + 'd') * doctors.length)];
+    const priority = seeded(k + 's') < 0.15 ? 'STAT' : 'Routine';
+    const orderedAt = start + Math.floor((i / COUNT) * span);
+    const ageMin = (now - orderedAt) / 60_000;
+    // Older orders are done; STATs finish faster.
+    const doneAfter = priority === 'STAT' ? 50 : 150;
+    const status = ageMin > doneAfter + seeded(k + 'w') * 60 ? 'Completed' : ageMin > 20 + seeded(k + 'c') * 40 ? 'In Progress' : 'Pending';
+    const results = status === 'Completed'
+      ? resultsFor(def, Object.fromEntries(def.params.map(p => {
+          const r = seeded(k + p.name);
+          const top = p.high >= 999 ? p.low * 2 : p.high;
+          // ~80% inside the range, the rest just above it (abnormal, not critical).
+          // Never below a critical floor (a "0–140" glucose range still has a 40 call limit).
+          const floor = Math.max(p.low, p.critLow ?? -Infinity);
+          const v = r < 0.8 ? floor + (top - floor) * seeded(k + p.name + 'v') : top * (1.02 + seeded(k + p.name + 'x') * 0.08);
+          return [p.name, Math.round(v * 100) / 100];
+        })))
+      : undefined;
+    return {
+      id: `L${String(100 + i)}`,
+      patientId: known?.id ?? `P${String(900 + Math.floor(seeded(k + 'n') * NAMES.length))}`,
+      patientName: known?.name ?? NAMES[Math.floor(seeded(k + 'n') * NAMES.length)],
+      testName: def.name,
+      category: def.category,
+      orderedDate: today,
+      completedDate: status === 'Completed' ? today : undefined,
+      status,
+      results,
+      doctorId: doctor.id,
+      doctorName: doctor.name,
+      priority,
+      orderedAt,
+      collectOn: today,
+    };
+  });
+}
+
+// One critical value to call: Robert Williams is on warfarin for AF, and his
+// STAT INR came back far above the call limit.
+const inrDef = LAB_CATALOG.find(t => t.name === 'INR')!;
+const robert: LabTest = {
+  id: 'L099', patientId: 'P004', patientName: 'Robert Williams', testName: 'INR', category: inrDef.category,
+  orderedDate: todayKey(), completedDate: todayKey(), status: 'Completed', doctorId: 'D003', doctorName: 'Dr. Robert Taylor',
+  priority: 'STAT', orderedAt: todayAt('08:40'), collectOn: todayKey(), results: resultsFor(inrDef, { INR: 5.8 }),
+};
+
+export const labTests: LabTest[] = [robert, ...morning(), ...examples];

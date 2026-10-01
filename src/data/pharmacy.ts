@@ -1,5 +1,6 @@
 import type { Medicine, StockStatus } from '../types';
 import { addDays, fromDateKey, todayKey } from '../utils/date';
+import { seeded } from '../utils/seeded';
 
 /** Expiry dates are authored relative to today so the demo never drifts into all-expired stock. */
 const inDays = (days: number) => addDays(todayKey(), days);
@@ -172,12 +173,7 @@ const FORMULARY: [name: string, category: string, strengths: string[], reorder: 
 ];
 const MAKERS = ['Cipla', 'Sun Pharma', 'Pfizer', 'Teva', 'Mylan', "Dr. Reddy's", 'Lupin', 'Zydus', 'Abbott', 'GSK'];
 
-/** Deterministic 0..1 from a string, so the catalogue is identical every load. */
-const unit = (key: string) => {
-  let h = 2166136261;
-  for (const c of key) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
-  return ((h >>> 0) % 10_000) / 10_000;
-};
+const unit = seeded;
 
 const generated: Medicine[] = FORMULARY.flatMap(([name, category, strengths, reorder]) =>
   strengths.flatMap(strength => MAKERS.slice(0, 1 + Math.floor(unit(name + strength) * 3)).map(maker => {

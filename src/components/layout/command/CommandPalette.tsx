@@ -171,6 +171,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
+        // Closed panels stay mounted (for the slide animation) but must not take
+        // Tab focus or be read out while invisible.
+        inert={!isOpen}
+        aria-hidden={!isOpen || undefined}
         onClick={e => e.stopPropagation()}
         className={cn(
           'mx-auto mt-[10vh] w-full max-w-2xl rounded-3xl border glass-modal backdrop-blur-2xl p-4 shadow-lifted transition-all duration-200',

@@ -278,6 +278,10 @@ export const AICopilotChat: React.FC<AICopilotChatProps> = ({ isOpen, onClose })
         role="dialog"
         aria-modal="false"
         aria-label="MediAI Copilot"
+        // Closed panels stay mounted (for the slide animation) but must not take
+        // Tab focus or be read out while invisible.
+        inert={!isOpen}
+        aria-hidden={!isOpen || undefined}
         className={cn(
           'fixed z-50 flex flex-col overflow-hidden',
           'bottom-0 right-0 w-full h-[85vh] rounded-t-3xl',

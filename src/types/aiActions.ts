@@ -41,4 +41,6 @@ export interface AIAction {
   requiresClinician: boolean;
   /** For bookings and referrals: the slot to put on the calendar when approved. */
   booking?: { doctorId: string; doctorName: string; specialty: string; date: string; time: string };
+  /** For lab drafts: the order to place when approved. */
+  labOrder?: { testName: string; collectOn: string; doctorId: string; doctorName: string };
 }

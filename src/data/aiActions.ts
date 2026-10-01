@@ -1,5 +1,6 @@
 import { doctors } from './doctors';
 import { toDateKey } from '../utils/date';
+import { matchTest } from './labCatalog';
 import { patients } from './patients';
 import { aiInsights } from './aiMockData';
 import { medicines, stockStatus, daysUntilExpiry, targetStockOf } from './pharmacy';
@@ -245,6 +246,10 @@ export function buildAIActions(): AIAction[] {
         // Bookings carry the slot as data, so approving can put it on the calendar.
         booking: (intent.kind === 'appointment' || intent.kind === 'referral') && doctor
           ? { doctorId: doctor.id, doctorName: doctor.name, specialty: doctor.specialty, date: slot.date, time: slot.time }
+          : undefined,
+        // Lab drafts name a catalogue test when the wording matches one ("lipid recheck" → Lipid Panel).
+        labOrder: intent.kind === 'lab'
+          ? { testName: matchTest(recommendation)?.name ?? recommendation, collectOn: slot.date, doctorId: doctor?.id ?? '', doctorName: doctor?.name ?? 'Care team' }
           : undefined,
       });
     });

@@ -12,6 +12,7 @@ import { ToastProvider } from './context/ToastContext.tsx';
 import { AIActionsProvider } from './context/AIActionsContext.tsx';
 import { SessionProvider } from './context/SessionContext.tsx';
 import { PharmacyProvider } from './context/PharmacyContext.tsx';
+import { LabProvider } from './context/LabContext.tsx';
 
 // Apply the saved theme before first paint to avoid a flash.
 const stored = typeof window !== 'undefined' ? localStorage.getItem('mediai-theme') : null;
@@ -29,7 +30,8 @@ createRoot(document.getElementById('root')!).render(
           <PatientsProvider>
             <DoctorsProvider>
               <AppointmentsProvider>
-                {/* Inside Appointments: approving a booking draft adds it to the calendar. */}
+                {/* Inside Appointments and Lab: approving a draft books the visit or places the order. */}
+                <LabProvider>
                 <AIActionsProvider>
                   <JourneyProvider>
                     <StaffProvider>
@@ -39,6 +41,7 @@ createRoot(document.getElementById('root')!).render(
                     </StaffProvider>
                   </JourneyProvider>
                 </AIActionsProvider>
+                </LabProvider>
               </AppointmentsProvider>
             </DoctorsProvider>
           </PatientsProvider>

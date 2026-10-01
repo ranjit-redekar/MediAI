@@ -149,6 +149,15 @@ export interface LabTest {
   results?: TestResult[];
   doctorId: string;
   doctorName: string;
+  /** STAT orders jump the queue and have a 1-hour target. */
+  priority?: 'STAT' | 'Routine';
+  /** Epoch ms the order was placed — turnaround is measured from here. */
+  orderedAt?: number;
+  /** `YYYY-MM-DD` the sample is due; future orders wait under Upcoming. */
+  collectOn?: string;
+  /** A critical value was phoned to the ordering clinician (read-back done). */
+  criticalCalledAt?: number;
+  criticalCalledBy?: string;
 }
 
 export interface TestResult {
