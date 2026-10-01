@@ -131,6 +131,8 @@ export interface Medicine {
   expiryDate: string;
   manufacturer: string;
   description: string;
+  /** Units at or below which the item counts as low and gets a reorder draft. */
+  reorderLevel?: number;
 }
 
 export type StockStatus = 'In Stock' | 'Low Stock' | 'Out of Stock' | 'Expired';

@@ -50,6 +50,13 @@ try {
   const infection = recommendMedicines('bacterial infection', ['fever'], ['Penicillin']);
   assert.ok(infection.every(s => !allergyConflict(s.name, ['Penicillin'])), 'no penicillin-class suggestion for an allergic patient');
 
+  // 4b. Suggestions come from diagnoses, never from symptoms or screenings (they draft automatically).
+  assert.deepEqual(recommendMedicines('New referral — fatigue workup', []), [], 'a symptom workup gets no drug');
+  assert.deepEqual(recommendMedicines('Gestational glucose screening', []), [], 'a screening gets no drug');
+  assert.deepEqual(recommendMedicines('Chest pain walk-in', ['fever', 'cough']), [], 'symptoms alone get no drug');
+  assert.equal(recommendMedicines('Hypertension review', [])[0]?.category, 'Antihypertensive');
+  assert.deepEqual(recommendMedicines('CBP count', []), [], 'no substring matches ("bp" in "CBP")');
+
   // 5. Demo dates move with the calendar, including ISO datetimes.
   const shifted = shiftDemoDates({ a: [{ when: addDays(today, -400) }], at: '2024-03-06T10:30:00Z' }, addDays(today, -400), ['when', 'at']);
   assert.equal(shifted.a[0].when, today);
@@ -78,6 +85,12 @@ try {
   const started = withExtra.map(v => v.id === 'V-A999' ? { ...v, stage: 'Consultation' } : v);
   assert.ok(mergeWithBook(started, appointments).some(v => v.id === 'V-A999'), 'a visit under way is never dropped');
   assert.equal(mergeWithBook(initialVisits, appointments).length, initialVisits.length, 'seed is stable');
+
+  // 8. A no-show booking leaves the board; the visit carries its booked doctor for reception.
+  const scheduled = initialVisits.find(v => v.stage === 'Scheduled' && v.id.startsWith('V-A'));
+  assert.ok(scheduled.bookedDoctor?.name, 'visits know their booked doctor');
+  const noShowBook = appointments.map(a => (`V-${a.id}` === scheduled.id ? { ...a, status: 'No-Show' } : a));
+  assert.equal(mergeWithBook(initialVisits, noShowBook).some(v => v.id === scheduled.id), false, 'no-show leaves the board');
 
   console.log('safety checks passed');
 } finally {

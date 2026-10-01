@@ -2,7 +2,7 @@ import { doctors } from './doctors';
 import { toDateKey } from '../utils/date';
 import { patients } from './patients';
 import { aiInsights } from './aiMockData';
-import { medicines, stockStatus, daysUntilExpiry, TARGET_STOCK_UNITS } from './pharmacy';
+import { medicines, stockStatus, daysUntilExpiry, targetStockOf } from './pharmacy';
 import type { AIAction, AIActionKind } from '../types/aiActions';
 
 /**
@@ -200,13 +200,13 @@ function buildStockActions(): AIAction[] {
       });
     }
     if (status !== 'In Stock') {
-      const units = TARGET_STOCK_UNITS - (status === 'Expired' ? 0 : m.stock);
+      const units = targetStockOf(m) - (status === 'Expired' ? 0 : m.stock);
       reorders.push({
         ...base,
         id: `STOCK-${m.id}-reorder`,
         label: 'Reorder from supplier',
         detail: `${m.name} · ${units} units from ${m.manufacturer} · ≈$${(units * m.unitPrice).toLocaleString()}`,
-        rationale: `Tops the shelf back up to the ${TARGET_STOCK_UNITS}-unit target at the last unit price on file.`,
+        rationale: `Tops the shelf back up to its ${targetStockOf(m)}-unit target at the last unit price on file.`,
         source: status === 'Expired' ? 'Replacing a quarantined batch' : `${m.stock} units left`,
         minutesSaved: 6,
       });

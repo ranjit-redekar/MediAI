@@ -19,6 +19,7 @@ import { BASE_RULES, MAX_INSTRUCTIONS_LENGTH, systemPromptBlocks } from '../../s
 import { cn } from '../utils/cn';
 
 export const Settings: React.FC = () => {
+  const [notify, setNotify] = useState<Record<string, boolean>>({});
   const [params, setParams] = useSearchParams();
   const { theme, themes, setTheme } = useTheme();
   const { role, signOut } = useSession();
@@ -156,20 +157,21 @@ export const Settings: React.FC = () => {
               <h2 className="text-xl font-semibold text-white mb-6">Notification Preferences</h2>
               <div className="space-y-4">
                 {[
-                  { label: 'Email Notifications', desc: 'Receive email updates about appointments' },
-                  { label: 'AI Alerts', desc: 'Get notified about critical AI predictions' },
-                  { label: 'Lab Results', desc: 'Notification when lab results are ready' },
-                  { label: 'Billing Updates', desc: 'Payment and invoice notifications' },
+                  { id: 'email', label: 'Email Notifications', desc: 'Receive email updates about appointments' },
+                  { id: 'ai', label: 'AI Alerts', desc: 'Get notified about critical AI predictions' },
+                  { id: 'lab', label: 'Lab Results', desc: 'Notification when lab results are ready' },
+                  { id: 'billing', label: 'Billing Updates', desc: 'Payment and invoice notifications' },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between p-4 rounded-xl bg-white/5">
+                  <div key={item.id} className="flex items-center justify-between gap-4 p-4 rounded-xl bg-[var(--surface-2)]">
                     <div>
-                      <p className="font-medium text-white">{item.label}</p>
-                      <p className="text-sm text-white/50">{item.desc}</p>
+                      <p id={`notify-${item.id}`} className="font-medium text-app">{item.label}</p>
+                      <p className="text-sm text-app-muted">{item.desc}</p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
-                      <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
+                    <Switch
+                      checked={notify[item.id] ?? true}
+                      onChange={on => setNotify(prev => ({ ...prev, [item.id]: on }))}
+                      labelledBy={`notify-${item.id}`}
+                    />
                   </div>
                 ))}
               </div>
@@ -180,9 +182,9 @@ export const Settings: React.FC = () => {
             <GlassCard>
               <h2 className="text-xl font-semibold text-white mb-6">Security Settings</h2>
               <div className="space-y-6">
-                <GlassInput label="Current Password" type="password" />
-                <GlassInput label="New Password" type="password" />
-                <GlassInput label="Confirm New Password" type="password" />
+                <GlassInput label="Current Password" type="password" autoComplete="current-password" />
+                <GlassInput label="New Password" type="password" autoComplete="new-password" />
+                <GlassInput label="Confirm New Password" type="password" autoComplete="new-password" />
                 <div className="flex justify-end">
                   <GlassButton variant="primary">Update Password</GlassButton>
                 </div>
@@ -594,3 +596,30 @@ const AIInstructionsSettings: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * An on/off switch: green when on, with a focus ring and a real name for
+ * screen readers. Colours come from tokens and fixed shades, not `bg-white/*`,
+ * which the light theme overrides with !important (why the old switch never
+ * changed colour when turned on).
+ */
+const Switch: React.FC<{ checked: boolean; onChange: (on: boolean) => void; labelledBy: string }> = ({ checked, onChange, labelledBy }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    aria-labelledby={labelledBy}
+    onClick={() => onChange(!checked)}
+    className={cn(
+      'relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus-ring',
+      checked ? 'bg-emerald-600' : 'bg-[var(--surface-3)] ring-1 ring-inset ring-[var(--border-strong)]'
+    )}
+  >
+    <span
+      className={cn(
+        'inline-block h-5 w-5 rounded-full bg-white shadow transition-transform',
+        checked ? 'translate-x-[22px]' : 'translate-x-0.5'
+      )}
+    />
+  </button>
+);

@@ -53,6 +53,12 @@ export interface Visit {
   priority: 'Routine' | 'Urgent';
   stage: JourneyStage;
   checkedInAt?: string;
+  /** Epoch ms of the slot, for "late" — absent on walk-ins. */
+  scheduledAt?: number;
+  /** Epoch ms of check-in, for "waiting". */
+  arrivedAt?: number;
+  /** The doctor the appointment was booked with, so reception doesn't re-pick. */
+  bookedDoctor?: { id: string; name: string; specialty: string };
   consultations: Consultation[];
   prescription: PrescribedMedicine[];
   pharmacyStatus: PharmacyStatus;

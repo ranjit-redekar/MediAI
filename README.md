@@ -58,8 +58,8 @@ Everything else in the product falls out of that one decision:
    or pharmacist, whatever their queue. Administrative work —
    booking, referrals, labs, outreach, enrolment — clears in one click. Where that line sits is a
    product decision, not a settings toggle.
-4. **The role subtracts work.** A pharmacist signs in to five stock drafts and a four-item
-   sidebar, not twenty-three drafts and thirteen nav entries belonging to other people. Signing in
+4. **The role subtracts work.** A pharmacist signs in to their stock drafts and a five-item
+   sidebar, not every draft and thirteen nav entries belonging to other people. Signing in
    as a role removes what isn't yours rather than greying it out.
 5. **Reasoning is available, never mandatory.** Every draft can explain the specialty match, the
    slot choice, and the signal it came from. You read it when you doubt it — not every time.
@@ -89,7 +89,7 @@ command palette, the routes you may open, and **which drafted actions reach your
 | Doctor | `doctor@mediai.com` | `Doctor@123` | Everything, including medication | 18 |
 | Assistant Doctor | `assistant@mediai.com` | `Assist@123` | Everything **except** medication | 14 |
 | Nurse | `nurse@mediai.com` | `Nurse@123` | Outreach, education, visits | 7 |
-| Pharmacist | `pharmacist@mediai.com` | `Pharma@123` | Stock: expired-batch quarantine and reorders | 5 |
+| Pharmacist | `pharmacist@mediai.com` | `Pharma@123` | Stock: expired-batch quarantine and reorders | 28 |
 | Lab Technician | `lab@mediai.com` | `Lab@123` | Lab orders only | 2 |
 | Receptionist | `reception@mediai.com` | `Front@123` | Bookings, referrals, outreach | 4 |
 | Patient | `patient@mediai.com` | `Patient@123` | — (own portal) | — |
@@ -129,8 +129,10 @@ Switch roles from the account menu without signing out, which makes the differen
 - **Appointments** — calendar and agenda views, rich filtering, and full booking/edit flows.
 - **Billing** — sortable invoice ledger, an overdue-first alert banner, and a detailed invoice modal
   with line items and totals.
-- **Pharmacy** — status derived from stock and expiry (an expired batch is never "In Stock"), with
-  quarantine and reorder drafts in the pharmacist's queue.
+- **Pharmacy** — a 200-line formulary in a sortable, paged table that opens on the items needing
+  action (expired, out, below each item's own reorder level). Status is derived from stock and
+  expiry, never stored; add items and receive deliveries in place; quarantine and reorder drafts
+  are approvable from the row or the queue.
 - **Laboratory** — order queue with expandable results and critical-value flagging.
 - **Approval queue** — every AI-drafted action in one place, grouped by patient, with batch approve,
   inline editing, per-action reasoning, and undo on everything.

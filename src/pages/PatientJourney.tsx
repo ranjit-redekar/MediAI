@@ -15,8 +15,9 @@ import {
   UserRound,
   Clock,
   AlertTriangle,
-  ChevronRight,
-  Bot
+  Bot,
+  UserPlus,
+  UserX,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { GlassButton } from '../components/ui/GlassButton';
@@ -24,11 +25,17 @@ import { GlassInput } from '../components/ui/GlassInput';
 import { GlassSelect } from '../components/ui/GlassSelect';
 import { useJourney } from '../context/JourneyContext';
 import { useSession } from '../context/SessionContext';
+import { usePatients } from '../context/PatientsContext';
+import { usePharmacy } from '../context/PharmacyContext';
+import type { Medicine } from '../types';
 import type { RoleId } from '../types/access';
 import { ScheduleVisitWizard } from '../components/journey/ScheduleVisitWizard';
 import { PageHeader } from '../components/ui/PageHeader';
 import { allergyConflict, recommendMedicines } from '../data/journeyMock';
 import { db } from '../data';
+import { stockStatus } from '../data/pharmacy';
+import { clockNow } from '../data/demoToday';
+import { AllergyRow } from '../components/patients/AllergyRow';
 import { cn } from '../utils/cn';
 import type { JourneyStage, MedicineSuggestion, Visit } from '../types/journey';
 import { JOURNEY_STAGES } from '../types/journey';
@@ -50,10 +57,19 @@ const STAGE_META: Record<JourneyStage, StageMeta> = {
 };
 
 const doctorOptions = db.doctors.map(d => ({ value: d.id, label: `${d.name} · ${d.specialty}` }));
-const medicineOptions = [
+// Only what the store can actually dispense: out-of-stock and expired batches aren't offered.
+const medicineOptionsFrom = (medicines: Medicine[]) => [
   { value: '', label: 'Add medicine manually…' },
-  ...db.medicines.map(m => ({ value: m.id, label: `${m.name} (${m.category})` }))
+  ...medicines
+    .filter(m => stockStatus(m) === 'In Stock' || stockStatus(m) === 'Low Stock')
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(m => ({ value: m.id, label: `${m.name} (${m.category})${stockStatus(m) === 'Low Stock' ? ' · low stock' : ''}` }))
 ];
+
+/** Whole minutes from an epoch-ms instant to the board's clock. */
+const minutesSince = (ms?: number) => (ms === undefined ? 0 : Math.floor((clockNow().getTime() - ms) / 60_000));
+/** A slot this far past with no check-in counts as late. */
+const LATE_AFTER_MIN = 10;
 
 export const PatientJourney: React.FC = () => {
   const { visits } = useJourney();
@@ -61,6 +77,10 @@ export const PatientJourney: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [selectedId, setSelectedId] = React.useState<string | null>(() => searchParams.get('visit'));
   const [scheduleOpen, setScheduleOpen] = React.useState(false);
+  const [showCompleted, setShowCompleted] = React.useState(false);
+  const { role } = useSession();
+  const { checkIn } = useJourney();
+  const canCheckIn = STAGE_OWNERS.Scheduled.roles.includes(role.id);
 
   const selected = visits.find(v => v.id === selectedId) ?? null;
 
@@ -72,9 +92,10 @@ export const PatientJourney: React.FC = () => {
         subtitle="Every patient in the building today — arrival, consultation, and the medical store."
         actions={
           <>
+            {/* Booking lives on Appointments; Today adds people who are already here. */}
             <GlassButton variant="primary" onClick={() => setScheduleOpen(true)}>
-              <CalendarPlus className="w-4 h-4" />
-              New Appointment
+              <UserPlus className="w-4 h-4" />
+              Add walk-in
             </GlassButton>
           </>
         }
@@ -106,8 +127,22 @@ export const PatientJourney: React.FC = () => {
                     No patients
                   </div>
                 )}
-                {items.map(visit => (
-                  <VisitCard key={visit.id} visit={visit} onClick={() => setSelectedId(visit.id)} />
+                {/* Completed grows all day; keep it to a count until someone asks. */}
+                {stage === 'Completed' && items.length > 0 && (
+                  <button
+                    onClick={() => setShowCompleted(v => !v)}
+                    className="w-full rounded-xl border border-dashed border-[var(--border-strong)] p-3 text-xs font-medium text-app-muted hover:text-app transition-colors focus-ring"
+                  >
+                    {showCompleted ? 'Hide completed' : `${items.length} done · show`}
+                  </button>
+                )}
+                {(stage !== 'Completed' || showCompleted) && items.map(visit => (
+                  <VisitCard
+                    key={visit.id}
+                    visit={visit}
+                    onClick={() => setSelectedId(visit.id)}
+                    onCheckIn={canCheckIn && visit.stage === 'Scheduled' ? () => checkIn(visit.id) : undefined}
+                  />
                 ))}
               </div>
             </div>
@@ -123,41 +158,55 @@ export const PatientJourney: React.FC = () => {
 
 // --- Visit card ------------------------------------------------------------
 
-const VisitCard: React.FC<{ visit: Visit; onClick: () => void }> = ({ visit, onClick }) => {
+const VisitCard: React.FC<{ visit: Visit; onClick: () => void; onCheckIn?: () => void }> = ({ visit, onClick, onCheckIn }) => {
   const activeDoctor = visit.consultations.find(c => !c.completed) ?? visit.consultations[visit.consultations.length - 1];
+  // Who they're with or booked to see — also what tells two visits by one patient apart.
+  const doctor = activeDoctor?.doctorName ?? visit.bookedDoctor?.name;
+  const waited = visit.stage === 'Reception' ? minutesSince(visit.arrivedAt) : 0;
+  const late = visit.stage === 'Scheduled' && visit.scheduledAt !== undefined ? minutesSince(visit.scheduledAt) : 0;
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-left p-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all group"
-    >
-      <div className="flex items-center gap-3">
-        <img src={visit.patientAvatar} alt={visit.patientName} className="w-9 h-9 rounded-full border border-white/10" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white truncate">{visit.patientName}</p>
-          <p className="text-xs text-white/50 truncate">{visit.reason}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all">
+      <button onClick={onClick} className="w-full text-left p-3 group focus-ring rounded-2xl">
+        <div className="flex items-center gap-3">
+          <img src={visit.patientAvatar} alt="" className="w-9 h-9 rounded-full border border-white/10" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-white truncate flex-1">{visit.patientName}</p>
+              {visit.priority === 'Urgent' && (
+                <span title="Urgent" className="flex-shrink-0"><AlertTriangle className="w-4 h-4 text-amber-400" aria-label="Urgent" /></span>
+              )}
+            </div>
+            <p className="text-xs text-white/50 truncate">{visit.reason}</p>
+          </div>
         </div>
-        {visit.priority === 'Urgent' && (
-          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+        {/* Its own line, only when it applies: name and doctor keep their full width. */}
+        {waited > 0 && (
+          <p className={cn('mt-2 text-xs font-semibold', waited >= 30 ? 'text-red-400' : waited >= 15 ? 'text-amber-400' : 'text-white/60')}>
+            Waiting {waited} min
+          </p>
         )}
-      </div>
-      <div className="flex items-center justify-between mt-2.5 text-xs text-white/40">
-        <span className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          {visit.scheduledTime}
-        </span>
-        {visit.stage === 'Consultation' && activeDoctor && (
-          <span className="truncate max-w-[110px] text-violet-300">{activeDoctor.doctorName}</span>
-        )}
-        {visit.stage === 'Pharmacy' && (
-          <span className="text-emerald-300">
-            {visit.prescription.filter(p => p.dispensed).length}/{visit.prescription.length} dispensed
+        {late >= LATE_AFTER_MIN && <p className="mt-2 text-xs font-semibold text-amber-400">Late by {late} min</p>}
+        <div className="flex items-center justify-between gap-2 mt-2 text-xs text-white/40">
+          <span className="flex items-center gap-1 min-w-0">
+            <Clock className="w-3 h-3 flex-shrink-0" />
+            <span className="flex-shrink-0">{visit.scheduledTime}</span>
+            {doctor && <span className="truncate text-white/60">· {doctor}</span>}
           </span>
-        )}
-        {visit.stage !== 'Consultation' && visit.stage !== 'Pharmacy' && (
-          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        )}
-      </div>
-    </button>
+          {visit.stage === 'Pharmacy' && (
+            <span className="flex-shrink-0 text-emerald-300">
+              {visit.prescription.filter(p => p.dispensed).length}/{visit.prescription.length} dispensed
+            </span>
+          )}
+        </div>
+      </button>
+      {onCheckIn && (
+        <div className="px-3 pb-3 -mt-1">
+          <GlassButton size="sm" variant="default" className="w-full" onClick={onCheckIn}>
+            <ClipboardCheck className="w-3.5 h-3.5" /> Check in
+          </GlassButton>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -193,6 +242,7 @@ const VisitDrawer: React.FC<{ visit: Visit | null; onClose: () => void }> = ({ v
 const DrawerBody: React.FC<{ visit: Visit; onClose: () => void }> = ({ visit, onClose }) => {
   const stageIndex = JOURNEY_STAGES.indexOf(visit.stage);
   const { role } = useSession();
+  const { getPatient } = usePatients();
   return (
     <div>
       {/* Header */}
@@ -233,8 +283,9 @@ const DrawerBody: React.FC<{ visit: Visit; onClose: () => void }> = ({ visit, on
         </div>
       </div>
 
-      {/* Chief complaint */}
+      {/* Chief complaint — with allergies, since this is where prescribing happens */}
       <div className="p-5 border-b border-white/10">
+        <div className="-mt-4 mb-4"><AllergyRow allergies={getPatient(visit.patientId)?.allergies} /></div>
         <p className="text-xs uppercase tracking-wide text-white/40 mb-1">Reason for visit</p>
         <p className="text-sm text-white">{visit.reason}</p>
         {visit.symptoms.length > 0 && (
@@ -302,24 +353,34 @@ const PanelHeading: React.FC<{ icon: LucideIcon; title: string; subtitle?: strin
 );
 
 const ReceptionPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
-  const { checkIn } = useJourney();
+  const { checkIn, markNoShow } = useJourney();
+  const late = visit.scheduledAt !== undefined ? minutesSince(visit.scheduledAt) : 0;
   return (
     <div>
       <PanelHeading icon={ClipboardCheck} title="Reception check-in" subtitle="Confirm the patient has arrived" />
       <p className="text-sm text-white/60 mb-4">
-        {visit.patientName} is scheduled for {visit.scheduledTime}. Check the patient in to move them to the reception queue.
+        {visit.patientName} is booked for {visit.scheduledTime}
+        {visit.bookedDoctor ? ` with ${visit.bookedDoctor.name}` : ''}.
+        {late >= LATE_AFTER_MIN && <span className="font-semibold text-amber-400"> Now {late} minutes late.</span>}
       </p>
       <GlassButton variant="primary" onClick={() => checkIn(visit.id)} className="w-full flex items-center justify-center gap-2">
         <ClipboardCheck className="w-4 h-4" />
         Check in at Reception
       </GlassButton>
+      {late >= LATE_AFTER_MIN && (
+        <GlassButton variant="ghost" onClick={() => markNoShow(visit.id)} className="w-full mt-2 flex items-center justify-center gap-2">
+          <UserX className="w-4 h-4" />
+          Mark no-show
+        </GlassButton>
+      )}
     </div>
   );
 };
 
 const AssignDoctorPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
   const { sendToDoctor } = useJourney();
-  const [doctorId, setDoctorId] = React.useState(db.doctors[0]?.id ?? '');
+  // The booked doctor, not the first name in the list: one click for the usual case.
+  const [doctorId, setDoctorId] = React.useState(visit.bookedDoctor?.id ?? '');
 
   const assign = () => {
     const doc = db.doctors.find(d => d.id === doctorId);
@@ -332,12 +393,12 @@ const AssignDoctorPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
       <PanelHeading icon={UserRound} title="Assign to doctor" subtitle={`Checked in at ${visit.checkedInAt ?? '—'}`} />
       <GlassSelect
         label="Attending doctor"
-        options={doctorOptions}
+        options={[...(visit.bookedDoctor ? [] : [{ value: '', label: 'Choose a doctor…' }]), ...doctorOptions]}
         value={doctorId}
         onChange={e => setDoctorId(e.target.value)}
       />
-      <GlassButton variant="primary" onClick={assign} className="w-full mt-4 flex items-center justify-center gap-2">
-        Send to Doctor
+      <GlassButton variant="primary" onClick={assign} disabled={!doctorId} className="w-full mt-4 flex items-center justify-center gap-2">
+        {doctorId ? `Send to ${db.doctors.find(d => d.id === doctorId)?.name}` : 'Send to doctor'}
         <ArrowRight className="w-4 h-4" />
       </GlassButton>
     </div>
@@ -345,20 +406,25 @@ const AssignDoctorPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
 };
 
 const ConsultationPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
-  const { updateConsultation, addPrescriptionItem, removePrescriptionItem, referToDoctor, sendToPharmacy } = useJourney();
+  const { updateConsultation, addPrescriptionItem, removePrescriptionItem, referToDoctor, sendToPharmacy, finishVisit } = useJourney();
   const active = visit.consultations.find(c => !c.completed) ?? visit.consultations[visit.consultations.length - 1];
-  const [suggestions, setSuggestions] = React.useState<MedicineSuggestion[] | null>(null);
+  const allergies = usePatients().getPatient(visit.patientId)?.allergies;
+  const { medicines } = usePharmacy();
+  const medicineOptions = React.useMemo(() => medicineOptionsFrom(medicines), [medicines]);
+  // Drafted as soon as the consult opens, from the visit reason — the doctor
+  // adds what fits instead of typing a diagnosis first and asking.
+  const [suggestions, setSuggestions] = React.useState<MedicineSuggestion[] | null>(() =>
+    visit.prescription.length ? null : recommendMedicines(`${active?.diagnosis ?? ''} ${visit.reason}`, visit.symptoms, allergies));
   const [manualMed, setManualMed] = React.useState('');
   const [allergyBlock, setAllergyBlock] = React.useState<string | null>(null);
-  const allergies = db.patients.find(p => p.id === visit.patientId)?.allergies;
   const [referId, setReferId] = React.useState('');
 
   if (!active) return null;
 
-  const runAI = () => setSuggestions(recommendMedicines(active.diagnosis, visit.symptoms, allergies));
+  const runAI = () => setSuggestions(recommendMedicines(`${active.diagnosis} ${visit.reason}`, visit.symptoms, allergies));
 
   const addManual = (medId: string) => {
-    const med = db.medicines.find(m => m.id === medId);
+    const med = medicines.find(m => m.id === medId);
     if (!med) return;
     const clash = allergyConflict(med.name, allergies);
     setAllergyBlock(clash ? `${med.name} not added — ${visit.patientName} has a recorded ${clash} allergy.` : null);
@@ -446,21 +512,19 @@ const ConsultationPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
                 AI Medicine Recommendations
                 <Sparkles className="w-3 h-3 text-violet-300" />
               </p>
-              <p className="text-[11px] text-white/40">Based on diagnosis + symptoms</p>
+              <p className="text-[11px] text-white/40">Drafted from the visit reason and diagnosis · skips allergies and unavailable stock</p>
             </div>
           </div>
           <GlassButton size="sm" variant="ghost" onClick={runAI}>
-            {suggestions ? 'Refresh' : 'Suggest'}
+            {suggestions ? 'Redraft' : 'Draft'}
           </GlassButton>
         </div>
 
         {suggestions === null && (
-          <p className="text-xs text-white/40">
-            Enter a diagnosis above, then tap <span className="text-violet-300">Suggest</span> to get AI-recommended medicines from inventory.
-          </p>
+          <p className="text-xs text-white/40">Update the diagnosis, then tap <span className="text-violet-300">Draft</span> to redraft.</p>
         )}
         {suggestions?.length === 0 && (
-          <p className="text-xs text-white/40">No confident match yet — refine the diagnosis or add medicines manually below.</p>
+          <p className="text-xs text-white/40">Nothing to suggest for this visit. Add a diagnosis and redraft, or add medicines manually below.</p>
         )}
         <div className="space-y-2">
           {suggestions?.map(s => {
@@ -541,15 +605,18 @@ const ConsultationPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
             <GlassButton variant="default" onClick={refer} disabled={!referId}>Refer</GlassButton>
           </div>
         </div>
-        <GlassButton
-          variant="primary"
-          onClick={() => sendToPharmacy(visit.id)}
-          disabled={visit.prescription.length === 0}
-          className="w-full flex items-center justify-center gap-2"
-        >
-          <Pill className="w-4 h-4" />
-          Send Prescription to Medical Store
-        </GlassButton>
+        {/* A visit that needs nothing from the store ends here — it used to have no way out. */}
+        {visit.prescription.length > 0 ? (
+          <GlassButton variant="primary" onClick={() => sendToPharmacy(visit.id)} className="w-full flex items-center justify-center gap-2">
+            <Pill className="w-4 h-4" />
+            Send prescription to medical store
+          </GlassButton>
+        ) : (
+          <GlassButton variant="primary" onClick={() => finishVisit(visit.id)} className="w-full flex items-center justify-center gap-2">
+            <CheckCircle2 className="w-4 h-4" />
+            Finish visit — no medicines
+          </GlassButton>
+        )}
       </div>
     </div>
   );
@@ -610,8 +677,10 @@ const CompletedPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
         <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mb-3">
           <CheckCircle2 className="w-7 h-7 text-emerald-300" />
         </div>
-        <p className="text-base font-semibold text-white">Journey complete</p>
-        <p className="text-sm text-white/50">Patient has collected medicines from the store.</p>
+        <p className="text-base font-semibold text-white">Visit complete</p>
+        <p className="text-sm text-white/50">
+          {visit.prescription.length ? 'Medicines collected from the store.' : 'No medicines were prescribed.'}
+        </p>
       </div>
       <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3">
         <div>
@@ -624,7 +693,7 @@ const CompletedPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
             <p className="text-sm text-white">{lastDoctor.diagnosis}</p>
           </div>
         )}
-        <div>
+        {visit.prescription.length > 0 && <div>
           <p className="text-xs text-white/40 mb-1">Medicines dispensed</p>
           <div className="space-y-1">
             {visit.prescription.map(p => (
@@ -633,7 +702,7 @@ const CompletedPanel: React.FC<{ visit: Visit }> = ({ visit }) => {
               </p>
             ))}
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );

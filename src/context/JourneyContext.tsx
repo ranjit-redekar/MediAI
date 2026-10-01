@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 import type { Consultation, PrescribedMedicine, Visit } from '../types/journey';
 import { initialVisits, mergeWithBook } from '../data/journeyMock';
 import { useAppointments } from './AppointmentsContext';
+import { clockNow } from '../data/demoToday';
 
 interface DoctorRef {
   id: string;
@@ -23,7 +24,8 @@ interface NewVisitInput {
 
 interface JourneyContextValue {
   visits: Visit[];
-  scheduleVisit: (input: NewVisitInput) => void;
+  /** A walk-in is already here: they join straight at Reception. */
+  addWalkIn: (input: NewVisitInput) => void;
   checkIn: (visitId: string) => void;
   sendToDoctor: (visitId: string, doctor: DoctorRef) => void;
   updateConsultation: (visitId: string, consultationId: string, fields: Partial<Consultation>) => void;
@@ -33,15 +35,25 @@ interface JourneyContextValue {
   sendToPharmacy: (visitId: string) => void;
   dispenseMedicine: (visitId: string, rxId: string) => void;
   completeVisit: (visitId: string) => void;
+  /** Ends a consultation that needs nothing from the store. */
+  finishVisit: (visitId: string) => void;
+  /** Takes a late patient off the board and records the no-show on the booking. */
+  markNoShow: (visitId: string) => void;
 }
 
 const JourneyContext = createContext<JourneyContextValue | undefined>(undefined);
+
+/** Arrival stamp: the clock time shown on the card and the instant waiting counts from. */
+const stamp = () => {
+  const now = clockNow();
+  return { checkedInAt: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), arrivedAt: now.getTime() };
+};
 
 let seq = 100;
 const uid = (prefix: string) => `${prefix}-${++seq}`;
 
 export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { appointments } = useAppointments();
+  const { appointments, updateAppointment } = useAppointments();
   const [stored, setVisits] = useState<Visit[]>(initialVisits);
   const visits = useMemo(() => mergeWithBook(stored, appointments), [stored, appointments]);
 
@@ -50,11 +62,12 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setVisits(prev => mergeWithBook(prev, appointments).map(v => (v.id === visitId ? updater(v) : v)));
   }, [appointments]);
 
-  const scheduleVisit = useCallback((input: NewVisitInput) => {
+  const addWalkIn = useCallback((input: NewVisitInput) => {
     const visit: Visit = {
       id: uid('V'),
       ...input,
-      stage: 'Scheduled',
+      ...stamp(),
+      stage: 'Reception',
       consultations: [],
       prescription: [],
       pharmacyStatus: 'Awaiting'
@@ -63,8 +76,7 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const checkIn = useCallback((visitId: string) => {
-    const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    patch(visitId, v => ({ ...v, stage: 'Reception', checkedInAt: v.checkedInAt ?? stamp }));
+    patch(visitId, v => ({ ...v, stage: 'Reception', ...(v.arrivedAt ? {} : stamp()) }));
   }, [patch]);
 
   const sendToDoctor = useCallback((visitId: string, doctor: DoctorRef) => {
@@ -142,9 +154,25 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     patch(visitId, v => ({ ...v, stage: 'Completed', pharmacyStatus: 'Fulfilled' }));
   }, [patch]);
 
+  const finishVisit = useCallback((visitId: string) => {
+    patch(visitId, v => ({
+      ...v,
+      stage: 'Completed',
+      pharmacyStatus: 'Fulfilled',
+      consultations: v.consultations.map(c => ({ ...c, completed: true })),
+    }));
+  }, [patch]);
+
+  const markNoShow = useCallback((visitId: string) => {
+    // Booked visits leave the board through the book (see mergeWithBook);
+    // a walk-in has no booking, so it is simply removed.
+    if (visitId.startsWith('V-A')) updateAppointment(visitId.slice(2), { status: 'No-Show' });
+    else setVisits(prev => prev.filter(v => v.id !== visitId));
+  }, [updateAppointment]);
+
   const value = useMemo<JourneyContextValue>(() => ({
     visits,
-    scheduleVisit,
+    addWalkIn,
     checkIn,
     sendToDoctor,
     updateConsultation,
@@ -153,8 +181,10 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     removePrescriptionItem,
     sendToPharmacy,
     dispenseMedicine,
-    completeVisit
-  }), [visits, scheduleVisit, checkIn, sendToDoctor, updateConsultation, referToDoctor, addPrescriptionItem, removePrescriptionItem, sendToPharmacy, dispenseMedicine, completeVisit]);
+    completeVisit,
+    finishVisit,
+    markNoShow,
+  }), [visits, addWalkIn, checkIn, sendToDoctor, updateConsultation, referToDoctor, addPrescriptionItem, removePrescriptionItem, sendToPharmacy, dispenseMedicine, completeVisit, finishVisit, markNoShow]);
 
   return <JourneyContext.Provider value={value}>{children}</JourneyContext.Provider>;
 };

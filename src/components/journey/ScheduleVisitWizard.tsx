@@ -19,6 +19,7 @@ import { GlassInput } from '../ui/GlassInput';
 import { GlassButton } from '../ui/GlassButton';
 import { GlassSelect } from '../ui/GlassSelect';
 import { useJourney } from '../../context/JourneyContext';
+import { clockNow } from '../../data/demoToday';
 import { db } from '../../data';
 import { cn } from '../../utils/cn';
 import type { Patient } from '../../types';
@@ -66,7 +67,7 @@ function registerPatient(input: typeof emptyNewPatient): Patient {
 }
 
 export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, onClose }) => {
-  const { scheduleVisit } = useJourney();
+  const { addWalkIn } = useJourney();
   const [step, setStep] = React.useState(0);
   const [mode, setMode] = React.useState<Mode | null>(null);
 
@@ -80,7 +81,6 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
   // visit details
   const [reason, setReason] = React.useState('');
   const [symptoms, setSymptoms] = React.useState('');
-  const [time, setTime] = React.useState('11:00 AM');
   const [priority, setPriority] = React.useState<'Routine' | 'Urgent'>('Routine');
 
   const reset = React.useCallback(() => {
@@ -91,7 +91,6 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
     setNewPatient(emptyNewPatient);
     setReason('');
     setSymptoms('');
-    setTime('11:00 AM');
     setPriority('Routine');
   }, []);
 
@@ -120,7 +119,8 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
   const confirm = () => {
     const patient = mode === 'new' ? registerPatient(newPatient) : selectedPatient;
     if (!patient) return;
-    scheduleVisit({
+    // Walk-ins are already here: arrival time is stamped as they're added.
+    addWalkIn({
       patientId: patient.id,
       patientName: patient.name,
       patientAvatar: patient.avatar,
@@ -128,7 +128,7 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
       gender: patient.gender,
       reason: reason.trim() || 'General consultation',
       symptoms: symptoms.split(',').map(s => s.trim()).filter(Boolean),
-      scheduledTime: time,
+      scheduledTime: clockNow().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       priority
     });
     close();
@@ -158,8 +158,8 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
               <CalendarPlus className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">New Appointment</h2>
-              <p className="text-xs text-white/50">Book a patient into today's journey</p>
+              <h2 className="text-lg font-semibold text-white">Add walk-in</h2>
+              <p className="text-xs text-white/50">A patient who's here now, without a booking</p>
             </div>
           </div>
           <button onClick={close} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
@@ -322,7 +322,6 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
                 onChange={e => setSymptoms(e.target.value)}
               />
               <div className="grid grid-cols-2 gap-3">
-                <GlassInput label="Preferred time" value={time} onChange={e => setTime(e.target.value)} />
                 <GlassSelect
                   label="Priority"
                   options={[{ value: 'Routine', label: 'Routine' }, { value: 'Urgent', label: 'Urgent — see sooner' }]}
@@ -363,7 +362,6 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
                 <div className="h-px bg-white/10" />
                 <Row label="Reason" value={reason.trim() || 'General consultation'} />
                 <Row label="Symptoms" value={symptoms.split(',').map(s => s.trim()).filter(Boolean).join(', ') || '—'} />
-                <Row label="Time" value={time} />
                 <Row
                   label="Priority"
                   value={priority}
@@ -372,7 +370,7 @@ export const ScheduleVisitWizard: React.FC<ScheduleVisitWizardProps> = ({ open, 
               </div>
               <div className="flex items-start gap-2 text-xs text-white/50 bg-white/5 rounded-xl p-3 border border-white/10">
                 <AlertTriangle className="w-4 h-4 text-violet-300 flex-shrink-0 mt-0.5" />
-                After confirming, the patient appears under <span className="text-white/80">&nbsp;Scheduled&nbsp;</span> on the journey board. Reception can then check them in.
+                After confirming, the patient appears under <span className="text-white/80">&nbsp;Reception&nbsp;</span>, checked in now, ready to be sent to a doctor.
               </div>
             </div>
           )}

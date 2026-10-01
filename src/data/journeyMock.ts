@@ -3,9 +3,14 @@ import { appointments } from './appointments';
 import type { Appointment } from '../types';
 import { patients } from './patients';
 import { todayKey } from '../utils/date';
+import { todayAt } from './demoToday';
 import type { MedicineSuggestion, Visit } from '../types/journey';
 
 // --- AI medicine recommendation engine -------------------------------------
+// Keywords are diagnoses and named conditions, never symptoms or screenings:
+// suggestions now draft automatically when a consult opens, and a presenting
+// complaint ("fatigue workup", "glucose screening") is not a reason to suggest a
+// drug. A symptom-only visit gets no suggestion until the doctor enters a diagnosis.
 // Maps condition / symptom keywords to medicine categories in our inventory,
 // with a default dosage and a human-readable rationale. This is intentionally
 // rule-based mock "intelligence" — swap for a real model call when the
@@ -21,70 +26,70 @@ interface Rule {
 
 const RULES: Rule[] = [
   {
-    keywords: ['infection', 'bacterial', 'fever', 'throat', 'sinus', 'wound'],
+    keywords: ['bacterial infection', 'sinusitis', 'cellulitis', 'uti', 'strep throat'],
     category: 'Antibiotics',
     dosage: '1 tablet, twice daily for 7 days',
     rationale: 'Bacterial infection indicators — broad-spectrum antibiotic cover.',
     confidence: 88
   },
   {
-    keywords: ['allergy', 'allergic', 'sneezing', 'congestion', 'itchy', 'rhinitis', 'rash'],
+    keywords: ['seasonal allergies', 'allergic rhinitis', 'hay fever', 'urticaria'],
     category: 'Antihistamine',
     dosage: '1 tablet once daily',
     rationale: 'Allergic / histamine-mediated symptoms respond to antihistamines.',
     confidence: 92
   },
   {
-    keywords: ['hypertension', 'blood pressure', 'bp', 'cardiac', 'chest'],
+    keywords: ['hypertension', 'high blood pressure'],
     category: 'Antihypertensive',
     dosage: '1 tablet once daily, morning',
     rationale: 'Elevated blood pressure — ACE inhibitor for first-line control.',
     confidence: 85
   },
   {
-    keywords: ['diabetes', 'glucose', 'sugar', 'hyperglycemia', 'a1c'],
+    keywords: ['type 2 diabetes', 'diabetes management', 'hyperglycemia'],
     category: 'Antidiabetic',
     dosage: '1 tablet with meals, twice daily',
     rationale: 'Glycaemic control indicated by glucose-related history.',
     confidence: 87
   },
   {
-    keywords: ['cholesterol', 'lipid', 'ldl', 'statin'],
+    keywords: ['hyperlipidemia', 'hypercholesterolemia', 'high cholesterol'],
     category: 'Statins',
     dosage: '1 tablet at night',
     rationale: 'Lipid management — statin therapy to lower LDL.',
     confidence: 80
   },
   {
-    keywords: ['asthma', 'wheeze', 'breath', 'respiratory', 'cough', 'copd'],
+    keywords: ['asthma', 'copd', 'bronchospasm'],
     category: 'Respiratory',
     dosage: '2 puffs as needed, up to 4x daily',
     rationale: 'Airway / bronchospasm symptoms — bronchodilator relief.',
     confidence: 84
   },
   {
-    keywords: ['acid', 'reflux', 'gastritis', 'stomach', 'nausea', 'heartburn', 'gastro'],
+    keywords: ['acid reflux', 'gerd', 'gastritis', 'gastro-oesophageal reflux'],
     category: 'Gastrointestinal',
     dosage: '1 capsule before breakfast',
     rationale: 'Acid-related GI symptoms — proton-pump inhibitor.',
     confidence: 83
   },
   {
-    keywords: ['thyroid', 'hypothyroid', 'tsh', 'fatigue'],
+    keywords: ['hypothyroidism', 'hypothyroid'],
     category: 'Hormone',
     dosage: '1 tablet daily on empty stomach',
     rationale: 'Thyroid hormone replacement based on TSH history.',
     confidence: 78
   },
   {
-    keywords: ['pregnancy', 'prenatal', 'antenatal', 'expecting'],
+    keywords: ['prenatal check', 'antenatal', 'pregnancy'],
     category: 'Supplements',
     dosage: '1 tablet daily',
     rationale: 'Antenatal support — prenatal micronutrients.',
     confidence: 90
   },
   {
-    keywords: ['clot', 'thrombosis', 'stroke', 'anticoagulant', 'afib', 'fibrillation'],
+    keywords: ['atrial fibrillation', 'afib', 'deep vein thrombosis', 'dvt'],
     category: 'Anticoagulant',
     dosage: '1 tablet daily, monitor INR',
     rationale: 'Thromboembolic risk — anticoagulation with INR monitoring.',
@@ -112,7 +117,8 @@ export function recommendMedicines(diagnosis: string, symptoms: string[], allerg
 
   for (const rule of RULES) {
     if (usedCategories.has(rule.category)) continue;
-    const matched = rule.keywords.some(k => haystack.includes(k));
+    // Whole words/phrases only: "bp" must not match inside another word.
+    const matched = rule.keywords.some(k => new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(haystack));
     if (!matched) continue;
     // Never suggest a batch that can't be dispensed: out of stock or expired.
     // …and never one the patient is allergic to.
@@ -173,6 +179,9 @@ function toVisit(a: Appointment, stage: Visit['stage'], prescription: Visit['pre
     priority: patient.status === 'Critical' || /urgent/i.test(a.notes ?? '') ? 'Urgent' : 'Routine',
     stage,
     checkedInAt: stage === 'Scheduled' ? undefined : toClock(a.time),
+    scheduledAt: todayAt(a.time),
+    arrivedAt: stage === 'Scheduled' ? undefined : todayAt(a.time),
+    bookedDoctor: { id: a.doctorId, name: a.doctorName, specialty: a.specialty },
     consultations: seen
       ? [{ id: `C-${a.id}`, doctorId: a.doctorId, doctorName: a.doctorName, specialty: a.specialty, diagnosis: a.notes ?? '', notes: a.notes ?? '', completed: true }]
       : [],

@@ -70,10 +70,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCompact, on
               </div>
               {!isCompact && (
                 <div>
-                  <h1 className="text-xl font-bold gradient-text flex items-center gap-1">
+                  <p className="text-xl font-bold gradient-text flex items-center gap-1">
                     MediAI
                     <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                  </h1>
+                  </p>
                   <p className="text-xs font-medium text-app-muted truncate max-w-[10rem]">{workspace.name}</p>
                 </div>
               )}
